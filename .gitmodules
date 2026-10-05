@@ -1,0 +1,4 @@
+[submodule "simulator/lvgl"]
+	path = simulator/lvgl
+	url = https://github.com/lvgl/lvgl
+	shallow = true
