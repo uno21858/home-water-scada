@@ -2533,7 +2533,7 @@
  *============================================================================*/
 
 /** Build examples */
-#define LV_BUILD_EXAMPLES 1
+#define LV_BUILD_EXAMPLES 0
 
 
 
@@ -2542,14 +2542,14 @@
  *============================================================================*/
 
 /** Build demos */
-#define LV_BUILD_DEMOS 1
+#define LV_BUILD_DEMOS 0
 
 #if LV_BUILD_DEMOS
 /** Benchmark demo
  *
  *  Enable: LV_FONT_MONTSERRAT_14, LV_FONT_MONTSERRAT_20, LV_FONT_MONTSERRAT_24, LV_FONT_MONTSERRAT_26, LV_USE_DEMO_WIDGETS
  */
-#define LV_USE_DEMO_BENCHMARK 1
+#define LV_USE_DEMO_BENCHMARK 0
 
 #if LV_USE_DEMO_BENCHMARK
 /** Use the demo's own Montserrat fonts with aligned glyph bitmaps instead
@@ -2566,10 +2566,10 @@
 #endif /*LV_USE_GLTF*/
 
 /** Keypad and encoder demo */
-#define LV_USE_DEMO_KEYPAD_AND_ENCODER 1
+#define LV_USE_DEMO_KEYPAD_AND_ENCODER 0
 
 /** Music player demo */
-#define LV_USE_DEMO_MUSIC 1
+#define LV_USE_DEMO_MUSIC 0
 
 #if LV_USE_DEMO_MUSIC
 /** Square layout */
@@ -2594,10 +2594,10 @@
  *
  *  Enable: LV_USE_GRID
  */
-#define LV_USE_DEMO_RENDER 1
+#define LV_USE_DEMO_RENDER 0
 
 /** Stress demo */
-#define LV_USE_DEMO_STRESS 1
+#define LV_USE_DEMO_STRESS 0
 
 /** Vector graphic demo
  *
@@ -2609,10 +2609,10 @@
 #define LV_USE_DEMO_WIDGETS 0
 
 /** Flex layout demo */
-#define LV_USE_DEMO_FLEX_LAYOUT 1
+#define LV_USE_DEMO_FLEX_LAYOUT 0
 
 /** Multi-language demo */
-#define LV_USE_DEMO_MULTILANG 1
+#define LV_USE_DEMO_MULTILANG 0
 
 /** Smartwatch demo */
 #define LV_USE_DEMO_SMARTWATCH 0

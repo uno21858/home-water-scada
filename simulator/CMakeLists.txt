@@ -13,4 +13,8 @@ target_include_directories(lvgl PUBLIC ${PROJECT_SOURCE_DIR} ${SDL2_INCLUDE_DIRS
 
 add_executable(simulator main.cpp)
 target_compile_definitions(simulator PRIVATE LV_CONF_INCLUDE_SIMPLE)
-target_link_libraries(simulator PRIVATE lvgl ${SDL2_LIBRARIES} m pthread)
+
+target_link_libraries(simulator PRIVATE ui lvgl ${SDL2_LIBRARIES} m pthread)
+
+
+add_subdirectory(${PROJECT_SOURCE_DIR}/../ui ${CMAKE_BINARY_DIR}/ui)
