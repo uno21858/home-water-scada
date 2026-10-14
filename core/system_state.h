@@ -11,6 +11,10 @@ namespace core {
 // La última muestra es la de ahorita.
 inline constexpr int kFlowSamples24h = 289;
 
+// Caudal de las últimas 2 h, una muestra por minuto: 120 + 1 = 121.
+// La última muestra es la de ahorita.
+inline constexpr int kFlowSamples2h = 121;
+
 enum class Level : uint8_t { ok, warning, alarm };
 
 enum class MixerMode : uint8_t { off, on, automatic };
@@ -42,6 +46,7 @@ struct SystemState {
     uint32_t liters_today = 0;
     uint32_t liters_since_dose = 0;
     std::array<float, kFlowSamples24h> flow_24h{};
+    std::array<float, kFlowSamples2h> flow_2h{};
 
     // Dosis a mano
     float ml_per_liter = 0.020f;               // mL de Cloralex por litro

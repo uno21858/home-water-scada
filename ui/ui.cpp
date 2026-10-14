@@ -9,6 +9,7 @@
 #include "components/nav_bar.h"
 #include "components/primitives.h"
 #include "screens/dose_screen.h"
+#include "screens/flow_screen.h"
 #include "screens/home_screen.h"
 #include "screens/summary_screen.h"
 #include "theme/colors.h"
@@ -39,6 +40,7 @@ ConfirmDialog dialog;
 KeypadDialog keypad;
 HomeScreen home;
 SummaryScreen summary;
+FlowScreen flow;
 DoseScreen dose;
 std::array<lv_obj_t*, kScreenCount> pages{};
 
@@ -78,7 +80,7 @@ void init(const core::SystemState& s, const Actions& a) {
     lv_obj_t* content = box(screen, 0, kHeaderHeight, 1024, kContentHeight);
     pages[index_of(Screen::home)] = home.create(content);
     pages[index_of(Screen::summary)] = summary.create(content);
-    pages[index_of(Screen::flow)] = placeholder(content, "Flujo");
+    pages[index_of(Screen::flow)] = flow.create(content);
     pages[index_of(Screen::cistern)] = placeholder(content, "Cisterna");
     pages[index_of(Screen::dose)] = dose.create(content);
     pages[index_of(Screen::history)] = placeholder(content, "Historial");
@@ -100,6 +102,7 @@ void update(const core::SystemState& s) {
     header.set_wifi(s.wifi_ok);
     home.update(s);
     summary.update(s);
+    flow.update(s);
     dose.update(s);
 }
 

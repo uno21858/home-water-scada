@@ -46,6 +46,21 @@ core::SystemState make() {
     }
     s.flow_24h.back() = s.flow_lpm;
 
+    // Últimas 2 h, una muestra por minuto: la curva del canvas de Flujo.
+    // Son los dos últimos bloques de arriba (6.6 y 12.2 L/min) vistos de cerca.
+    for (int i = 0; i < core::kFlowSamples2h; ++i) {
+        float v = 0.0f;
+        if (i >= 28 && i < 53) {
+            v = 6.6f + 1.6f * std::sin((i - 28) / 4.0f) + (i % 3) * 0.25f;
+        } else if (i >= 70 && i < 74) {
+            v = 4.0f + (i - 70) * 2.1f;
+        } else if (i >= 74) {
+            v = 12.1f + 0.45f * std::sin(i / 3.1f) + 0.2f * std::sin(i / 1.7f);
+        }
+        s.flow_2h[i] = std::max(0.0f, v);
+    }
+    s.flow_2h.back() = s.flow_lpm;
+
     // Últimas dosis, la más nueva primero; la del jueves se capturó a mano
     s.recent_doses = {{
         {1000, 6 * 60 + 10, 40, false},
@@ -97,6 +112,10 @@ void next_minute() {
         if (s.mixer_minutes_left == 0) s.mixer_on = false;
     }
 
+    // Cada minuto entra una muestra nueva a la gráfica de 2 h
+    std::rotate(s.flow_2h.begin(), s.flow_2h.begin() + 1, s.flow_2h.end());
+    s.flow_2h.back() = s.flow_lpm;
+
     // Cada 5 min entra una muestra nueva a la gráfica de 24 h
     if (s.minute % 5 == 0) {
         std::rotate(s.flow_24h.begin(), s.flow_24h.begin() + 1, s.flow_24h.end());
@@ -112,6 +131,7 @@ void tick_1s() {
     ++seconds;
     s.flow_lpm = 12.4f + 0.15f * std::sin(seconds / 3.0f);
     s.flow_24h.back() = s.flow_lpm;
+    s.flow_2h.back() = s.flow_lpm;
 
     liters_fraction += s.flow_lpm / 60.0f;
     while (liters_fraction >= 1.0f) {

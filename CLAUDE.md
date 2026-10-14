@@ -26,8 +26,8 @@ Mientras llega el hardware, se desarrolla en el simulador con SDL (Mac y Fedora)
   - `components/`: `primitives` (box, label, icon, card, link_to, botones),
     `header`, `nav_bar`, `confirm_dialog`, `keypad_dialog`, `pipe` (puntos de
     flujo), `sensor_tag`.
-  - `screens/`: `home_screen` (Tren), `summary_screen` (Resumen), `dose_screen`
-    (Dosis). Las demás pestañas son placeholders en `ui.cpp`.
+  - `screens/`: `home_screen` (Tren), `summary_screen` (Resumen), `flow_screen`
+    (Flujo), `dose_screen` (Dosis). Las demás pestañas son placeholders en `ui.cpp`.
 - `simulator/`: ventana SDL. `demo.cpp` llena el estado con los datos de ejemplo
   del DS y lo mueve cada segundo.
 - `firmware/hmi` (la 7B) y `firmware/nodo` (ESP32-S3 en la caja del pilar con el
@@ -82,6 +82,11 @@ En Mac, SDL2 viene de Homebrew (`brew install sdl2`). Si CMake no lo encuentra:
   (`docs/diseno/ds/lvgl.md`).
 - Callbacks: funciones `static` o lambdas sin captura; el objeto llega por
   `user_data`.
+- Con la misma caja, las fuentes de cifras quedan más arriba que en el canvas:
+  el navegador centra la fuente en el interlineado y LVGL usa `base_line`.
+  Medido en Flujo: 232 px 17 px más arriba y 72 px 5 px; por cuenta, 136 px unos
+  10 y 44 px unos 4. En Flujo se compensa la de 232 (se encimaba con el título);
+  las de 72 y 44 se quedan como en Resumen y Dosis.
 
 ## Antes de dar por buena una pantalla
 
@@ -92,22 +97,21 @@ En Mac, SDL2 viene de Homebrew (`brew install sdl2`). Si CMake no lo encuentra:
 
 ## Estado (octubre 2026)
 
-Hecho: Tren (inicio), Resumen, Dosis, el diálogo de Ya le puse y el teclado de
-Registrar otra cantidad.
+Hecho: Tren (inicio), Resumen, Flujo, Dosis, el diálogo de Ya le puse y el
+teclado de Registrar otra cantidad.
 
 Pendiente, en este orden:
 
-1. Flujo.
-2. Cisterna y su detalle Mezcla (bomba R).
-3. Historial.
-4. Ajustes.
-5. Pasillo (reposo a los 2 min sin tocar) y los enlaces del encabezado: Casa →
+1. Cisterna y su detalle Mezcla (bomba R).
+2. Historial.
+3. Ajustes.
+4. Pasillo (reposo a los 2 min sin tocar) y los enlaces del encabezado: Casa →
    Panorama, ? → Leyenda, Inyección. El componente `header` todavía no tiene
    enlace, botón de atrás, chip ni el aviso de sin red; ver `Encabezado.dc.html`.
-6. Detalles: DetalleF, DetalleP, DetalleCaida, Cartuchos, Inyeccion.
-7. Estados globales: alarma a pantalla completa (EstadoAlarma) y sin red.
-8. Servicio: Alarmas, Diagnóstico, Prueba de cubeta, Leyenda, Panorama.
-9. Firmware de la 7B y del nodo.
+5. Detalles: DetalleF, DetalleP, DetalleCaida, Cartuchos, Inyeccion.
+6. Estados globales: alarma a pantalla completa (EstadoAlarma) y sin red.
+7. Servicio: Alarmas, Diagnóstico, Prueba de cubeta, Leyenda, Panorama.
+8. Firmware de la 7B y del nodo.
 
 ## Diferencias a propósito con el canvas
 
@@ -117,3 +121,8 @@ Pendiente, en este orden:
 - P1, P2, los vasos y la caída del Tren todavía no abren nada: sus pantallas de
   detalle no existen.
 - Los chips de fecha y hora del teclado solo muestran; no hay selector diseñado.
+- En Flujo el aviso "Sin flujo" va junto al título "Caudal" y no en x 578: mide
+  174 px y en el canvas queda abajo de la tarjeta de Litros hoy (x 700).
+- En Flujo la cifra de 232 px va en y 57 y no en 40 (ver la nota de cifras en
+  "LVGL 9.6: lo que ya mordió"); así cae donde la dibuja el canvas.
+- El encabezado de Flujo todavía no tiene el enlace "Sensor F" a DetalleF.
