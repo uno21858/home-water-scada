@@ -8,6 +8,7 @@
 #include "components/keypad_dialog.h"
 #include "components/nav_bar.h"
 #include "components/primitives.h"
+#include "screens/cistern_screen.h"
 #include "screens/dose_screen.h"
 #include "screens/flow_screen.h"
 #include "screens/home_screen.h"
@@ -54,6 +55,7 @@ KeypadDialog keypad;
 HomeScreen home;
 SummaryScreen summary;
 FlowScreen flow;
+CisternScreen cistern;
 DoseScreen dose;
 std::array<lv_obj_t*, kScreenCount> pages{};
 
@@ -76,6 +78,10 @@ void on_dose_typed(uint32_t ml) {
     if (actions.dose_typed != nullptr) actions.dose_typed(ml);
 }
 
+void on_strip_checked(uint32_t tenths_mgl) {
+    if (actions.strip_checked != nullptr) actions.strip_checked(tenths_mgl);
+}
+
 }  // namespace
 
 void init(const core::SystemState& s, const Actions& a) {
@@ -94,7 +100,7 @@ void init(const core::SystemState& s, const Actions& a) {
     pages[index_of(Screen::home)] = home.create(content);
     pages[index_of(Screen::summary)] = summary.create(content);
     pages[index_of(Screen::flow)] = flow.create(content);
-    pages[index_of(Screen::cistern)] = placeholder(content, "Cisterna");
+    pages[index_of(Screen::cistern)] = cistern.create(content);
     pages[index_of(Screen::dose)] = dose.create(content);
     pages[index_of(Screen::history)] = placeholder(content, "Historial");
     pages[index_of(Screen::settings)] = placeholder(content, "Ajustes");
@@ -116,6 +122,7 @@ void update(const core::SystemState& s) {
     home.update(s);
     summary.update(s);
     flow.update(s);
+    cistern.update(s);
     dose.update(s);
 }
 
@@ -145,7 +152,19 @@ void open_dose_keypad() {
     snprintf(hint, sizeof hint, "Sugerido: %lu mL", static_cast<unsigned long>(core::dose_ml(state)));
     snprintf(date, sizeof date, "Hoy %u %s", static_cast<unsigned>(state.day), fmt::month_short(state.month));
     fmt::clock(time, sizeof time, core::minute_of_day(state));
-    keypad.open("Registrar otra cantidad", hint, date, time, on_dose_typed);
+    keypad.open({"Registrar otra cantidad", "Cantidad", "mL", 0, 3, hint, date, time}, on_dose_typed);
+}
+
+void open_strip_keypad() {
+    char hint[48];
+    char mv[12];
+    char date[24];
+    char time[8];
+    fmt::signed_int(mv, sizeof mv, state.orp_mv);
+    snprintf(hint, sizeof hint, "Se guarda con el ORP de ahorita: %s mV", mv);
+    snprintf(date, sizeof date, "Hoy %u %s", static_cast<unsigned>(state.day), fmt::month_short(state.month));
+    fmt::clock(time, sizeof time, core::minute_of_day(state));
+    keypad.open({"Calibrar con tira", "Cloro libre de la tira", "mg/L", 1, 2, hint, date, time}, on_strip_checked);
 }
 
 }  // namespace ui

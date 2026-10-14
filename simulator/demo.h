@@ -19,4 +19,7 @@ void tick_1s();
 void on_dose_confirmed(uint32_t ml);  // "Sí, ya le puse"
 void on_dose_typed(uint32_t ml);      // "Registrar otra cantidad"
 
+// La tira de "Calibrar con tira": se guarda con el ORP de ahorita
+void on_strip_checked(uint32_t tenths_mgl);
+
 }  // namespace demo

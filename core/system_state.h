@@ -15,6 +15,10 @@ inline constexpr int kFlowSamples24h = 289;
 // La última muestra es la de ahorita.
 inline constexpr int kFlowSamples2h = 121;
 
+// ORP de la cisterna de los últimos 7 días, una muestra por hora: 7 * 24 = 168.
+// La última muestra es la de ahorita.
+inline constexpr int kOrpSamples7d = 168;
+
 enum class Level : uint8_t { ok, warning, alarm };
 
 enum class MixerMode : uint8_t { off, on, automatic };
@@ -24,6 +28,15 @@ struct DoseRecord {
     uint16_t at = 0;     // minuto del día
     uint16_t ml = 0;
     bool typed = false;  // se capturó a mano con "Registrar otra cantidad"
+};
+
+// Calibración del cloro libre con una tira: lo que marcó y el ORP de ese momento
+struct StripCheck {
+    uint8_t weekday = 0;     // 0 domingo ... 6 sábado
+    uint8_t day = 0;         // día del mes; 0 = todavía no se calibra
+    uint8_t month = 0;
+    uint8_t tenths_mgl = 0;  // cloro libre en décimas de mg/L: 5 = 0.5 mg/L
+    int16_t orp_mv = 0;
 };
 
 struct SystemState {
@@ -60,6 +73,9 @@ struct SystemState {
 
     // ORP de la cisterna
     int orp_mv = 0;
+    std::array<int16_t, kOrpSamples7d> orp_7d{};
+    float chlorine_mgl = 0.0f;  // cloro libre estimado con el ORP y la última tira
+    StripCheck last_strip{};
 
     // Bomba R de la cisterna
     MixerMode mixer_mode = MixerMode::automatic;

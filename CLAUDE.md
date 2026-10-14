@@ -25,12 +25,14 @@ Mientras llega el hardware, se desarrolla en el simulador con SDL (Mac y Fedora)
     `format` (números al formato de México).
   - `components/`: `primitives` (box, label, icon, card, link_to, botones),
     `header` (atrás, título, chip y enlace según la pantalla), `nav_bar`,
-    `confirm_dialog`, `keypad_dialog`, `pipe` (puntos de flujo), `sensor_tag`.
+    `confirm_dialog`, `keypad_dialog` (unidad y decimales con `KeypadSpec`),
+    `pipe` (puntos de flujo), `sensor_tag`.
   - Pantallas de detalle: van en el enum `Screen` después de las 7 pestañas.
     `kPages` en `ui.cpp` dice el encabezado de cada una y qué pestaña marca la
     barra.
   - `screens/`: `home_screen` (Tren), `summary_screen` (Resumen), `flow_screen`
-    (Flujo), `dose_screen` (Dosis). Las demás pestañas son placeholders en `ui.cpp`.
+    (Flujo), `cistern_screen` (Cisterna), `dose_screen` (Dosis). Las demás
+    pestañas son placeholders en `ui.cpp`.
 - `simulator/`: ventana SDL. `demo.cpp` llena el estado con los datos de ejemplo
   del DS y lo mueve cada segundo.
 - `firmware/hmi` (la 7B) y `firmware/nodo` (ESP32-S3 en la caja del pilar con el
@@ -87,9 +89,13 @@ En Mac, SDL2 viene de Homebrew (`brew install sdl2`). Si CMake no lo encuentra:
   `user_data`.
 - Con la misma caja, las fuentes de cifras quedan más arriba que en el canvas:
   el navegador centra la fuente en el interlineado y LVGL usa `base_line`.
-  Medido en Flujo: 232 px 17 px más arriba y 72 px 5 px; por cuenta, 136 px unos
-  10 y 44 px unos 4. En Flujo se compensa la de 232 (se encimaba con el título);
-  las de 72 y 44 se quedan como en Resumen y Dosis.
+  Medido: 232 px 17 px más arriba, 136 px 10 y 72 px 5; por cuenta, 44 px unos
+  4. Las cifras grandes que van solas abajo de un título se bajan esos px para
+  no encimarse (232 en Flujo, 136 en Cisterna); las de 72 y 44 se quedan como en
+  Resumen y Dosis.
+- Línea punteada: `lv_line` con `line_dash_width` y `line_dash_gap`. Solo sale
+  en líneas horizontales o verticales, y el patrón va pegado a la x de la
+  pantalla: no se anima.
 
 ## Antes de dar por buena una pantalla
 
@@ -100,12 +106,12 @@ En Mac, SDL2 viene de Homebrew (`brew install sdl2`). Si CMake no lo encuentra:
 
 ## Estado (octubre 2026)
 
-Hecho: Tren (inicio), Resumen, Flujo, Dosis, el diálogo de Ya le puse y el
-teclado de Registrar otra cantidad.
+Hecho: Tren (inicio), Resumen, Flujo, Cisterna, Dosis, el diálogo de Ya le
+puse y el teclado (Registrar otra cantidad y Calibrar con tira).
 
 Pendiente, en este orden:
 
-1. Cisterna y su detalle Mezcla (bomba R).
+1. Mezcla (bomba R), el detalle de Cisterna.
 2. Historial.
 3. Ajustes.
 4. Pasillo (reposo a los 2 min sin tocar). El `header` ya tiene atrás, chip y
@@ -130,3 +136,10 @@ Pendiente, en este orden:
 - En Flujo la cifra de 232 px va en y 57 y no en 40 (ver la nota de cifras en
   "LVGL 9.6: lo que ya mordió"); así cae donde la dibuja el canvas.
 - El encabezado de Flujo todavía no tiene el enlace "Sensor F" a DetalleF.
+- Cisterna sin sonda ORP (`has_orp` falso) se ve como una tarjeta bloqueada de
+  fase 2, y sin tira dice "Sin calibrar" y no estima el cloro. El canvas solo
+  dibuja el caso con sonda y calibración.
+- "Calibrar con tira" abre el teclado en mg/L con un decimal y guarda la tira con
+  el ORP de ese momento (`Actions::strip_checked`). El canvas no tiene esa vista.
+- En Cisterna, "mV" y el estado se recorren a la derecha si el ORP negativo no
+  cabe antes de x 318.

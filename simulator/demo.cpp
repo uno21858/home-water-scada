@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
 
 namespace demo {
 namespace {
@@ -75,6 +76,20 @@ core::SystemState make() {
     s.p2_psi = 38;
     s.orp_mv = 650;
 
+    // ORP de los últimos 7 días, una muestra por hora: la curva del canvas de
+    // Cisterna. Sube después de la dosis de las 06:30 y baja despacio; el
+    // miércoles hubo un bajón.
+    for (int i = 0; i < core::kOrpSamples7d; ++i) {
+        const int hour = (19 + i) % 24;
+        const float t = std::fmod(hour - 6.5f + 24.0f, 24.0f);
+        float v = 560.0f + 165.0f * std::exp(-t / 20.0f) + 8.0f * std::sin(i / 2.3f);
+        if (i > 60 && i < 84) v -= 70.0f * std::exp(-std::abs(i - 72) / 8.0f);
+        s.orp_7d[i] = static_cast<int16_t>(std::lround(v));
+    }
+    s.orp_7d.back() = static_cast<int16_t>(s.orp_mv);
+    s.chlorine_mgl = 0.5f;
+    s.last_strip = {6, 26, 9, 5, 641};  // sábado 26 de septiembre: 0.5 mg/L con 641 mV
+
     s.mixer_mode = core::MixerMode::automatic;
     s.mixer_on = true;
     s.mixer_minutes_left = 3;
@@ -112,6 +127,12 @@ void next_minute() {
         if (s.mixer_minutes_left == 0) s.mixer_on = false;
     }
 
+    // Cada hora entra una muestra nueva a la gráfica de ORP de 7 días
+    if (s.minute == 0) {
+        std::rotate(s.orp_7d.begin(), s.orp_7d.begin() + 1, s.orp_7d.end());
+        s.orp_7d.back() = static_cast<int16_t>(s.orp_mv);
+    }
+
     // Cada minuto entra una muestra nueva a la gráfica de 2 h
     std::rotate(s.flow_2h.begin(), s.flow_2h.begin() + 1, s.flow_2h.end());
     s.flow_2h.back() = s.flow_lpm;
@@ -146,5 +167,10 @@ void tick_1s() {
 void on_dose_confirmed(uint32_t ml) { add_dose(ml, false); }
 
 void on_dose_typed(uint32_t ml) { add_dose(ml, true); }
+
+void on_strip_checked(uint32_t tenths_mgl) {
+    s.last_strip = {s.weekday, s.day, s.month, static_cast<uint8_t>(tenths_mgl), static_cast<int16_t>(s.orp_mv)};
+    s.chlorine_mgl = static_cast<float>(tenths_mgl) / 10.0f;  // el demo no estima: copia la tira
+}
 
 }  // namespace demo

@@ -19,6 +19,13 @@ void thousands(char* out, size_t size, uint32_t value) {
     out[j] = '\0';
 }
 
+void signed_int(char* out, size_t size, int value) {
+    // U+2212 en UTF-8; el guion normal es más corto y se ve como guion
+    const char* minus = value < 0 ? "\xE2\x88\x92" : "";
+    const long magnitude = value < 0 ? -static_cast<long>(value) : value;
+    snprintf(out, size, "%s%ld", minus, magnitude);
+}
+
 void one_decimal(char* out, size_t size, float value) {
     // Se decide con el valor ya redondeado: 9.96 sale "10.0" y no lleva espacio
     const float rounded = std::round(value * 10.0f) / 10.0f;

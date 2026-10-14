@@ -20,6 +20,7 @@ inline constexpr int kScreenCount = 7;
 struct Actions {
     void (*dose_confirmed)(uint32_t ml) = nullptr;  // tocó "Sí, ya le puse"
     void (*dose_typed)(uint32_t ml) = nullptr;      // guardó otra cantidad en el teclado
+    void (*strip_checked)(uint32_t tenths_mgl) = nullptr;  // guardó la tira: 5 = 0.5 mg/L
 };
 
 void init(const core::SystemState& state, const Actions& actions);
@@ -31,5 +32,8 @@ void ask_dose_confirmation();
 
 // Abre el teclado de "Registrar otra cantidad"
 void open_dose_keypad();
+
+// Abre el teclado de "Calibrar con tira" (Cisterna)
+void open_strip_keypad();
 
 }  // namespace ui

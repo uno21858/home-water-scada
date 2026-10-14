@@ -9,6 +9,9 @@ namespace ui::fmt {
 // 1860 -> "1,860"
 void thousands(char* out, size_t size, uint32_t value);
 
+// Entero con el signo menos del DS (U+2212): -50 -> "−50"
+void signed_int(char* out, size_t size, int value);
+
 // Un decimal. Abajo de 10 lleva un espacio de cifra al inicio para que
 // el número mida lo mismo y la unidad no brinque: 12.4 -> "12.4", 9.8 -> " 9.8"
 void one_decimal(char* out, size_t size, float value);

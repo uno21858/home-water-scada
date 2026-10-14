@@ -1,5 +1,6 @@
 #include "components/keypad_dialog.h"
 
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 
@@ -19,6 +20,7 @@ constexpr char kBackspace = '<';
 constexpr char kKeys[12] = {'1', '2', '3', '4', '5', '6', '7', '8', '9', kClear, '0', kBackspace};
 
 // Chip que muestra fecha u hora. Todavía no abre un selector: no es tocable.
+// Regresa el chip; su texto es el último hijo.
 lv_obj_t* info_chip(lv_obj_t* parent, int32_t x, int32_t w, const lv_image_dsc_t* src) {
     lv_obj_t* chip = box(parent, x, 312, w, 64);
     lv_obj_add_style(chip, &styles::button_secondary, 0);
@@ -26,7 +28,8 @@ lv_obj_t* info_chip(lv_obj_t* parent, int32_t x, int32_t w, const lv_image_dsc_t
     lv_obj_set_flex_align(chip, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
     lv_obj_set_style_pad_column(chip, 12, 0);
     icon(chip, src, colors::text);
-    return label(chip, &font_body_32, colors::text, "");
+    label(chip, &font_body_32, colors::text, "");
+    return chip;
 }
 
 }  // namespace
@@ -47,8 +50,8 @@ void KeypadDialog::create(lv_obj_t* layer) {
     title_ = label(dialog, &font_title_36, colors::text, "");
     lv_obj_set_pos(title_, 30, 22);
 
-    lv_obj_t* caption = label(dialog, &font_label_26, colors::text_secondary, "Cantidad");
-    lv_obj_set_pos(caption, 30, 84);
+    caption_ = label(dialog, &font_label_26, colors::text_secondary, "");
+    lv_obj_set_pos(caption_, 30, 84);
 
     // Campo: la cifra, un cursor fijo (el DS no quiere parpadeos) y la unidad
     lv_obj_t* field = box(dialog, 30, 118, 426, 96);
@@ -62,16 +65,18 @@ void KeypadDialog::create(lv_obj_t* layer) {
     cursor_ = box(field, 28, 16, 4, 60);
     lv_obj_set_style_bg_color(cursor_, color(colors::text), 0);
     lv_obj_set_style_bg_opa(cursor_, LV_OPA_COVER, 0);
-    lv_obj_t* unit = label(field, &font_title_36, colors::text_secondary, "mL");
-    lv_obj_align(unit, LV_ALIGN_TOP_RIGHT, -22, 24);
+    unit_ = label(field, &font_title_36, colors::text_secondary, "");
+    lv_obj_align(unit_, LV_ALIGN_TOP_RIGHT, -22, 24);
 
     hint_ = label(dialog, &font_label_26, colors::text_secondary, "");
     lv_obj_set_pos(hint_, 30, 222);
 
-    lv_obj_t* when = label(dialog, &font_label_26, colors::text_secondary, "Fecha y hora");
-    lv_obj_set_pos(when, 30, 276);
-    date_ = info_chip(dialog, 30, 240, &icon_calendario_32);
-    time_ = info_chip(dialog, 282, 174, &icon_reloj_32);
+    when_ = label(dialog, &font_label_26, colors::text_secondary, "Fecha y hora");
+    lv_obj_set_pos(when_, 30, 276);
+    date_chip_ = info_chip(dialog, 30, 240, &icon_calendario_32);
+    date_ = lv_obj_get_child(date_chip_, -1);
+    time_chip_ = info_chip(dialog, 282, 174, &icon_reloj_32);
+    time_ = lv_obj_get_child(time_chip_, -1);
 
     button_secondary(dialog, 30, 444, 184, "Cancelar", handle_cancel, this);
     save_ = button_primary(dialog, 226, 444, 230, "Guardar", handle_save, this);
@@ -101,12 +106,23 @@ void KeypadDialog::create(lv_obj_t* layer) {
     lv_obj_set_hidden(veil_, true);
 }
 
-void KeypadDialog::open(const char* title, const char* hint, const char* date, const char* time,
-                        Callback on_save) {
-    lv_label_set_text(title_, title);
-    lv_label_set_text(hint_, hint);
-    lv_label_set_text(date_, date);
-    lv_label_set_text(time_, time);
+void KeypadDialog::open(const KeypadSpec& spec, Callback on_save) {
+    lv_label_set_text(title_, spec.title);
+    lv_label_set_text(caption_, spec.caption);
+    lv_label_set_text(unit_, spec.unit);
+    lv_label_set_text(hint_, spec.hint);
+
+    const bool when = spec.date != nullptr && spec.time != nullptr;
+    lv_obj_set_hidden(when_, !when);
+    lv_obj_set_hidden(date_chip_, !when);
+    lv_obj_set_hidden(time_chip_, !when);
+    if (when) {
+        lv_label_set_text(date_, spec.date);
+        lv_label_set_text(time_, spec.time);
+    }
+
+    decimals_ = spec.decimals;
+    max_digits_ = spec.max_digits < sizeof digits_ ? spec.max_digits : sizeof digits_ - 1;
     digits_[0] = '\0';
     on_save_ = on_save;
     refresh();
@@ -126,7 +142,7 @@ void KeypadDialog::press(char key) {
         if (len > 0) digits_[len - 1] = '\0';
     } else if (std::strcmp(digits_, "0") == 0) {
         digits_[0] = key;  // un 0 solo se reemplaza: no queremos "045"
-    } else if (len < sizeof digits_ - 1) {
+    } else if (len < max_digits_) {
         digits_[len] = key;
         digits_[len + 1] = '\0';
     }
@@ -134,11 +150,24 @@ void KeypadDialog::press(char key) {
 }
 
 void KeypadDialog::refresh() {
-    lv_label_set_text(value_, digits_);
-    // Cada cifra de 72 px mide 50.4 px (0.70 em); el cursor va 6 px después
-    const int32_t len = static_cast<int32_t>(std::strlen(digits_));
-    lv_obj_set_x(cursor_, 22 + len * 504 / 10 + 6);
-    lv_obj_set_disabled(save_, std::atoi(digits_) == 0);
+    // Con decimales se muestra ya con su punto: "5" con 1 decimal es "0.5"
+    const unsigned value = static_cast<unsigned>(std::atoi(digits_));
+    char text[24] = "";  // de sobra para cualquier unsigned: así el compilador no avisa
+    if (digits_[0] == '\0' || decimals_ == 0) {
+        snprintf(text, sizeof text, "%s", digits_);
+    } else {
+        const int places = decimals_ < 3 ? decimals_ : 3;
+        unsigned scale = 1;
+        for (int i = 0; i < places; ++i) scale *= 10;
+        snprintf(text, sizeof text, "%u.%0*u", value / scale, places, value % scale);
+    }
+    lv_label_set_text(value_, text);
+
+    // El cursor va 6 px después de la última cifra
+    lv_point_t size;
+    lv_text_get_size(&size, text, &font_digits_72, 0, 0, LV_COORD_MAX, LV_TEXT_FLAG_NONE);
+    lv_obj_set_x(cursor_, 22 + size.x + 6);
+    lv_obj_set_disabled(save_, value == 0);
 }
 
 void KeypadDialog::handle_key(lv_event_t* e) {

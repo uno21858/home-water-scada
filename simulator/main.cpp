@@ -27,6 +27,7 @@ int main()
     ui::Actions actions;
     actions.dose_confirmed = demo::on_dose_confirmed;
     actions.dose_typed = demo::on_dose_typed;
+    actions.strip_checked = demo::on_strip_checked;
     ui::init(demo::state(), actions);
 
     // Cada segundo cambian los datos, como lo haría el firmware
