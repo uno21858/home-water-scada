@@ -17,5 +17,8 @@ extern lv_style_t button_primary;            // accion: la acción principal de 
 extern lv_style_t button_primary_pressed;
 extern lv_style_t button_secondary;          // panel-alto con borde-control
 extern lv_style_t button_secondary_pressed;
+extern lv_style_t button_disabled;           // cualquier botón que no se puede usar ahorita
+extern lv_style_t key;                       // tecla del teclado numérico
+extern lv_style_t key_pressed;
 
 }  // namespace ui::styles

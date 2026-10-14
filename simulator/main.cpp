@@ -26,6 +26,7 @@ int main()
     // Construye la interfaz (vive en ui/) con los datos de ejemplo
     ui::Actions actions;
     actions.dose_confirmed = demo::on_dose_confirmed;
+    actions.dose_typed = demo::on_dose_typed;
     ui::init(demo::state(), actions);
 
     // Cada segundo cambian los datos, como lo haría el firmware

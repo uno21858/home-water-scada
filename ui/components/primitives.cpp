@@ -109,6 +109,9 @@ static lv_obj_t* button(lv_obj_t* parent, int32_t x, int32_t y, int32_t w, const
     lv_obj_set_clickable(obj, true);
     lv_obj_add_style(obj, normal, 0);
     lv_obj_add_style(obj, pressed, LV_STATE_PRESSED);
+    lv_obj_add_style(obj, &styles::button_disabled, LV_STATE_DISABLED);
+    // El estado del botón (presionado, deshabilitado) baja también al ícono
+    lv_obj_set_state_trickle(obj, true);
     lv_obj_set_flex_flow(obj, LV_FLEX_FLOW_ROW);
     lv_obj_set_flex_align(obj, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
     lv_obj_set_style_pad_column(obj, 12, 0);
@@ -116,12 +119,21 @@ static lv_obj_t* button(lv_obj_t* parent, int32_t x, int32_t y, int32_t w, const
     return obj;
 }
 
+// Texto de botón sin color propio: lo hereda del estilo del botón según su estado
+static lv_obj_t* button_text(lv_obj_t* parent, const lv_font_t* font, const char* text) {
+    lv_obj_t* obj = lv_label_create(parent);
+    lv_obj_set_style_text_font(obj, font, 0);
+    lv_label_set_text(obj, text);
+    return obj;
+}
+
 lv_obj_t* button_primary(lv_obj_t* parent, int32_t x, int32_t y, int32_t w, const char* text,
                          lv_event_cb_t on_click, void* user_data) {
     lv_obj_t* obj = button(parent, x, y, w, &styles::button_primary, &styles::button_primary_pressed,
                            on_click, user_data);
-    icon(obj, &icon_check_32, colors::on_primary);
-    label(obj, &font_title_36, colors::on_primary, text);
+    lv_obj_t* check = icon(obj, &icon_check_32, colors::on_primary);
+    lv_obj_set_style_image_recolor(check, color(colors::text_disabled), LV_STATE_DISABLED);
+    button_text(obj, &font_title_36, text);
     return obj;
 }
 
@@ -129,7 +141,7 @@ lv_obj_t* button_secondary(lv_obj_t* parent, int32_t x, int32_t y, int32_t w, co
                            lv_event_cb_t on_click, void* user_data) {
     lv_obj_t* obj = button(parent, x, y, w, &styles::button_secondary, &styles::button_secondary_pressed,
                            on_click, user_data);
-    label(obj, &font_body_32, colors::text, text);
+    button_text(obj, &font_body_32, text);
     return obj;
 }
 

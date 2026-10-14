@@ -5,12 +5,15 @@
 
 #include "components/confirm_dialog.h"
 #include "components/header.h"
+#include "components/keypad_dialog.h"
 #include "components/nav_bar.h"
 #include "components/primitives.h"
+#include "screens/dose_screen.h"
 #include "screens/home_screen.h"
 #include "screens/summary_screen.h"
 #include "theme/colors.h"
 #include "theme/fonts.h"
+#include "theme/format.h"
 #include "theme/styles.h"
 
 // Estructura (ver lvgl.md del DS): una sola screen con tres partes fijas.
@@ -33,8 +36,10 @@ core::SystemState state;  // la última copia que llegó en update()
 Header header;
 NavBar nav;
 ConfirmDialog dialog;
+KeypadDialog keypad;
 HomeScreen home;
 SummaryScreen summary;
+DoseScreen dose;
 std::array<lv_obj_t*, kScreenCount> pages{};
 
 size_t index_of(Screen screen) { return static_cast<size_t>(screen); }
@@ -50,6 +55,10 @@ lv_obj_t* placeholder(lv_obj_t* parent, const char* name) {
 
 void on_dose_confirmed() {
     if (actions.dose_confirmed != nullptr) actions.dose_confirmed(core::dose_ml(state));
+}
+
+void on_dose_typed(uint32_t ml) {
+    if (actions.dose_typed != nullptr) actions.dose_typed(ml);
 }
 
 }  // namespace
@@ -71,13 +80,14 @@ void init(const core::SystemState& s, const Actions& a) {
     pages[index_of(Screen::summary)] = summary.create(content);
     pages[index_of(Screen::flow)] = placeholder(content, "Flujo");
     pages[index_of(Screen::cistern)] = placeholder(content, "Cisterna");
-    pages[index_of(Screen::dose)] = placeholder(content, "Dosis");
+    pages[index_of(Screen::dose)] = dose.create(content);
     pages[index_of(Screen::history)] = placeholder(content, "Historial");
     pages[index_of(Screen::settings)] = placeholder(content, "Ajustes");
 
     header.create(screen);
     nav.create(screen);
     dialog.create(lv_layer_top());
+    keypad.create(lv_layer_top());
 
     update(s);
     show(Screen::summary);
@@ -90,6 +100,7 @@ void update(const core::SystemState& s) {
     header.set_wifi(s.wifi_ok);
     home.update(s);
     summary.update(s);
+    dose.update(s);
 }
 
 void show(Screen screen) {
@@ -99,13 +110,25 @@ void show(Screen screen) {
 }
 
 void ask_dose_confirmation() {
+    const uint32_t ml = core::dose_ml(state);
+    if (ml == 0) return;  // el botón ya sale deshabilitado; esto es por si acaso
     char title[48];
     char body[160];
-    snprintf(title, sizeof title, "¿Ya le pusiste %lu mL?", static_cast<unsigned long>(core::dose_ml(state)));
+    snprintf(title, sizeof title, "¿Ya le pusiste %lu mL?", static_cast<unsigned long>(ml));
     snprintf(body, sizeof body,
              "Se registra hoy a las %02u:%02u y el conteo de litros desde la última dosis vuelve a 0.",
              static_cast<unsigned>(state.hour), static_cast<unsigned>(state.minute));
     dialog.open(title, body, "Sí, ya le puse", on_dose_confirmed);
+}
+
+void open_dose_keypad() {
+    char hint[32];
+    char date[24];
+    char time[8];
+    snprintf(hint, sizeof hint, "Sugerido: %lu mL", static_cast<unsigned long>(core::dose_ml(state)));
+    snprintf(date, sizeof date, "Hoy %u %s", static_cast<unsigned>(state.day), fmt::month_short(state.month));
+    fmt::clock(time, sizeof time, core::minute_of_day(state));
+    keypad.open("Registrar otra cantidad", hint, date, time, on_dose_typed);
 }
 
 }  // namespace ui

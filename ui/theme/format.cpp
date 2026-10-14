@@ -31,4 +31,15 @@ void clock(char* out, size_t size, unsigned minute_of_day) {
     snprintf(out, size, "%02u:%02u", (minute_of_day / 60) % 24, minute_of_day % 60);
 }
 
+const char* weekday_short(unsigned weekday) {
+    static const char* const kNames[7] = {"Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"};
+    return kNames[weekday % 7];
+}
+
+const char* month_short(unsigned month) {
+    static const char* const kNames[12] = {"ene", "feb", "mar", "abr", "may", "jun",
+                                           "jul", "ago", "sep", "oct", "nov", "dic"};
+    return (month >= 1 && month <= 12) ? kNames[month - 1] : "";
+}
+
 }  // namespace ui::fmt

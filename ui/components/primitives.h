@@ -46,6 +46,7 @@ void link_to(lv_obj_t* obj, Screen target);
 lv_obj_t* chevron(lv_obj_t* parent);
 
 // Botones de 80 px de alto. El primario lleva palomita.
+// Para deshabilitarlos: lv_obj_set_disabled(boton, true).
 lv_obj_t* button_primary(lv_obj_t* parent, int32_t x, int32_t y, int32_t w, const char* text,
                          lv_event_cb_t on_click, void* user_data);
 lv_obj_t* button_secondary(lv_obj_t* parent, int32_t x, int32_t y, int32_t w, const char* text,

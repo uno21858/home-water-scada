@@ -16,6 +16,7 @@ inline constexpr int kScreenCount = 7;
 // Lo que la interfaz le pide a la app. Cualquiera puede quedar en nullptr.
 struct Actions {
     void (*dose_confirmed)(uint32_t ml) = nullptr;  // tocó "Sí, ya le puse"
+    void (*dose_typed)(uint32_t ml) = nullptr;      // guardó otra cantidad en el teclado
 };
 
 void init(const core::SystemState& state, const Actions& actions);
@@ -24,5 +25,8 @@ void show(Screen screen);
 
 // Abre "¿Ya le pusiste X mL?". Lo usan Resumen y Dosis.
 void ask_dose_confirmation();
+
+// Abre el teclado de "Registrar otra cantidad"
+void open_dose_keypad();
 
 }  // namespace ui

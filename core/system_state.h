@@ -15,12 +15,23 @@ enum class Level : uint8_t { ok, warning, alarm };
 
 enum class MixerMode : uint8_t { off, on, automatic };
 
+struct DoseRecord {
+    uint32_t day = 0;    // mismo conteo que SystemState::today
+    uint16_t at = 0;     // minuto del día
+    uint16_t ml = 0;
+    bool typed = false;  // se capturó a mano con "Registrar otra cantidad"
+};
+
 struct SystemState {
     // Qué está instalado
     bool has_pressure = false;  // fase 1.5: sensores P1 y P2
     bool has_mixer = false;     // fase 2: bomba R
 
-    // Hora y red
+    // Fecha, hora y red
+    uint32_t today = 0;   // número de día desde una fecha fija: sirve para comparar días
+    uint8_t weekday = 0;  // 0 domingo ... 6 sábado
+    uint8_t day = 1;      // día del mes
+    uint8_t month = 1;    // 1 enero ... 12 diciembre
     uint8_t hour = 0;
     uint8_t minute = 0;
     bool wifi_ok = false;
@@ -32,7 +43,10 @@ struct SystemState {
     std::array<float, kFlowSamples24h> flow_24h{};
 
     // Dosis a mano
-    float ml_per_liter = 0.020f;  // mL de Cloralex por litro
+    float ml_per_liter = 0.020f;               // mL de Cloralex por litro
+    uint16_t daily_cap_ml = 120;               // tope al día (lo usa la fase 3)
+    std::array<DoseRecord, 5> recent_doses{};  // la más nueva primero
+    uint8_t recent_dose_count = 0;
 
     // Presión antes (P1) y después (P2) de los filtros
     int p1_psi = 0;

@@ -16,4 +16,10 @@ void one_decimal(char* out, size_t size, float value);
 // Minuto del día -> "HH:MM"
 void clock(char* out, size_t size, unsigned minute_of_day);
 
+// 0 domingo ... 6 sábado -> "Dom" ... "Sáb"
+const char* weekday_short(unsigned weekday);
+
+// 1 enero ... 12 diciembre -> "ene" ... "dic"
+const char* month_short(unsigned month);
+
 }  // namespace ui::fmt

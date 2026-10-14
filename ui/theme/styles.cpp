@@ -13,6 +13,9 @@ lv_style_t button_primary;
 lv_style_t button_primary_pressed;
 lv_style_t button_secondary;
 lv_style_t button_secondary_pressed;
+lv_style_t button_disabled;
+lv_style_t key;
+lv_style_t key_pressed;
 
 namespace {
 lv_color_t c(uint32_t hex) { return lv_color_hex(hex); }
@@ -70,6 +73,23 @@ void init() {
     lv_style_init(&button_secondary_pressed);
     lv_style_set_bg_color(&button_secondary_pressed, c(colors::secondary_pressed));
     lv_style_set_border_color(&button_secondary_pressed, c(colors::text));
+
+    lv_style_init(&button_disabled);
+    lv_style_set_bg_color(&button_disabled, c(colors::panel));
+    lv_style_set_border_color(&button_disabled, c(colors::border));
+    lv_style_set_text_color(&button_disabled, c(colors::text_disabled));
+
+    lv_style_init(&key);
+    lv_style_set_bg_color(&key, c(colors::panel_raised));
+    lv_style_set_bg_opa(&key, LV_OPA_COVER);
+    lv_style_set_border_color(&key, c(colors::border));
+    lv_style_set_border_width(&key, 2);
+    lv_style_set_radius(&key, 10);
+    lv_style_set_text_color(&key, c(colors::text));
+
+    lv_style_init(&key_pressed);
+    lv_style_set_bg_color(&key_pressed, c(colors::secondary_pressed));
+    lv_style_set_border_color(&key_pressed, c(colors::text));
 }
 
 }  // namespace ui::styles

@@ -44,6 +44,7 @@ private:
 
     // Toca echar
     lv_obj_t* dose_value_ = nullptr;
+    lv_obj_t* dose_button_ = nullptr;
 
     // Filtros
     lv_obj_t* filters_live_ = nullptr;

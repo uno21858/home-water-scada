@@ -14,7 +14,9 @@ const core::SystemState& state();
 // y cada minuto avanzan la hora y la cuenta de la bomba R.
 void tick_1s();
 
-// Lo que haría el firmware al confirmar la dosis
-void on_dose_confirmed(uint32_t ml);
+// Lo que haría el firmware al registrar una dosis: la guarda y el conteo
+// de litros desde la última dosis vuelve a 0
+void on_dose_confirmed(uint32_t ml);  // "Sí, ya le puse"
+void on_dose_typed(uint32_t ml);      // "Registrar otra cantidad"
 
 }  // namespace demo

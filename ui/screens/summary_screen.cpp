@@ -152,7 +152,8 @@ void SummaryScreen::create_dose_card(lv_obj_t* page) {
     lv_obj_t* where = label(area, &font_label_26, colors::text_secondary, "de Cloralex en la boca B");
     lv_obj_set_pos(where, 16, 98);
 
-    button_primary(c, 16, 142, 346, "Ya le puse", [](lv_event_t*) { ask_dose_confirmation(); }, nullptr);
+    dose_button_ = button_primary(c, 16, 142, 346, "Ya le puse", [](lv_event_t*) { ask_dose_confirmation(); },
+                                  nullptr);
 }
 
 void SummaryScreen::create_filters_card(lv_obj_t* page) {
@@ -253,9 +254,11 @@ void SummaryScreen::update(const core::SystemState& s) {
     update_flow(s);
     update_time_marks(s);
 
+    const uint32_t ml = core::dose_ml(s);
     char buf[16];
-    snprintf(buf, sizeof buf, "%lu", static_cast<unsigned long>(core::dose_ml(s)));
+    snprintf(buf, sizeof buf, "%lu", static_cast<unsigned long>(ml));
     set_text(dose_value_, buf);
+    lv_obj_set_disabled(dose_button_, ml == 0);
 
     update_filters(s);
     update_mixer(s);
