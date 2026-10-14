@@ -90,7 +90,7 @@ void init(const core::SystemState& s, const Actions& a) {
     keypad.create(lv_layer_top());
 
     update(s);
-    show(Screen::summary);
+    show(Screen::home);  // Tren es la de inicio
 }
 
 void update(const core::SystemState& s) {

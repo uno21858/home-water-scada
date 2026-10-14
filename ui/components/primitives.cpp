@@ -85,9 +85,14 @@ lv_obj_t* locked_card(lv_obj_t* parent, int32_t x, int32_t y, int32_t w, int32_t
     return obj;
 }
 
-void link_to(lv_obj_t* obj, Screen target) {
+void fill(lv_obj_t* obj, uint32_t hex) {
+    lv_obj_set_style_bg_color(obj, color(hex), 0);
+    lv_obj_set_style_bg_opa(obj, LV_OPA_COVER, 0);
+}
+
+void link_to(lv_obj_t* obj, Screen target, const lv_style_t* pressed) {
     lv_obj_set_clickable(obj, true);
-    lv_obj_add_style(obj, &styles::card_pressed, LV_STATE_PRESSED);
+    lv_obj_add_style(obj, pressed != nullptr ? pressed : &styles::card_pressed, LV_STATE_PRESSED);
     lv_obj_add_event_cb(
         obj,
         [](lv_event_t* e) {

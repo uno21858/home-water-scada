@@ -39,8 +39,12 @@ lv_obj_t* card(lv_obj_t* parent, int32_t x, int32_t y, int32_t w, int32_t h);
 lv_obj_t* locked_card(lv_obj_t* parent, int32_t x, int32_t y, int32_t w, int32_t h,
                       const char* title, const char* line1, const char* line2);
 
-// Hace tocable un objeto: se aclara al presionarlo y abre otra pantalla
-void link_to(lv_obj_t* obj, Screen target);
+// Hace tocable un objeto: cambia de color al presionarlo y abre otra pantalla.
+// Por defecto se aclara como tarjeta; los botones panel-alto usan otro estilo.
+void link_to(lv_obj_t* obj, Screen target, const lv_style_t* pressed = nullptr);
+
+// Pinta el fondo de un objeto de un solo color
+void fill(lv_obj_t* obj, uint32_t hex);
 
 // Flechita ">" arriba a la derecha de una tarjeta tocable
 lv_obj_t* chevron(lv_obj_t* parent);

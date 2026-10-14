@@ -37,11 +37,6 @@ int32_t range_x(int psi) { return (std::clamp(psi, 0, 80) * kRangeW + 40) / 80; 
 
 void rotate(void* obj, int32_t angle) { lv_image_set_rotation(static_cast<lv_obj_t*>(obj), angle); }
 
-void fill(lv_obj_t* obj, uint32_t hex) {
-    lv_obj_set_style_bg_color(obj, color(hex), 0);
-    lv_obj_set_style_bg_opa(obj, LV_OPA_COVER, 0);
-}
-
 void mixer_text(char* out, size_t size, const core::SystemState& s) {
     char at[8];
     if (s.mixer_on && s.mixer_mode == core::MixerMode::automatic) {

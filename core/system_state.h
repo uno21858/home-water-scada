@@ -25,6 +25,7 @@ struct DoseRecord {
 struct SystemState {
     // Qué está instalado
     bool has_pressure = false;  // fase 1.5: sensores P1 y P2
+    bool has_orp = false;       // fase 2: sonda ORP en la cisterna
     bool has_mixer = false;     // fase 2: bomba R
 
     // Fecha, hora y red
@@ -52,6 +53,9 @@ struct SystemState {
     int p1_psi = 0;
     int p2_psi = 0;
 
+    // ORP de la cisterna
+    int orp_mv = 0;
+
     // Bomba R de la cisterna
     MixerMode mixer_mode = MixerMode::automatic;
     bool mixer_on = false;
@@ -74,9 +78,20 @@ constexpr Level pressure_drop_level(int drop_psi) {
     return Level::ok;
 }
 
+// ORP de la cisterna con los umbrales del DS:
+// 650 mV o más Oxidante, de -50 a 649 Neutro, menos de -50 Reductor
+constexpr Level orp_level(int mv) {
+    if (mv < -50) return Level::alarm;
+    if (mv < 650) return Level::warning;
+    return Level::ok;
+}
+
 // La pastilla del encabezado: lo peor de lo que se está vigilando
 inline Level overall_level(const SystemState& s) {
-    return s.has_pressure ? pressure_drop_level(s.p1_psi - s.p2_psi) : Level::ok;
+    Level worst = Level::ok;
+    if (s.has_pressure) worst = pressure_drop_level(s.p1_psi - s.p2_psi);
+    if (s.has_orp && orp_level(s.orp_mv) > worst) worst = orp_level(s.orp_mv);
+    return worst;
 }
 
 inline uint16_t minute_of_day(const SystemState& s) {

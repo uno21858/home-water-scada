@@ -21,6 +21,7 @@ constexpr Block kBlocks[] = {
 core::SystemState make() {
     core::SystemState s;
     s.has_pressure = true;
+    s.has_orp = true;
     s.has_mixer = true;
     s.today = 1000;  // cualquier número: solo sirve para comparar días
     s.weekday = 6;   // sábado 3 de octubre
@@ -57,6 +58,7 @@ core::SystemState make() {
 
     s.p1_psi = 42;
     s.p2_psi = 38;
+    s.orp_mv = 650;
 
     s.mixer_mode = core::MixerMode::automatic;
     s.mixer_on = true;

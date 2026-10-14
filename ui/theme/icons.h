@@ -25,8 +25,11 @@ LV_IMAGE_DECLARE(icon_wifi_off_32);
 
 // Controles
 LV_IMAGE_DECLARE(icon_chevron_28);
+LV_IMAGE_DECLARE(icon_chevron_32);
 LV_IMAGE_DECLARE(icon_check_32);
 LV_IMAGE_DECLARE(icon_candado_32);
+LV_IMAGE_DECLARE(icon_candado_28);
+LV_IMAGE_DECLARE(icon_candado_24);
 LV_IMAGE_DECLARE(icon_editar_24);       // dosis capturada a mano
 LV_IMAGE_DECLARE(icon_borrar_48);       // tecla borrar
 LV_IMAGE_DECLARE(icon_calendario_32);
@@ -34,4 +37,5 @@ LV_IMAGE_DECLARE(icon_reloj_32);
 LV_IMAGE_DECLARE(icon_bomba_28);        // pulso de prueba (fase 3)
 
 // Equipos
-LV_IMAGE_DECLARE(icon_impulsor_56);  // aspas de la bomba R; gira con lv_image_set_rotation
+LV_IMAGE_DECLARE(icon_impulsor_56);        // aspas de la bomba R; gira con lv_image_set_rotation
+LV_IMAGE_DECLARE(icon_impulsor_chico_26);  // las mismas aspas, en el diagrama del tren

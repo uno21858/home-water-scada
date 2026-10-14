@@ -17,9 +17,9 @@ ICONS=(
   "tren 32" "resumen 32" "flujo 32" "cisterna 32" "dosis 32" "historial 32" "ajustes 32"
   "ok 32" "advertencia 32" "alarma 32" "wifi 32" "wifi_off 32"
   "ok 28" "advertencia 28" "alarma 28"
-  "chevron 28" "check 32" "candado 32"
+  "chevron 28" "chevron 32" "check 32" "candado 32" "candado 28" "candado 24"
   "editar 24" "borrar 48" "calendario 32" "reloj 32" "bomba 28"
-  "impulsor 56"
+  "impulsor 56" "impulsor_chico 26"
 )
 
 for entry in "${ICONS[@]}"; do
