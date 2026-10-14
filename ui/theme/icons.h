@@ -1,0 +1,32 @@
+#pragma once
+// Íconos A8 (solo alfa) generados con icons/generate.sh.
+// El color se pone en código con image_recolor (ver icon() en primitives.h).
+
+#include "lvgl.h"
+
+// Barra de navegación
+LV_IMAGE_DECLARE(icon_tren_32);
+LV_IMAGE_DECLARE(icon_resumen_32);
+LV_IMAGE_DECLARE(icon_flujo_32);
+LV_IMAGE_DECLARE(icon_cisterna_32);
+LV_IMAGE_DECLARE(icon_dosis_32);
+LV_IMAGE_DECLARE(icon_historial_32);
+LV_IMAGE_DECLARE(icon_ajustes_32);
+
+// Estados
+LV_IMAGE_DECLARE(icon_ok_32);
+LV_IMAGE_DECLARE(icon_advertencia_32);
+LV_IMAGE_DECLARE(icon_alarma_32);
+LV_IMAGE_DECLARE(icon_ok_28);
+LV_IMAGE_DECLARE(icon_advertencia_28);
+LV_IMAGE_DECLARE(icon_alarma_28);
+LV_IMAGE_DECLARE(icon_wifi_32);
+LV_IMAGE_DECLARE(icon_wifi_off_32);
+
+// Controles
+LV_IMAGE_DECLARE(icon_chevron_28);
+LV_IMAGE_DECLARE(icon_check_32);
+LV_IMAGE_DECLARE(icon_candado_32);
+
+// Equipos
+LV_IMAGE_DECLARE(icon_impulsor_56);  // aspas de la bomba R; gira con lv_image_set_rotation

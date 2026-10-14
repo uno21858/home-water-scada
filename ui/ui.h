@@ -1,13 +1,28 @@
-//
-// Created by Erick on 09/10/26.
-//
-
-#ifndef HMI_SIMULATOR_UI_H
-#define HMI_SIMULATOR_UI_H
-
 #pragma once
+// Punto de entrada de la interfaz.
+// La app (firmware o simulador) llama init() una vez y update() cada que
+// cambia el estado. Lo que hace el usuario regresa a la app por Actions.
 
-void ui_init();
+#include <cstdint>
 
+#include "system_state.h"
 
-#endif //HMI_SIMULATOR_UI_H
+namespace ui {
+
+// Mismo orden que las pestañas de la barra
+enum class Screen : uint8_t { home, summary, flow, cistern, dose, history, settings };
+inline constexpr int kScreenCount = 7;
+
+// Lo que la interfaz le pide a la app. Cualquiera puede quedar en nullptr.
+struct Actions {
+    void (*dose_confirmed)(uint32_t ml) = nullptr;  // tocó "Sí, ya le puse"
+};
+
+void init(const core::SystemState& state, const Actions& actions);
+void update(const core::SystemState& state);
+void show(Screen screen);
+
+// Abre "¿Ya le pusiste X mL?". Lo usan Resumen y Dosis.
+void ask_dose_confirmation();
+
+}  // namespace ui

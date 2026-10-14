@@ -1,13 +1,16 @@
-//
-// Created by Erick on 09/10/26.
-//
-
-#ifndef HMI_SIMULATOR_HOME_H
-#define HMI_SIMULATOR_HOME_H
-
 #pragma once
+// Pantalla Tren (inicio): el P&ID del tren de filtros con P1, P2, F, B,
+// la cisterna y la franja de abajo. Por ahora es un aviso; se llena después.
+
 #include "lvgl.h"
+#include "system_state.h"
 
-lv_obj_t* home_screen_create();
+namespace ui {
 
-#endif //HMI_SIMULATOR_HOME_H
+class HomeScreen {
+public:
+    lv_obj_t* create(lv_obj_t* parent);  // regresa el contenedor de la pantalla
+    void update(const core::SystemState& s);
+};
+
+}  // namespace ui

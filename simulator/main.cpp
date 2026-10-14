@@ -9,7 +9,7 @@
 
 #include "lvgl/lvgl.h"
 
-
+#include "demo.h"
 #include "ui.h"
 
 int main()
@@ -23,8 +23,16 @@ int main()
     lv_indev_t* touch = lv_sdl_mouse_create();
     lv_indev_set_display(touch, disp);
 
-    // Construye la interfaz (vive en ui/)
-    ui_init();
+    // Construye la interfaz (vive en ui/) con los datos de ejemplo
+    ui::Actions actions;
+    actions.dose_confirmed = demo::on_dose_confirmed;
+    ui::init(demo::state(), actions);
+
+    // Cada segundo cambian los datos, como lo haría el firmware
+    lv_timer_create([](lv_timer_t*) {
+        demo::tick_1s();
+        ui::update(demo::state());
+    }, 1000, nullptr);
 
     while (true) {
         uint32_t ms = lv_timer_handler();
