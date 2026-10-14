@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Tren de filtros</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:"Montserrat Tnum";src:url("/_blob/9d5800f4c7bea6e5041333e753b58eb8") format("truetype");font-weight:500;font-style:normal;font-display:block}
+@font-face{font-family:"Montserrat Tnum";src:url("/_blob/f9923e4b0b5fcb8ad1e46b8765af09f2") format("truetype");font-weight:600;font-style:normal;font-display:block}
+body{margin:0}
+a{color:inherit;text-decoration:none}
+.pid .t{background-color:#6d7987}
+.pid.fluye .t{background-color:#1f8eab;background-image:radial-gradient(circle,#b6f1fd 2.6px,rgba(182,241,253,0) 3.3px)}
+.pid.fluye .h{background-size:24px 10px;background-repeat:repeat-x}
+.pid.fluye .v{background-size:10px 24px;background-repeat:repeat-y}
+.pid.fluye .r{animation:fr .48s linear infinite}
+.pid.fluye .l{animation:fl .48s linear infinite}
+.pid.fluye .d{animation:fd .48s linear infinite}
+.pid.fluye .u{animation:fu .48s linear infinite}
+@keyframes fr{from{background-position:0 0}to{background-position:24px 0}}
+@keyframes fl{from{background-position:0 0}to{background-position:-24px 0}}
+@keyframes fd{from{background-position:0 0}to{background-position:0 24px}}
+@keyframes fu{from{background-position:0 0}to{background-position:0 -24px}}
+@media (prefers-reduced-motion:reduce){.pid.fluye .t{animation:none}}
+.rotor{transform-box:view-box;transform-origin:13px 13px}
+.rotor.gira{animation:gira 2s linear infinite}
+@keyframes gira{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.rotor.gira{animation:none}}
+</style>
+</helmet>
+<div style="position: relative; width: 1024px; height: 600px; overflow: hidden; background: #1b1f24; color: #e9edf1; font-family: 'Montserrat Tnum', Montserrat, sans-serif; font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased">
+
+<div class="{{modo}}" style="position: absolute; left: 0; top: 0; width: 1024px; height: 600px">
+<div class="t h r" title="Entrada desde el medidor" style="position: absolute; left: 60px; top: 351px; width: 157px; height: 10px"></div>
+<div class="t v u" title="Subida" style="position: absolute; left: 207px; top: 129px; width: 10px; height: 232px"></div>
+<div class="t h r" title="Eje del tren" style="position: absolute; left: 207px; top: 129px; width: 790px; height: 10px"></div>
+<div class="t v d" title="Bajada derecha" style="position: absolute; left: 987px; top: 129px; width: 10px; height: 115px"></div>
+<div class="t h l" title="Retorno bajo los vasos" style="position: absolute; left: 243px; top: 234px; width: 754px; height: 10px"></div>
+<div class="t v d" title="Bajada final" style="position: absolute; left: 243px; top: 234px; width: 10px; height: 195px"></div>
+<div class="t h r" title="Cobre bajo el piso a la cisterna" style="position: absolute; left: 243px; top: 419px; width: 141px; height: 10px"></div>
+</div>
+
+<div title="Ramal de la boca B" style="position: absolute; left: 253px; top: 305px; width: 99px; height: 10px; background: #6d7987"></div>
+<div title="Ramal de descarga V4" style="position: absolute; left: 253px; top: 357px; width: 43px; height: 10px; background: #6d7987"></div>
+
+<div style="position: absolute; left: 16px; top: 304px; font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be; white-space: nowrap">SIAPA</div>
+<svg width="44" height="32" viewBox="0 0 44 32" aria-hidden="true" style="position: absolute; left: 16px; top: 340px; fill: #232930; stroke: #76818d; stroke-width: 2; stroke-linejoin: round"><path d="M2 2H30L42 16L30 30H2Z"></path></svg>
+
+<div style="position: absolute; left: 16px; top: 374px; width: 70px; text-align: right; font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be">PRF</div>
+<a href="Cartuchos.dc.html" aria-label="Prefiltro PRF-02 de malla de 40 µm" style="position: absolute; left: 94px; top: 363px; width: 40px; height: 48px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; background: #232930; border: 2px solid #76818d; border-radius: 0 0 10px 10px"><svg width="24" height="32" viewBox="0 0 24 32" aria-hidden="true" style="display: block; fill: none; stroke: #6d7987; stroke-width: 1.5"><path d="M4 2V30M12 2V30M20 2V30M2 8H22M2 16H22M2 24H22"></path></svg></a>
+<div style="position: absolute; left: 88px; top: 347px; width: 52px; height: 18px; box-sizing: border-box; background: #2d343d; border: 2px solid #76818d; border-radius: 4px"></div>
+<svg width="20" height="24" viewBox="0 0 20 24" aria-hidden="true" style="position: absolute; left: 104px; top: 411px; fill: #1b1f24; stroke: #a9b3be; stroke-width: 2; stroke-linejoin: round"><path d="M3 4H17L3 22H17Z"></path></svg>
+
+<svg width="28" height="34" viewBox="0 0 28 34" aria-hidden="true" style="position: absolute; left: 160px; top: 333px; fill: #1b1f24; stroke: #a9b3be; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round"><path d="M2 13L26 33V13L2 33Z"></path><path d="M14 4V23M7 4H21" style="fill: none"></path></svg>
+<div style="position: absolute; left: 155px; top: 372px; width: 38px; text-align: center; font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be">V1</div>
+
+<div style="position: absolute; left: 188px; top: 189px; width: 16px; height: 2px; background: #6d7987"></div>
+<div title="Toma P1" style="position: absolute; left: 204px; top: 182px; width: 16px; height: 16px; box-sizing: border-box; border-radius: 50%; background: #1b1f24; border: 2px solid #e9edf1"></div>
+
+<div style="position: absolute; left: 265px; top: 84px; width: 114px; text-align: center; font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be; white-space: nowrap">20 µm</div>
+<div style="position: absolute; left: 405px; top: 84px; width: 114px; text-align: center; font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be; white-space: nowrap">10 µm</div>
+<div style="position: absolute; left: 545px; top: 84px; width: 114px; text-align: center; font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be; white-space: nowrap">5 µm</div>
+<div style="position: absolute; left: 685px; top: 84px; width: 114px; text-align: center; font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be; white-space: nowrap">CTO</div>
+<div style="position: absolute; left: 825px; top: 84px; width: 114px; text-align: center; font-size: 26px; line-height: 32px; font-weight: 500; color: #7c8793; white-space: nowrap">Sarro</div>
+
+<a href="Cartuchos.dc.html" aria-label="Cartucho de 20 µm" style="position: absolute; left: 294px; top: 142px; width: 56px; height: 64px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; background: #232930; border: 2px solid #76818d; border-radius: 0 0 12px 12px"><span style="display: block; width: 24px; height: 44px; border-radius: 4px; background: #2d343d"></span></a>
+<a href="Cartuchos.dc.html" aria-label="Cartucho de 10 µm" style="position: absolute; left: 434px; top: 142px; width: 56px; height: 64px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; background: #232930; border: 2px solid #76818d; border-radius: 0 0 12px 12px"><span style="display: block; width: 24px; height: 44px; border-radius: 4px; background: #2d343d"></span></a>
+<a href="Cartuchos.dc.html" aria-label="Cartucho de 5 µm" style="position: absolute; left: 574px; top: 142px; width: 56px; height: 64px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; background: #232930; border: 2px solid #76818d; border-radius: 0 0 12px 12px"><span style="display: block; width: 24px; height: 44px; border-radius: 4px; background: #2d343d"></span></a>
+<a href="Cartuchos.dc.html" aria-label="Cartucho de carbón CTO" style="position: absolute; left: 714px; top: 142px; width: 56px; height: 64px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; background: #232930; border: 2px solid #76818d; border-radius: 0 0 12px 12px"><span style="display: block; width: 24px; height: 44px; border-radius: 4px; background: #2d343d"></span></a>
+<a href="Cartuchos.dc.html" aria-label="Vaso del antisarro, vacío" style="position: absolute; left: 854px; top: 142px; width: 56px; height: 64px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; background: #232930; border: 2px solid #76818d; border-radius: 0 0 12px 12px"><span style="display: block; width: 24px; height: 44px; box-sizing: border-box; border-radius: 4px; border: 2px dashed #3a434d"></span></a>
+
+<div style="position: absolute; left: 286px; top: 124px; width: 72px; height: 20px; box-sizing: border-box; background: #2d343d; border: 2px solid #76818d; border-radius: 4px"></div>
+<div style="position: absolute; left: 426px; top: 124px; width: 72px; height: 20px; box-sizing: border-box; background: #2d343d; border: 2px solid #76818d; border-radius: 4px"></div>
+<div style="position: absolute; left: 566px; top: 124px; width: 72px; height: 20px; box-sizing: border-box; background: #2d343d; border: 2px solid #76818d; border-radius: 4px"></div>
+<div style="position: absolute; left: 706px; top: 124px; width: 72px; height: 20px; box-sizing: border-box; background: #2d343d; border: 2px solid #76818d; border-radius: 4px"></div>
+<div style="position: absolute; left: 846px; top: 124px; width: 72px; height: 20px; box-sizing: border-box; background: #2d343d; border: 2px solid #76818d; border-radius: 4px"></div>
+
+<div title="Medidor de flujo F" style="position: absolute; left: 872px; top: 225px; width: 44px; height: 28px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; background: #1b1f24; border: 2px solid #e9edf1; border-radius: 6px"><svg width="28" height="16" viewBox="0 0 28 16" aria-hidden="true" style="display: block; fill: none; stroke: #e9edf1; stroke-width: 2; stroke-linecap: round"><circle cx="14" cy="8" r="5"></circle><path d="M2 8H9M19 8H26"></path></svg></div>
+<div style="position: absolute; left: 893px; top: 253px; width: 2px; height: 7px; background: #6d7987"></div>
+<div title="Toma P2" style="position: absolute; left: 692px; top: 231px; width: 16px; height: 16px; box-sizing: border-box; border-radius: 50%; background: #1b1f24; border: 2px solid #e9edf1"></div>
+<div style="position: absolute; left: 699px; top: 247px; width: 2px; height: 13px; background: #6d7987"></div>
+
+<svg width="20" height="24" viewBox="0 0 20 24" aria-hidden="true" style="position: absolute; left: 238px; top: 254px; fill: #1b1f24; stroke: #a9b3be; stroke-width: 2; stroke-linejoin: round"><path d="M2 2H18L2 22H18Z"></path></svg>
+<div style="position: absolute; left: 262px; top: 250px; width: 40px; font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be">V5</div>
+<svg width="28" height="24" viewBox="0 0 28 24" aria-hidden="true" style="position: absolute; left: 338px; top: 282px; fill: #1b1f24; stroke: #a9b3be; stroke-width: 2.5; stroke-linejoin: round"><path d="M2 2H26L17 12V23H11V12Z"></path></svg>
+<svg width="26" height="20" viewBox="0 0 26 20" aria-hidden="true" style="position: absolute; left: 300px; top: 300px; fill: #1b1f24; stroke: #a9b3be; stroke-width: 2; stroke-linejoin: round"><path d="M2 2L24 18V2L2 18Z"></path></svg>
+<div style="position: absolute; left: 296px; top: 320px; width: 34px; text-align: center; font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be">V3</div>
+<svg width="26" height="20" viewBox="0 0 26 20" aria-hidden="true" style="position: absolute; left: 262px; top: 352px; fill: #1b1f24; stroke: #a9b3be; stroke-width: 2; stroke-linejoin: round"><path d="M2 2L24 18V2L2 18Z"></path></svg>
+<svg width="18" height="16" viewBox="0 0 18 16" aria-hidden="true" style="position: absolute; left: 296px; top: 354px; fill: #232930; stroke: #a9b3be; stroke-width: 2; stroke-linejoin: round"><path d="M1 3H8L17 6V10L8 13H1Z"></path></svg>
+<div style="position: absolute; left: 318px; top: 346px; width: 40px; font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be">V4</div>
+<svg width="20" height="24" viewBox="0 0 20 24" aria-hidden="true" style="position: absolute; left: 238px; top: 386px; fill: #1b1f24; stroke: #a9b3be; stroke-width: 2; stroke-linejoin: round"><path d="M2 2H18L2 22H18Z"></path></svg>
+<div style="position: absolute; left: 262px; top: 382px; width: 40px; font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be">V2</div>
+
+<a href="Cisterna.dc.html" aria-label="Cisterna" style="position: absolute; left: 384px; top: 348px; width: 624px; height: 92px; box-sizing: border-box; background: #232930; border: 2px solid #76818d; border-radius: 10px"></a>
+<div style="position: absolute; left: 386px; top: 358px; width: 620px; height: 2px; background: #3cc8ea"></div>
+<div style="position: absolute; left: 396px; top: 368px; font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be; white-space: nowrap">Cisterna</div>
+<sc-if value="{{orp}}" hint-placeholder-val="{{true}}">
+<div style="position: absolute; left: 396px; top: 396px; font-size: 26px; line-height: 32px; font-weight: 500; color: #55c993; white-space: nowrap">Oxidante</div>
+</sc-if>
+<sc-if value="{{sinOrp}}" hint-placeholder-val="{{false}}">
+<div style="position: absolute; left: 396px; top: 396px; font-size: 26px; line-height: 32px; font-weight: 500; color: #7c8793; white-space: nowrap">10 m³</div>
+</sc-if>
+<div title="Mástil de la sonda ORP y la bomba R" style="position: absolute; left: 539px; top: 340px; width: 3px; height: 72px; background: #a9b3be"></div>
+<div title="Sonda ORP" style="position: absolute; left: 535px; top: 372px; width: 11px; height: 20px; border-radius: 3px; background: #a9b3be"></div>
+<a href="Mezcla.dc.html" aria-label="Bomba R, mezcla la cisterna" style="position: absolute; left: 527.5px; top: 410px; width: 26px; height: 26px; display: block"><svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true" style="display: block"><circle cx="13" cy="13" r="11.5" style="fill: #1b1f24; stroke: {{rBorde}}; stroke-width: 2; stroke-dasharray: {{rRaya}}"></circle><g class="{{rClase}}"><path d="M13 13V5.5M13 13L19.5 16.75M13 13L6.5 16.75" style="fill: none; stroke: {{rColor}}; stroke-width: 2.5; stroke-linecap: round"></path></g></svg></a>
+
+<div style="position: absolute; left: 16px; top: 162px; width: 172px; height: 56px">
+<sc-if value="{{presion}}" hint-placeholder-val="{{true}}">
+<a href="DetalleP.dc.html" style="position: absolute; left: 0; top: 0; width: 172px; height: 56px; box-sizing: border-box; padding: 3px 12px; display: flex; flex-direction: column; gap: 4px; background: #2d343d; border: 2px solid #3a434d; border-radius: 6px; color: #e9edf1"><span style="display: flex; align-items: baseline; gap: 8px; height: 38px; white-space: nowrap"><span style="font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be">P1</span><span style="font-size: 44px; line-height: 38px; font-weight: 600">42</span><span style="font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be">psi</span></span><span style="position: relative; display: block; height: 4px; border-radius: 2px; background: #3a434d"><span style="position: absolute; left: 25%; top: 0; width: 37.5%; height: 4px; background: #6d7987"></span><span style="position: absolute; left: 52.5%; top: -3px; width: 3px; height: 10px; margin-left: -1px; background: #e9edf1"></span></span></a>
+</sc-if>
+<sc-if value="{{sinPresion}}" hint-placeholder-val="{{false}}">
+<div style="position: absolute; left: 0; top: 0; width: 172px; height: 56px; box-sizing: border-box; padding: 0 12px; display: flex; align-items: center; gap: 8px; background: #1b1f24; border: 2px solid #3a434d; border-radius: 6px; color: #7c8793; white-space: nowrap"><span style="font-size: 26px; line-height: 32px; font-weight: 500">P1</span><svg width="24" height="24" viewBox="0 0 32 32" aria-hidden="true" style="display: block; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round"><rect x="6.5" y="14" width="19" height="14" rx="3"></rect><path d="M10.5 14v-4a5.5 5.5 0 0 1 11 0v4M16 19.5v3"></path></svg><span style="font-size: 26px; line-height: 32px; font-weight: 500">fase 1.5</span></div>
+</sc-if>
+</div>
+
+<a href="Inyeccion.dc.html" style="position: absolute; left: 378px; top: 260px; width: 168px; height: 56px; box-sizing: border-box; padding: 0 12px; display: flex; align-items: center; gap: 10px; background: #2d343d; border: 2px solid #3a434d; border-radius: 6px; color: #e9edf1; white-space: nowrap"><span style="font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be">B</span><span style="font-size: 32px; line-height: 38px; font-weight: 500">Manual</span></a>
+
+<div style="position: absolute; left: 584px; top: 260px; width: 172px; height: 56px">
+<sc-if value="{{presion}}" hint-placeholder-val="{{true}}">
+<a href="DetalleP.dc.html" style="position: absolute; left: 0; top: 0; width: 172px; height: 56px; box-sizing: border-box; padding: 3px 12px; display: flex; flex-direction: column; gap: 4px; background: #2d343d; border: 2px solid #3a434d; border-radius: 6px; color: #e9edf1"><span style="display: flex; align-items: baseline; gap: 8px; height: 38px; white-space: nowrap"><span style="font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be">P2</span><span style="font-size: 44px; line-height: 38px; font-weight: 600">{{p2}}</span><span style="font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be">psi</span></span><span style="position: relative; display: block; height: 4px; border-radius: 2px; background: #3a434d"><span style="position: absolute; left: 25%; top: 0; width: 37.5%; height: 4px; background: #6d7987"></span><span style="position: absolute; left: {{p2Pct}}%; top: -3px; width: 3px; height: 10px; margin-left: -1px; background: #e9edf1"></span></span></a>
+</sc-if>
+<sc-if value="{{sinPresion}}" hint-placeholder-val="{{false}}">
+<div style="position: absolute; left: 0; top: 0; width: 172px; height: 56px; box-sizing: border-box; padding: 0 12px; display: flex; align-items: center; gap: 8px; background: #1b1f24; border: 2px solid #3a434d; border-radius: 6px; color: #7c8793; white-space: nowrap"><span style="font-size: 26px; line-height: 32px; font-weight: 500">P2</span><svg width="24" height="24" viewBox="0 0 32 32" aria-hidden="true" style="display: block; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round"><rect x="6.5" y="14" width="19" height="14" rx="3"></rect><path d="M10.5 14v-4a5.5 5.5 0 0 1 11 0v4M16 19.5v3"></path></svg><span style="font-size: 26px; line-height: 32px; font-weight: 500">fase 1.5</span></div>
+</sc-if>
+</div>
+
+<a href="DetalleF.dc.html" style="position: absolute; left: 772px; top: 260px; width: 236px; height: 56px; box-sizing: border-box; padding: 3px 12px; display: flex; flex-direction: column; gap: 4px; background: #2d343d; border: 2px solid #3a434d; border-radius: 6px; color: #e9edf1"><span style="display: flex; align-items: baseline; gap: 8px; height: 38px; white-space: nowrap"><span style="font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be">F</span><span style="font-size: 44px; line-height: 38px; font-weight: 600; color: {{fColor}}">{{fValor}}</span><span style="font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be">L/min</span></span><span style="position: relative; display: block; height: 4px; border-radius: 2px; background: #3a434d"><span style="position: absolute; left: 0; top: 0; width: {{fPct}}%; height: 4px; border-radius: 2px; background: #3cc8ea"></span></span></a>
+
+<div style="position: absolute; left: 566px; top: 366px; width: 244px; height: 56px">
+<sc-if value="{{orp}}" hint-placeholder-val="{{true}}">
+<a href="Cisterna.dc.html" style="position: absolute; left: 0; top: 0; width: 244px; height: 56px; box-sizing: border-box; padding: 3px 12px; display: flex; flex-direction: column; gap: 4px; background: #2d343d; border: 2px solid #3a434d; border-radius: 6px; color: #e9edf1"><span style="display: flex; align-items: baseline; gap: 8px; height: 38px; white-space: nowrap"><span style="font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be">ORP</span><span style="font-size: 44px; line-height: 38px; font-weight: 600">650</span><span style="font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be">mV</span></span><span style="display: flex; height: 4px; gap: 2px"><span style="display: block; width: 20.8%; height: 4px; background: #46181b"></span><span style="display: block; width: 58.3%; height: 4px; background: #3a2a12"></span><span style="position: relative; display: block; flex: 1; height: 4px; background: #55c993"><span style="position: absolute; left: 0; top: -3px; width: 3px; height: 10px; background: #e9edf1"></span></span></span></a>
+</sc-if>
+<sc-if value="{{sinOrp}}" hint-placeholder-val="{{false}}">
+<div style="position: absolute; left: 0; top: 0; width: 244px; height: 56px; box-sizing: border-box; padding: 0 12px; display: flex; align-items: center; gap: 8px; background: #1b1f24; border: 2px solid #3a434d; border-radius: 6px; color: #7c8793; white-space: nowrap"><span style="font-size: 26px; line-height: 32px; font-weight: 500">ORP</span><svg width="24" height="24" viewBox="0 0 32 32" aria-hidden="true" style="display: block; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round"><rect x="6.5" y="14" width="19" height="14" rx="3"></rect><path d="M10.5 14v-4a5.5 5.5 0 0 1 11 0v4M16 19.5v3"></path></svg><span style="font-size: 26px; line-height: 32px; font-weight: 500">fase 2</span></div>
+</sc-if>
+</div>
+
+<div style="position: absolute; left: 822px; top: 366px; width: 176px; height: 56px">
+<sc-if value="{{rInst}}" hint-placeholder-val="{{true}}">
+<a href="Mezcla.dc.html" style="position: absolute; left: 0; top: 0; width: 176px; height: 56px; box-sizing: border-box; padding: 0 10px; display: flex; align-items: center; gap: 8px; background: #2d343d; border: 2px solid #3a434d; border-radius: 6px; color: #e9edf1; white-space: nowrap"><span style="font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be">R</span><span style="font-size: 26px; line-height: 32px; font-weight: 500">{{rEstado}}</span></a>
+</sc-if>
+<sc-if value="{{rNo}}" hint-placeholder-val="{{false}}">
+<div style="position: absolute; left: 0; top: 0; width: 176px; height: 56px; box-sizing: border-box; padding: 0 10px; display: flex; align-items: center; gap: 8px; background: #1b1f24; border: 2px solid #3a434d; border-radius: 6px; color: #7c8793; white-space: nowrap"><span style="font-size: 26px; line-height: 32px; font-weight: 500">R</span><svg width="24" height="24" viewBox="0 0 32 32" aria-hidden="true" style="display: block; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round"><rect x="6.5" y="14" width="19" height="14" rx="3"></rect><path d="M10.5 14v-4a5.5 5.5 0 0 1 11 0v4M16 19.5v3"></path></svg><span style="font-size: 26px; line-height: 32px; font-weight: 500">fase 2</span></div>
+</sc-if>
+</div>
+
+<div style="position: absolute; left: 16px; top: 452px; width: 360px; height: 56px">
+<sc-if value="{{presion}}" hint-placeholder-val="{{true}}">
+<a href="DetalleCaida.dc.html" style="position: absolute; left: 0; top: 0; width: 360px; height: 56px; box-sizing: border-box; padding: 0 16px; display: flex; align-items: center; gap: 8px; background: {{dpFondo}}; border: 2px solid {{dpColor}}; border-radius: 10px; color: #e9edf1; white-space: nowrap"><span style="flex: 1; font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be">Caída</span><span style="font-size: 44px; line-height: 38px; font-weight: 600">{{dp}}</span><span style="font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be">psi</span><span style="margin-left: 8px; font-size: 26px; line-height: 32px; font-weight: 500; color: {{dpColor}}">{{dpPalabra}}</span></a>
+</sc-if>
+<sc-if value="{{sinPresion}}" hint-placeholder-val="{{false}}">
+<div style="position: absolute; left: 0; top: 0; width: 360px; height: 56px; box-sizing: border-box; padding: 0 16px; display: flex; align-items: center; gap: 10px; background: #1b1f24; border: 2px solid #3a434d; border-radius: 10px; color: #7c8793; white-space: nowrap"><svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true" style="display: block; flex: none; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round"><rect x="6.5" y="14" width="19" height="14" rx="3"></rect><path d="M10.5 14v-4a5.5 5.5 0 0 1 11 0v4M16 19.5v3"></path></svg><span style="font-size: 26px; line-height: 32px; font-weight: 500">Caída · fase 1.5</span></div>
+</sc-if>
+</div>
+<div style="position: absolute; left: 388px; top: 452px; width: 264px; height: 56px; box-sizing: border-box; padding: 0 16px; display: flex; align-items: center; gap: 8px; background: #232930; border: 1px solid #3a434d; border-radius: 10px; white-space: nowrap"><span style="flex: 1; font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be">Hoy</span><span style="font-size: 44px; line-height: 38px; font-weight: 600">1,860</span><span style="font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be">L</span></div>
+<a href="Dosis.dc.html" style="position: absolute; left: 664px; top: 452px; width: 344px; height: 56px; box-sizing: border-box; padding: 0 12px 0 16px; display: flex; align-items: center; gap: 8px; background: #2d343d; border: 2px solid #76818d; border-radius: 10px; color: #e9edf1; white-space: nowrap"><span style="flex: 1; font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be">Toca echar</span><span style="font-size: 44px; line-height: 38px; font-weight: 600">37</span><span style="font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be">mL</span><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true" style="display: block; flex: none; margin-left: 4px; fill: none; stroke: #a9b3be; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round"><path d="M12 6.5l9.5 9.5-9.5 9.5"></path></svg></a>
+
+<div style="position: absolute; left: 0; top: 0; width: 1024px; height: 64px">
+<dc-import name="Encabezado" titulo="Tren de filtros" estado="{{estado}}" ayuda="Leyenda.dc.html" enlace="Panorama.dc.html" enlace-texto="Casa" hint-size="1024px,64px"></dc-import>
+</div>
+<div style="position: absolute; left: 0; top: 520px; width: 1024px; height: 80px">
+<dc-import name="Navegacion" activa="tren" hint-size="1024px,80px"></dc-import>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"flujo":{"editor":"boolean","default":true},"caida":{"editor":"enum","options":["normal","revisar","tapados"],"default":"normal"},"fase":{"editor":"enum","options":["1","1.5","2"],"default":"2"},"bombaR":{"editor":"boolean","default":true},"$preview":{"width":1024,"height":600}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const flujo = this.props.flujo ?? true;
+    const caida = this.props.caida ?? 'normal';
+    const fase = this.props.fase ?? '2';
+    const presion = fase !== '1';
+    const orp = fase === '2';
+    const bombaR = this.props.bombaR ?? true;
+    const rInst = orp;
+    const rGira = rInst && bombaR;
+    const C = {
+      normal: { p2: 38, dp: 4, palabra: 'Normal', color: '#55c993', fondo: '#16301f', estado: 'ok' },
+      revisar: { p2: 35, dp: 7, palabra: 'Revisar', color: '#f2a83a', fondo: '#3a2a12', estado: 'advertencia' },
+      tapados: { p2: 30, dp: 12, palabra: 'Tapados', color: '#ff7069', fondo: '#46181b', estado: 'alarma' }
+    };
+    const c = C[caida] || C.normal;
+    return {
+      modo: flujo ? 'pid fluye' : 'pid',
+      estado: presion ? c.estado : 'ok',
+      presion: presion,
+      sinPresion: !presion,
+      orp: orp,
+      sinOrp: !orp,
+      p2: String(c.p2),
+      p2Pct: (c.p2 / 80 * 100).toFixed(1),
+      dp: String(c.dp),
+      dpPalabra: c.palabra,
+      dpColor: c.color,
+      dpFondo: c.fondo,
+      fValor: flujo ? '12.4' : '0.0',
+      fColor: flujo ? '#e9edf1' : '#7c8793',
+      fPct: flujo ? '41.3' : '0',
+      rInst: rInst,
+      rNo: !rInst,
+      rEstado: bombaR ? 'Prendida' : 'Apagada',
+      rClase: rGira ? 'rotor gira' : 'rotor',
+      rColor: rInst ? (bombaR ? '#3cc8ea' : '#6d7987') : '#3a434d',
+      rBorde: rInst ? '#a9b3be' : '#3a434d',
+      rRaya: rInst ? 'none' : '4 3'
+    };
+  }
+}
+</script>
+</body>
+</html>

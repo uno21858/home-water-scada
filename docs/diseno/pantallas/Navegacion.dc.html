@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Barra de navegación</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:"Montserrat Tnum";src:url("/_blob/9d5800f4c7bea6e5041333e753b58eb8") format("truetype");font-weight:500;font-style:normal;font-display:block}
+@font-face{font-family:"Montserrat Tnum";src:url("/_blob/f9923e4b0b5fcb8ad1e46b8765af09f2") format("truetype");font-weight:600;font-style:normal;font-display:block}
+body{margin:0}
+</style>
+</helmet>
+<nav aria-label="Pantallas" style="position: relative; width: 1024px; height: 80px; box-sizing: border-box; display: flex; overflow: hidden; background: #232930; border-top: 1px solid #3a434d; color: #a9b3be; font-family: 'Montserrat Tnum', Montserrat, sans-serif; -webkit-font-smoothing: antialiased">
+<a href="Main.dc.html" aria-current="{{cur.tren}}" style="position: relative; width: 146px; height: 79px; flex: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; text-decoration: none; color: {{c.tren}}; background: {{bg.tren}}"><span style="position: absolute; left: 0; right: 0; top: -1px; height: 4px; background: {{barra.tren}}"></span><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true" style="display: block; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round"><path d="M2 8.5h28"></path><rect x="5" y="8.5" width="6" height="17" rx="3"></rect><rect x="13" y="8.5" width="6" height="17" rx="3"></rect><rect x="21" y="8.5" width="6" height="17" rx="3"></rect></svg><span style="font-size: 26px; line-height: 32px; font-weight: 500">Tren</span></a>
+<a href="Resumen.dc.html" aria-current="{{cur.resumen}}" style="position: relative; width: 146px; height: 79px; flex: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; text-decoration: none; color: {{c.resumen}}; background: {{bg.resumen}}"><span style="position: absolute; left: 0; right: 0; top: -1px; height: 4px; background: {{barra.resumen}}"></span><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true" style="display: block; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round"><rect x="4.5" y="4.5" width="12.5" height="9.5" rx="2"></rect><rect x="21.5" y="4.5" width="6" height="9.5" rx="2"></rect><rect x="4.5" y="18.5" width="9.25" height="9" rx="2"></rect><rect x="18.25" y="18.5" width="9.25" height="9" rx="2"></rect></svg><span style="font-size: 26px; line-height: 32px; font-weight: 500">Resumen</span></a>
+<a href="Flujo.dc.html" aria-current="{{cur.flujo}}" style="position: relative; width: 146px; height: 79px; flex: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; text-decoration: none; color: {{c.flujo}}; background: {{bg.flujo}}"><span style="position: absolute; left: 0; right: 0; top: -1px; height: 4px; background: {{barra.flujo}}"></span><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true" style="display: block; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round"><path d="M4 10h17M4 16h22M4 22h17"></path><path d="M22 10.5l5.5 5.5-5.5 5.5"></path></svg><span style="font-size: 26px; line-height: 32px; font-weight: 500">Flujo</span></a>
+<a href="Cisterna.dc.html" aria-current="{{cur.cisterna}}" style="position: relative; width: 147px; height: 79px; flex: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; text-decoration: none; color: {{c.cisterna}}; background: {{bg.cisterna}}"><span style="position: absolute; left: 0; right: 0; top: -1px; height: 4px; background: {{barra.cisterna}}"></span><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true" style="display: block; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round"><path d="M16 3v5"></path><rect x="5" y="8" width="22" height="20" rx="3"></rect><path d="M5 17.5c2.4-1.6 4.9-1.6 7.3 0s4.9 1.6 7.3 0 4.9-1.6 7.4 0"></path></svg><span style="font-size: 26px; line-height: 32px; font-weight: 500">Cisterna</span></a>
+<a href="Dosis.dc.html" aria-current="{{cur.dosis}}" style="position: relative; width: 146px; height: 79px; flex: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; text-decoration: none; color: {{c.dosis}}; background: {{bg.dosis}}"><span style="position: absolute; left: 0; right: 0; top: -1px; height: 4px; background: {{barra.dosis}}"></span><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true" style="display: block; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round"><path d="M12 3.5h8M13.5 3.5V12L7 24a2.5 2.5 0 0 0 2.2 3.7h13.6A2.5 2.5 0 0 0 25 24l-6.5-12V3.5"></path><path d="M9.6 19.5h12.8"></path></svg><span style="font-size: 26px; line-height: 32px; font-weight: 500">Dosis</span></a>
+<a href="Historial.dc.html" aria-current="{{cur.historial}}" style="position: relative; width: 146px; height: 79px; flex: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; text-decoration: none; color: {{c.historial}}; background: {{bg.historial}}"><span style="position: absolute; left: 0; right: 0; top: -1px; height: 4px; background: {{barra.historial}}"></span><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true" style="display: block; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round"><path d="M5 4v23h23"></path><path d="M9.5 20l5-6.5 4.5 4 7-9"></path></svg><span style="font-size: 26px; line-height: 32px; font-weight: 500">Historial</span></a>
+<a href="Ajustes.dc.html" aria-current="{{cur.ajustes}}" style="position: relative; width: 147px; height: 79px; flex: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; text-decoration: none; color: {{c.ajustes}}; background: {{bg.ajustes}}"><span style="position: absolute; left: 0; right: 0; top: -1px; height: 4px; background: {{barra.ajustes}}"></span><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true" style="display: block; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round"><path d="M4 9h6M16 9h12M4 16h14M24 16h4M4 23h3M13 23h15"></path><circle cx="13" cy="9" r="3"></circle><circle cx="21" cy="16" r="3"></circle><circle cx="10" cy="23" r="3"></circle></svg><span style="font-size: 26px; line-height: 32px; font-weight: 500">Ajustes</span></a>
+</nav>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"activa":{"editor":"enum","options":["tren","resumen","flujo","cisterna","dosis","historial","ajustes","ninguna"],"default":"tren"},"$preview":{"width":1024,"height":80}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const activa = this.props.activa ?? 'tren';
+    const ids = ['tren', 'resumen', 'flujo', 'cisterna', 'dosis', 'historial', 'ajustes'];
+    const c = {}, bg = {}, barra = {}, cur = {};
+    ids.forEach((id) => {
+      const on = id === activa;
+      c[id] = on ? '#e9edf1' : '#a9b3be';
+      bg[id] = on ? '#2d343d' : 'transparent';
+      barra[id] = on ? '#e9edf1' : 'transparent';
+      cur[id] = on ? 'page' : 'false';
+    });
+    return { c: c, bg: bg, barra: barra, cur: cur };
+  }
+}
+</script>
+</body>
+</html>

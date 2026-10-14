@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Confirmar dosis</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:"Montserrat Tnum";src:url("/_blob/9d5800f4c7bea6e5041333e753b58eb8") format("truetype");font-weight:500;font-style:normal;font-display:block}
+@font-face{font-family:"Montserrat Tnum";src:url("/_blob/f9923e4b0b5fcb8ad1e46b8765af09f2") format("truetype");font-weight:600;font-style:normal;font-display:block}
+body{margin:0}
+</style>
+</helmet>
+<div style="position: relative; width: 1024px; height: 600px; overflow: hidden; background: #1b1f24; color: #e9edf1; font-family: 'Montserrat Tnum', Montserrat, sans-serif; font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased">
+
+<div style="position: absolute; left: 0; top: 0; width: 1024px; height: 600px">
+<dc-import name="Dosis" hint-size="1024px,600px"></dc-import>
+</div>
+<div style="position: absolute; left: 0; top: 0; width: 1024px; height: 600px; background: rgba(11, 13, 16, 0.8)"></div>
+
+<div role="dialog" aria-modal="true" aria-label="¿Ya le pusiste 37 mL?" style="position: absolute; left: 172px; top: 120px; width: 680px; height: 360px; box-sizing: border-box; background: #232930; border: 2px solid #76818d; border-radius: 16px">
+<div style="position: absolute; left: 30px; top: 30px; font-size: 48px; line-height: 58px; font-weight: 600; white-space: nowrap">¿Ya le pusiste 37 mL?</div>
+<div style="position: absolute; left: 30px; top: 104px; width: 616px; font-size: 32px; line-height: 38px; font-weight: 500; color: #a9b3be">Se registra hoy a las 18:42 y el conteo de litros desde la última dosis vuelve a 0.</div>
+<a href="Dosis.dc.html" style="position: absolute; left: 30px; top: 248px; width: 220px; height: 80px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; border-radius: 10px; background: #2d343d; border: 2px solid #76818d; color: #e9edf1; text-decoration: none; font-size: 32px; line-height: 38px; font-weight: 500">Cancelar</a>
+<a href="Main.dc.html" style="position: absolute; left: 264px; top: 248px; width: 384px; height: 80px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: 12px; border-radius: 10px; background: #e3e8ed; border: 2px solid #e3e8ed; color: #14181c; text-decoration: none; white-space: nowrap"><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true" style="display: block; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round"><path d="M6 16.5l6.5 6.5L26 9.5"></path></svg><span style="font-size: 36px; line-height: 45px; font-weight: 600">Sí, ya le puse</span></a>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1024,"height":600}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

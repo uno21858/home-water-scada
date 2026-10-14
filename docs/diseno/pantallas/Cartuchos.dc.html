@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Cartuchos</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:"Montserrat Tnum";src:url("/_blob/9d5800f4c7bea6e5041333e753b58eb8") format("truetype");font-weight:500;font-style:normal;font-display:block}
+@font-face{font-family:"Montserrat Tnum";src:url("/_blob/f9923e4b0b5fcb8ad1e46b8765af09f2") format("truetype");font-weight:600;font-style:normal;font-display:block}
+body{margin:0}
+</style>
+</helmet>
+<div style="position: relative; width: 1024px; height: 600px; overflow: hidden; background: #1b1f24; color: #e9edf1; font-family: 'Montserrat Tnum', Montserrat, sans-serif; font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased">
+
+<sc-for list="{{filas}}" as="r" hint-placeholder-count="6">
+<div style="position: absolute; left: 16px; top: {{r.top}}px; width: 992px; height: 60px; box-sizing: border-box; background: #232930; border: 1px solid #3a434d; border-radius: 10px; color: {{r.color}}">
+<svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true" style="position: absolute; left: 16px; top: 13px; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round"><rect x="9.5" y="3.5" width="13" height="25" rx="3"></rect><path d="M13 9h6M13 13.5h6M13 18h6M13 22.5h6"></path></svg>
+<span style="position: absolute; left: 60px; top: 10px; font-size: 32px; line-height: 38px; font-weight: 500; white-space: nowrap">{{r.nombre}}</span>
+<span style="position: absolute; left: 216px; top: 10px; font-size: 32px; line-height: 38px; font-weight: 500; white-space: nowrap">{{r.dias}}</span>
+<span style="position: absolute; left: 340px; top: 10px; font-size: 32px; line-height: 38px; font-weight: 500; white-space: nowrap">{{r.litros}}</span>
+<span style="position: absolute; left: 500px; top: 24px; width: 140px; height: 10px; border-radius: 5px; background: {{r.pista}}; overflow: hidden"><span style="display: block; width: {{r.pct}}%; height: 10px; background: #a9b3be"></span></span>
+<span style="position: absolute; left: 652px; top: 13px; font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be; white-space: nowrap">{{r.intervalo}}</span>
+<button type="button" onClick="{{r.pedir}}" style="position: absolute; left: 806px; top: 1px; width: 176px; height: 56px; box-sizing: border-box; border-radius: 10px; background: #2d343d; border: 2px solid #76818d; color: #e9edf1; font-family: inherit; font-size: 32px; line-height: 38px; font-weight: 500; white-space: nowrap; cursor: pointer">{{r.boton}}</button>
+</div>
+</sc-for>
+
+<div style="position: absolute; left: 0; top: 0; width: 1024px; height: 64px">
+<dc-import name="Encabezado" titulo="Cartuchos" atras="Main.dc.html" hint-size="1024px,64px"></dc-import>
+</div>
+<div style="position: absolute; left: 0; top: 520px; width: 1024px; height: 80px">
+<dc-import name="Navegacion" activa="tren" hint-size="1024px,80px"></dc-import>
+</div>
+
+<sc-if value="{{hayConfirmacion}}" hint-placeholder-val="{{false}}">
+<div style="position: absolute; left: 0; top: 0; width: 1024px; height: 600px; background: rgba(11, 13, 16, 0.8)"></div>
+<div role="dialog" aria-modal="true" aria-label="{{pregunta}}" style="position: absolute; left: 172px; top: 120px; width: 680px; height: 360px; box-sizing: border-box; background: #232930; border: 2px solid #76818d; border-radius: 16px">
+<div style="position: absolute; left: 30px; top: 30px; width: 616px; font-size: 48px; line-height: 58px; font-weight: 600">{{pregunta}}</div>
+<div style="position: absolute; left: 30px; top: 104px; width: 616px; font-size: 32px; line-height: 38px; font-weight: 500; color: #a9b3be">Se registra hoy a las 18:42 y su conteo de días y litros vuelve a 0.</div>
+<button type="button" onClick="{{cancelar}}" style="position: absolute; left: 30px; top: 248px; width: 220px; height: 80px; box-sizing: border-box; border-radius: 10px; background: #2d343d; border: 2px solid #76818d; color: #e9edf1; font-family: inherit; font-size: 32px; line-height: 38px; font-weight: 500; cursor: pointer">Cancelar</button>
+<button type="button" onClick="{{confirmar}}" style="position: absolute; left: 264px; top: 248px; width: 384px; height: 80px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: 12px; border-radius: 10px; background: #e3e8ed; border: 2px solid #e3e8ed; color: #14181c; font-family: inherit; cursor: pointer"><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true" style="display: block; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round"><path d="M6 16.5l6.5 6.5L26 9.5"></path></svg><span style="font-size: 36px; line-height: 45px; font-weight: 600">{{si}}</span></button>
+</div>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1024,"height":600}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const st = this.state || {};
+    const hechos = st.hechos || {};
+    const base = [
+      { id: 'prf', nombre: 'Prefiltro', dias: 6, litros: '11,300', intervalo: 'cada 7 días', pct: 86, boton: 'Ya purgué', pregunta: '¿Ya purgaste el prefiltro?', si: 'Sí, ya purgué' },
+      { id: 'p20', nombre: '20 µm', dias: 31, litros: '58,900', intervalo: '2 a 3 meses', pct: 41, boton: 'Lo cambié', pregunta: '¿Cambiaste el de 20 µm?', si: 'Sí, lo cambié' },
+      { id: 'p10', nombre: '10 µm', dias: 31, litros: '58,900', intervalo: '3 a 6 meses', pct: 23, boton: 'Lo cambié', pregunta: '¿Cambiaste el de 10 µm?', si: 'Sí, lo cambié' },
+      { id: 'p5', nombre: '5 µm', dias: 2, litros: '4,410', intervalo: '3 a 6 meses', pct: 2, boton: 'Lo cambié', pregunta: '¿Cambiaste el de 5 µm?', si: 'Sí, lo cambié' },
+      { id: 'cto', nombre: 'CTO', dias: 31, litros: '58,900', intervalo: '6 meses', pct: 17, boton: 'Lo cambié', pregunta: '¿Cambiaste el CTO?', si: 'Sí, lo cambié' },
+      { id: 'tac', nombre: 'Sarro', fuera: true, intervalo: 'sin repuesto', pct: 0, boton: 'Lo puse', pregunta: '¿Pusiste el de sarro?', si: 'Sí, ya lo puse' }
+    ];
+    const filas = base.map((c, i) => {
+      const nuevo = hechos[c.id] === true;
+      const fuera = c.fuera && !nuevo;
+      const dias = nuevo ? 0 : c.dias;
+      return {
+        top: 76 + i * 72,
+        nombre: c.nombre,
+        color: fuera ? '#7c8793' : '#e9edf1',
+        dias: fuera ? 'Fuera' : (dias === 0 ? 'Hoy' : (dias === 1 ? '1 día' : dias + ' días')),
+        litros: fuera ? 'vaso vacío' : (nuevo ? '0 L' : c.litros + ' L'),
+        pista: fuera ? '#232930' : '#2d343d',
+        pct: nuevo ? 0 : c.pct,
+        intervalo: fuera ? c.intervalo : (c.fuera ? '1 año' : c.intervalo),
+        boton: c.boton,
+        pedir: () => this.setState({ pide: c.id })
+      };
+    });
+    const pide = base.find((c) => c.id === st.pide);
+    return {
+      filas: filas,
+      hayConfirmacion: !!pide,
+      pregunta: pide ? pide.pregunta : '',
+      si: pide ? pide.si : '',
+      cancelar: () => this.setState({ pide: null }),
+      confirmar: () => {
+        const h = Object.assign({}, hechos);
+        if (pide) h[pide.id] = true;
+        this.setState({ pide: null, hechos: h });
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>

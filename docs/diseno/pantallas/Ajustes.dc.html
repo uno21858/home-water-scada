@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Ajustes</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:"Montserrat Tnum";src:url("/_blob/9d5800f4c7bea6e5041333e753b58eb8") format("truetype");font-weight:500;font-style:normal;font-display:block}
+@font-face{font-family:"Montserrat Tnum";src:url("/_blob/f9923e4b0b5fcb8ad1e46b8765af09f2") format("truetype");font-weight:600;font-style:normal;font-display:block}
+body{margin:0}
+</style>
+</helmet>
+<div style="position: relative; width: 1024px; height: 600px; overflow: hidden; background: #1b1f24; color: #e9edf1; font-family: 'Montserrat Tnum', Montserrat, sans-serif; font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased">
+
+<button type="button" onClick="{{cat.sensores.pick}}" aria-pressed="{{cat.sensores.on}}" style="position: absolute; left: 16px; top: 76px; width: 360px; height: 76px; box-sizing: border-box; padding: 0; text-align: left; font-family: inherit; color: #e9edf1; cursor: pointer; background: {{cat.sensores.bg}}; border: {{cat.sensores.borde}}; border-radius: 10px"><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true" style="position: absolute; left: 16px; top: 22px; fill: none; stroke: {{cat.sensores.ico}}; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round"><circle cx="16" cy="14" r="11"></circle><path d="M16 14l5.5-5"></path><circle cx="16" cy="14" r="1.8" style="fill: {{cat.sensores.ico}}; stroke: none"></circle><path d="M16 25v4M12 29h8"></path></svg><span style="position: absolute; left: 62px; top: 2px; font-size: 32px; line-height: 38px; font-weight: 500; white-space: nowrap">Sensores</span><span style="position: absolute; left: 62px; top: 38px; font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be; white-space: nowrap">Flujo y presión</span></button>
+<button type="button" onClick="{{cat.dosis.pick}}" aria-pressed="{{cat.dosis.on}}" style="position: absolute; left: 16px; top: 164px; width: 360px; height: 76px; box-sizing: border-box; padding: 0; text-align: left; font-family: inherit; color: #e9edf1; cursor: pointer; background: {{cat.dosis.bg}}; border: {{cat.dosis.borde}}; border-radius: 10px"><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true" style="position: absolute; left: 16px; top: 22px; fill: none; stroke: {{cat.dosis.ico}}; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round"><path d="M16 3.5S7 13.8 7 19.8a9 9 0 0 0 18 0C25 13.8 16 3.5 16 3.5z"></path></svg><span style="position: absolute; left: 62px; top: 2px; font-size: 32px; line-height: 38px; font-weight: 500; white-space: nowrap">Dosis</span><span style="position: absolute; left: 62px; top: 38px; font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be; white-space: nowrap">0.020 mL/L · 120 mL</span></button>
+<button type="button" onClick="{{cat.conexion.pick}}" aria-pressed="{{cat.conexion.on}}" style="position: absolute; left: 16px; top: 252px; width: 360px; height: 76px; box-sizing: border-box; padding: 0; text-align: left; font-family: inherit; color: #e9edf1; cursor: pointer; background: {{cat.conexion.bg}}; border: {{cat.conexion.borde}}; border-radius: 10px"><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true" style="position: absolute; left: 16px; top: 22px; fill: none; stroke: {{cat.conexion.ico}}; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round"><circle cx="16" cy="25.5" r="2.3" style="fill: {{cat.conexion.ico}}; stroke: none"></circle><path d="M11.76 21.26a6 6 0 0 1 8.48 0"></path><path d="M7.51 17.01a12 12 0 0 1 16.98 0"></path><path d="M3.27 12.77a18 18 0 0 1 25.46 0"></path></svg><span style="position: absolute; left: 62px; top: 2px; font-size: 32px; line-height: 38px; font-weight: 500; white-space: nowrap">Conexión</span><span style="position: absolute; left: 62px; top: 38px; font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be; white-space: nowrap">Casa-2.4G · en línea</span></button>
+<button type="button" onClick="{{cat.cartuchos.pick}}" aria-pressed="{{cat.cartuchos.on}}" style="position: absolute; left: 16px; top: 340px; width: 360px; height: 76px; box-sizing: border-box; padding: 0; text-align: left; font-family: inherit; color: #e9edf1; cursor: pointer; background: {{cat.cartuchos.bg}}; border: {{cat.cartuchos.borde}}; border-radius: 10px"><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true" style="position: absolute; left: 16px; top: 22px; fill: none; stroke: {{cat.cartuchos.ico}}; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round"><rect x="9.5" y="3.5" width="13" height="25" rx="3"></rect><path d="M13 9h6M13 13.5h6M13 18h6M13 22.5h6"></path></svg><span style="position: absolute; left: 62px; top: 2px; font-size: 32px; line-height: 38px; font-weight: 500; white-space: nowrap">Cartuchos</span><span style="position: absolute; left: 62px; top: 38px; font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be; white-space: nowrap">Último: 5 µm, 1 oct</span></button>
+<button type="button" onClick="{{cat.pantalla.pick}}" aria-pressed="{{cat.pantalla.on}}" style="position: absolute; left: 16px; top: 428px; width: 360px; height: 76px; box-sizing: border-box; padding: 0; text-align: left; font-family: inherit; color: #e9edf1; cursor: pointer; background: {{cat.pantalla.bg}}; border: {{cat.pantalla.borde}}; border-radius: 10px"><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true" style="position: absolute; left: 16px; top: 22px; fill: none; stroke: {{cat.pantalla.ico}}; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round"><circle cx="16" cy="16" r="5.5"></circle><path d="M16 3v3.5M16 25.5V29M3 16h3.5M25.5 16H29M6.8 6.8l2.5 2.5M22.7 22.7l2.5 2.5M6.8 25.2l2.5-2.5M22.7 9.3l2.5-2.5"></path></svg><span style="position: absolute; left: 62px; top: 2px; font-size: 32px; line-height: 38px; font-weight: 500; white-space: nowrap">Pantalla</span><span style="position: absolute; left: 62px; top: 38px; font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be; white-space: nowrap">Noche y modo pasillo</span></button>
+
+<sc-if value="{{ver.sensores}}" hint-placeholder-val="{{true}}">
+<div style="position: absolute; left: 388px; top: 76px; width: 620px; height: 210px; box-sizing: border-box; background: #232930; border: 1px solid #3a434d; border-radius: 10px">
+<div style="position: absolute; left: 20px; top: 8px; font-size: 32px; line-height: 38px; font-weight: 500; color: #a9b3be; white-space: nowrap">Sensor de flujo F · YF-B6</div>
+<div style="position: absolute; left: 20px; top: 52px; display: flex; align-items: baseline; gap: 10px; white-space: nowrap"><span style="font-size: 72px; line-height: 63px; font-weight: 600">396</span><span style="font-size: 36px; line-height: 45px; font-weight: 600; color: #a9b3be">pulsos/L</span></div>
+<div style="position: absolute; right: 20px; top: 72px; font-size: 26px; line-height: 32px; font-weight: 500; color: #7c8793; white-space: nowrap">De fábrica: 396</div>
+<a href="PruebaCubeta.dc.html" style="position: absolute; left: 20px; top: 130px; width: 380px; height: 64px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: 12px; border-radius: 10px; background: #2d343d; border: 2px solid #76818d; color: #e9edf1; text-decoration: none; white-space: nowrap"><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true" style="display: block; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round"><path d="M5.5 12h21l-2.6 15.5H8.1z"></path><path d="M8 12c0-6.5 16-6.5 16 0"></path></svg><span style="font-size: 32px; line-height: 38px; font-weight: 500">Prueba de cubeta</span></a>
+<a href="EstadoTeclado.dc.html" aria-label="Escribir el factor del sensor" style="position: absolute; left: 412px; top: 130px; width: 64px; height: 64px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; border-radius: 10px; background: #2d343d; border: 2px solid #76818d; color: #e9edf1; text-decoration: none"><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true" style="display: block; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round"><path d="M5 27l1.6-6.2L21.3 6.1a2 2 0 0 1 2.8 0l1.8 1.8a2 2 0 0 1 0 2.8L11.2 25.4z"></path><path d="M18.5 9l4.5 4.5"></path></svg></a>
+</div>
+<div style="position: absolute; left: 388px; top: 298px; width: 620px; height: 210px; box-sizing: border-box; background: #232930; border: 1px solid #3a434d; border-radius: 10px">
+<div style="position: absolute; left: 20px; top: 8px; font-size: 32px; line-height: 38px; font-weight: 500; color: #a9b3be; white-space: nowrap">Presión P1 y P2 · cero</div>
+<div style="position: absolute; left: 20px; top: 52px; display: flex; align-items: baseline; gap: 10px; white-space: nowrap"><span style="font-size: 36px; line-height: 45px; font-weight: 600; color: #a9b3be">P1</span><span style="font-size: 72px; line-height: 63px; font-weight: 600">0.0</span><span style="margin-left: 24px; font-size: 36px; line-height: 45px; font-weight: 600; color: #a9b3be">P2</span><span style="font-size: 72px; line-height: 63px; font-weight: 600">0.0</span><span style="font-size: 36px; line-height: 45px; font-weight: 600; color: #a9b3be">psi</span></div>
+<button type="button" style="position: absolute; left: 20px; top: 130px; width: 240px; height: 64px; box-sizing: border-box; border-radius: 10px; background: #2d343d; border: 2px solid #76818d; color: #e9edf1; font-family: inherit; font-size: 32px; line-height: 38px; font-weight: 500; cursor: pointer">Hacer cero</button>
+<div style="position: absolute; left: 276px; top: 128px; width: 324px; font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be">Con V1 cerrada y el tren sin presión.</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ver.dosis}}" hint-placeholder-val="{{false}}">
+<div style="position: absolute; left: 388px; top: 76px; width: 620px; height: 210px; box-sizing: border-box; background: #232930; border: 1px solid #3a434d; border-radius: 10px">
+<div style="position: absolute; left: 20px; top: 8px; font-size: 32px; line-height: 38px; font-weight: 500; color: #a9b3be; white-space: nowrap">Relación de dosis</div>
+<div style="position: absolute; left: 20px; top: 52px; display: flex; align-items: baseline; gap: 10px; white-space: nowrap"><span style="font-size: 72px; line-height: 63px; font-weight: 600">0.020</span><span style="font-size: 36px; line-height: 45px; font-weight: 600; color: #a9b3be">mL por litro</span></div>
+<a href="EstadoTeclado.dc.html" style="position: absolute; left: 20px; top: 130px; width: 240px; height: 64px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: 12px; border-radius: 10px; background: #2d343d; border: 2px solid #76818d; color: #e9edf1; text-decoration: none; white-space: nowrap"><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true" style="display: block; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round"><path d="M5 27l1.6-6.2L21.3 6.1a2 2 0 0 1 2.8 0l1.8 1.8a2 2 0 0 1 0 2.8L11.2 25.4z"></path><path d="M18.5 9l4.5 4.5"></path></svg><span style="font-size: 32px; line-height: 38px; font-weight: 500">Cambiar</span></a>
+<div style="position: absolute; left: 276px; top: 128px; width: 324px; font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be">Hoy: 1,850 L × 0.020 = 37 mL de Cloralex</div>
+</div>
+<div style="position: absolute; left: 388px; top: 298px; width: 620px; height: 210px; box-sizing: border-box; background: #232930; border: 1px solid #3a434d; border-radius: 10px">
+<div style="position: absolute; left: 20px; top: 8px; font-size: 32px; line-height: 38px; font-weight: 500; color: #a9b3be; white-space: nowrap">Tope diario</div>
+<div style="position: absolute; left: 20px; top: 52px; display: flex; align-items: baseline; gap: 10px; white-space: nowrap"><span style="font-size: 72px; line-height: 63px; font-weight: 600">120</span><span style="font-size: 36px; line-height: 45px; font-weight: 600; color: #a9b3be">mL al día</span></div>
+<a href="EstadoTeclado.dc.html" style="position: absolute; left: 20px; top: 130px; width: 240px; height: 64px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: 12px; border-radius: 10px; background: #2d343d; border: 2px solid #76818d; color: #e9edf1; text-decoration: none; white-space: nowrap"><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true" style="display: block; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round"><path d="M5 27l1.6-6.2L21.3 6.1a2 2 0 0 1 2.8 0l1.8 1.8a2 2 0 0 1 0 2.8L11.2 25.4z"></path><path d="M18.5 9l4.5 4.5"></path></svg><span style="font-size: 32px; line-height: 38px; font-weight: 500">Cambiar</span></a>
+<div style="position: absolute; left: 276px; top: 128px; width: 324px; font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be">En fase 3 la bomba se para al llegar.</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ver.conexion}}" hint-placeholder-val="{{false}}">
+<div style="position: absolute; left: 388px; top: 76px; width: 620px; height: 210px; box-sizing: border-box; background: #232930; border: 1px solid #3a434d; border-radius: 10px">
+<div style="position: absolute; left: 20px; top: 8px; font-size: 32px; line-height: 38px; font-weight: 500; color: #a9b3be; white-space: nowrap">Red WiFi</div>
+<div style="position: absolute; left: 20px; top: 52px; font-size: 36px; line-height: 45px; font-weight: 600; white-space: nowrap">Casa-2.4G</div>
+<div style="position: absolute; left: 20px; top: 98px; font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be; white-space: nowrap">Señal buena · en línea</div>
+<button type="button" style="position: absolute; left: 20px; top: 136px; width: 260px; height: 64px; box-sizing: border-box; border-radius: 10px; background: #2d343d; border: 2px solid #76818d; color: #e9edf1; font-family: inherit; font-size: 32px; line-height: 38px; font-weight: 500; cursor: pointer">Cambiar red</button>
+</div>
+<div style="position: absolute; left: 388px; top: 298px; width: 620px; height: 210px; box-sizing: border-box; background: #232930; border: 1px solid #3a434d; border-radius: 10px">
+<div style="position: absolute; left: 20px; top: 8px; font-size: 32px; line-height: 38px; font-weight: 500; color: #a9b3be; white-space: nowrap">Envío de datos</div>
+<div style="position: absolute; left: 20px; top: 52px; display: flex; align-items: center; gap: 8px; color: #55c993; white-space: nowrap"><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true" style="display: block; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round"><circle cx="16" cy="16" r="12.5"></circle><path d="M10.5 16.5l3.6 3.6 7.6-8"></path></svg><span style="font-size: 36px; line-height: 45px; font-weight: 600">Al día</span></div>
+<div style="position: absolute; left: 20px; top: 98px; font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be; white-space: nowrap">Último envío 18:42 · 0 por enviar</div>
+<a href="Diagnostico.dc.html" style="position: absolute; left: 20px; top: 136px; width: 300px; height: 64px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: 8px; border-radius: 10px; background: #2d343d; border: 2px solid #76818d; color: #e9edf1; text-decoration: none; white-space: nowrap"><span style="font-size: 32px; line-height: 38px; font-weight: 500">Diagnóstico</span><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true" style="display: block; fill: none; stroke: #a9b3be; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round"><path d="M12 6.5l9.5 9.5-9.5 9.5"></path></svg></a>
+</div>
+</sc-if>
+
+<sc-if value="{{ver.cartuchos}}" hint-placeholder-val="{{false}}">
+<div style="position: absolute; left: 388px; top: 76px; width: 620px; height: 210px; box-sizing: border-box; background: #232930; border: 1px solid #3a434d; border-radius: 10px">
+<div style="position: absolute; left: 20px; top: 8px; font-size: 32px; line-height: 38px; font-weight: 500; color: #a9b3be; white-space: nowrap">Cada cuánto se cambian</div>
+<div style="position: absolute; left: 20px; top: 54px; display: grid; grid-template-columns: 150px 1fr; column-gap: 16px; row-gap: 4px; font-size: 26px; line-height: 32px; font-weight: 500; white-space: nowrap">
+<span style="color: #a9b3be">20 µm</span><span>2 a 3 meses</span>
+<span style="color: #a9b3be">10 y 5 µm</span><span>3 a 6 meses</span>
+<span style="color: #a9b3be">CTO</span><span>6 meses</span>
+<span style="color: #a9b3be">Sarro</span><span>1 año</span>
+</div>
+</div>
+<div style="position: absolute; left: 388px; top: 298px; width: 620px; height: 210px; box-sizing: border-box; background: #232930; border: 1px solid #3a434d; border-radius: 10px">
+<div style="position: absolute; left: 20px; top: 8px; font-size: 32px; line-height: 38px; font-weight: 500; color: #a9b3be; white-space: nowrap">Repuestos en casa</div>
+<div style="position: absolute; left: 20px; top: 54px; font-size: 32px; line-height: 38px; font-weight: 500; white-space: nowrap">PP 20, 10 y 5 µm: 5 de cada uno</div>
+<div style="position: absolute; left: 20px; top: 92px; font-size: 32px; line-height: 38px; font-weight: 500; white-space: nowrap">CTO: 4 · Sarro: 0</div>
+<a href="Cartuchos.dc.html" style="position: absolute; left: 20px; top: 136px; width: 300px; height: 64px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: 8px; border-radius: 10px; background: #2d343d; border: 2px solid #76818d; color: #e9edf1; text-decoration: none; white-space: nowrap"><span style="font-size: 32px; line-height: 38px; font-weight: 500">Ver cartuchos</span><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true" style="display: block; fill: none; stroke: #a9b3be; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round"><path d="M12 6.5l9.5 9.5-9.5 9.5"></path></svg></a>
+</div>
+</sc-if>
+
+<sc-if value="{{ver.pantalla}}" hint-placeholder-val="{{false}}">
+<div style="position: absolute; left: 388px; top: 76px; width: 620px; height: 210px; box-sizing: border-box; background: #232930; border: 1px solid #3a434d; border-radius: 10px">
+<div style="position: absolute; left: 20px; top: 8px; font-size: 32px; line-height: 38px; font-weight: 500; color: #a9b3be; white-space: nowrap">Apagar la luz de noche</div>
+<div style="position: absolute; left: 20px; top: 58px; font-size: 36px; line-height: 45px; font-weight: 600; white-space: nowrap">23:00 a 06:30</div>
+<div role="group" aria-label="Apagar de noche" style="position: absolute; left: 412px; top: 52px; width: 188px; height: 56px; box-sizing: border-box; display: flex; overflow: hidden; border: 2px solid #76818d; border-radius: 10px; background: #232930"><button type="button" aria-pressed="true" style="flex: 1; border: none; background: #e3e8ed; color: #14181c; font-family: inherit; font-size: 32px; line-height: 38px; font-weight: 500">Sí</button><button type="button" aria-pressed="false" style="flex: 1; border: none; border-left: 2px solid #76818d; background: transparent; color: #a9b3be; font-family: inherit; font-size: 32px; line-height: 38px; font-weight: 500">No</button></div>
+<button type="button" style="position: absolute; left: 20px; top: 130px; width: 300px; height: 64px; box-sizing: border-box; border-radius: 10px; background: #2d343d; border: 2px solid #76818d; color: #e9edf1; font-family: inherit; font-size: 32px; line-height: 38px; font-weight: 500; cursor: pointer">Cambiar horario</button>
+<div style="position: absolute; left: 336px; top: 134px; width: 264px; font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be">Un toque la vuelve a prender.</div>
+</div>
+<div style="position: absolute; left: 388px; top: 298px; width: 620px; height: 210px; box-sizing: border-box; background: #232930; border: 1px solid #3a434d; border-radius: 10px">
+<div style="position: absolute; left: 20px; top: 8px; font-size: 32px; line-height: 38px; font-weight: 500; color: #a9b3be; white-space: nowrap">Modo pasillo</div>
+<div style="position: absolute; left: 20px; top: 52px; font-size: 32px; line-height: 38px; font-weight: 500; white-space: nowrap">Cifras grandes si nadie toca en</div>
+<div role="group" aria-label="Minutos sin tocar" style="position: absolute; left: 20px; top: 130px; width: 360px; height: 64px; box-sizing: border-box; display: flex; overflow: hidden; border: 2px solid #76818d; border-radius: 10px; background: #232930"><button type="button" aria-pressed="false" style="flex: 1; border: none; background: transparent; color: #a9b3be; font-family: inherit; font-size: 32px; line-height: 38px; font-weight: 500">1 min</button><button type="button" aria-pressed="true" style="flex: 1; border: none; border-left: 2px solid #76818d; background: #e3e8ed; color: #14181c; font-family: inherit; font-size: 32px; line-height: 38px; font-weight: 500">2 min</button><button type="button" aria-pressed="false" style="flex: 1; border: none; border-left: 2px solid #76818d; background: transparent; color: #a9b3be; font-family: inherit; font-size: 32px; line-height: 38px; font-weight: 500">5 min</button></div>
+<a href="Pasillo.dc.html" style="position: absolute; left: 392px; top: 130px; width: 208px; height: 64px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: 8px; border-radius: 10px; background: #2d343d; border: 2px solid #76818d; color: #e9edf1; text-decoration: none; white-space: nowrap"><span style="font-size: 32px; line-height: 38px; font-weight: 500">Verlo</span><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true" style="display: block; fill: none; stroke: #a9b3be; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round"><path d="M12 6.5l9.5 9.5-9.5 9.5"></path></svg></a>
+</div>
+</sc-if>
+
+<div style="position: absolute; left: 0; top: 0; width: 1024px; height: 64px">
+<dc-import name="Encabezado" titulo="Ajustes" enlace="Diagnostico.dc.html" enlace-texto="Diagnóstico" hint-size="1024px,64px"></dc-import>
+</div>
+<div style="position: absolute; left: 0; top: 520px; width: 1024px; height: 80px">
+<dc-import name="Navegacion" activa="ajustes" hint-size="1024px,80px"></dc-import>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1024,"height":600}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const st = this.state || {};
+    const actual = st.cat || 'sensores';
+    const ids = ['sensores', 'dosis', 'conexion', 'cartuchos', 'pantalla'];
+    const cat = {}, ver = {};
+    ids.forEach((id) => {
+      const on = id === actual;
+      ver[id] = on;
+      cat[id] = {
+        on: on ? 'true' : 'false',
+        bg: on ? '#2d343d' : '#232930',
+        borde: on ? '2px solid #e9edf1' : '1px solid #3a434d',
+        ico: on ? '#e9edf1' : '#a9b3be',
+        pick: () => this.setState({ cat: id })
+      };
+    });
+    return { cat: cat, ver: ver };
+  }
+}
+</script>
+</body>
+</html>

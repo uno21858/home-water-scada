@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Prueba de cubeta</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:"Montserrat Tnum";src:url("/_blob/9d5800f4c7bea6e5041333e753b58eb8") format("truetype");font-weight:500;font-style:normal;font-display:block}
+@font-face{font-family:"Montserrat Tnum";src:url("/_blob/f9923e4b0b5fcb8ad1e46b8765af09f2") format("truetype");font-weight:600;font-style:normal;font-display:block}
+body{margin:0}
+</style>
+</helmet>
+<div style="position: relative; width: 1024px; height: 600px; overflow: hidden; background: #1b1f24; color: #e9edf1; font-family: 'Montserrat Tnum', Montserrat, sans-serif; font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased">
+
+<ol aria-label="Pasos" style="position: absolute; left: 16px; top: 76px; width: 452px; height: 432px; box-sizing: border-box; margin: 0; padding: 12px; list-style: none; display: flex; flex-direction: column; gap: 8px; background: #232930; border: 1px solid #3a434d; border-radius: 10px">
+<li style="position: relative; height: 94px; box-sizing: border-box; border-radius: 10px; border: 1px solid #3a434d; background: #232930">
+<svg width="36" height="36" viewBox="0 0 32 32" aria-label="Hecho" role="img" style="position: absolute; left: 14px; top: 14px; fill: none; stroke: #55c993; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round"><circle cx="16" cy="16" r="12.5"></circle><path d="M10.5 16.5l3.6 3.6 7.6-8"></path></svg>
+<span style="position: absolute; left: 64px; top: 12px; width: 354px; font-size: 32px; line-height: 38px; font-weight: 500; color: #a9b3be">Cierra V2, la salida a la cisterna</span>
+</li>
+<li style="position: relative; height: 94px; box-sizing: border-box; border-radius: 10px; border: 1px solid #3a434d; background: #232930">
+<svg width="36" height="36" viewBox="0 0 32 32" aria-label="Hecho" role="img" style="position: absolute; left: 14px; top: 14px; fill: none; stroke: #55c993; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round"><circle cx="16" cy="16" r="12.5"></circle><path d="M10.5 16.5l3.6 3.6 7.6-8"></path></svg>
+<span style="position: absolute; left: 64px; top: 12px; width: 354px; font-size: 32px; line-height: 38px; font-weight: 500; color: #a9b3be">Pon la cubeta de 10 L bajo V4</span>
+</li>
+<li style="position: relative; height: 94px; box-sizing: border-box; border-radius: 10px; border: {{p3.borde}}; background: {{p3.bg}}">
+<sc-if value="{{p3.hecho}}" hint-placeholder-val="{{false}}">
+<svg width="36" height="36" viewBox="0 0 32 32" aria-label="Hecho" role="img" style="position: absolute; left: 14px; top: 14px; fill: none; stroke: #55c993; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round"><circle cx="16" cy="16" r="12.5"></circle><path d="M10.5 16.5l3.6 3.6 7.6-8"></path></svg>
+</sc-if>
+<sc-if value="{{p3.pend}}" hint-placeholder-val="{{true}}">
+<span style="position: absolute; left: 14px; top: 14px; width: 36px; height: 36px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; border-radius: 50%; border: 2px solid #e9edf1; font-size: 26px; line-height: 32px; font-weight: 600">3</span>
+</sc-if>
+<span style="position: absolute; left: 64px; top: 12px; width: 354px; font-size: 32px; line-height: 38px; font-weight: 500; color: {{p3.color}}">Abre V4 y llénala hasta la marca</span>
+</li>
+<li style="position: relative; height: 94px; box-sizing: border-box; border-radius: 10px; border: {{p4.borde}}; background: {{p4.bg}}">
+<span style="position: absolute; left: 14px; top: 14px; width: 36px; height: 36px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; border-radius: 50%; border: 2px solid {{p4.color}}; color: {{p4.color}}; font-size: 26px; line-height: 32px; font-weight: 600">4</span>
+<span style="position: absolute; left: 64px; top: 12px; width: 354px; font-size: 32px; line-height: 38px; font-weight: 500; color: {{p4.color}}">Cierra V4 y vuelve a abrir V2</span>
+</li>
+</ol>
+
+<sc-if value="{{contando}}" hint-placeholder-val="{{true}}">
+<div style="position: absolute; left: 496px; top: 76px; font-size: 32px; line-height: 38px; font-weight: 500; color: #a9b3be; white-space: nowrap">Pulsos contados</div>
+<div style="position: absolute; left: 488px; top: 108px; font-size: 136px; line-height: 119px; font-weight: 600; white-space: nowrap">{{pulsos}}</div>
+<svg width="140" height="136" viewBox="0 0 140 136" role="img" aria-label="Cubeta: el sensor lleva {{litros}} L de 10" style="position: absolute; left: 496px; top: 252px; overflow: visible">
+<polygon points="{{agua}}" style="fill: #1f8eab; stroke: none"></polygon>
+<path d="M10 8H130L118 128H22Z" style="fill: none; stroke: #76818d; stroke-width: 3; stroke-linejoin: round"></path>
+<line x1="6" y1="12" x2="134" y2="12" style="stroke: #e9edf1; stroke-width: 2; stroke-dasharray: 6 5"></line>
+</svg>
+<div style="position: absolute; left: 652px; top: 252px; font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be; white-space: nowrap">La marca de 10 L</div>
+<div style="position: absolute; left: 652px; top: 296px; display: flex; align-items: baseline; gap: 8px; white-space: nowrap"><span style="font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be">Con 396 van</span><span style="font-size: 44px; line-height: 38px; font-weight: 600">{{litros}}</span><span style="font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be">L</span></div>
+<div style="position: absolute; left: 652px; top: 344px; width: 356px; font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be">Cuando el agua toque la marca, toca Ya llegué.</div>
+<button type="button" onClick="{{llegue}}" style="position: absolute; left: 488px; top: 428px; width: 320px; height: 80px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: 12px; border-radius: 10px; background: #e3e8ed; border: 2px solid #e3e8ed; color: #14181c; font-family: inherit; cursor: pointer"><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true" style="display: block; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round"><path d="M6 16.5l6.5 6.5L26 9.5"></path></svg><span style="font-size: 36px; line-height: 45px; font-weight: 600">Ya llegué</span></button>
+<a href="Ajustes.dc.html" style="position: absolute; left: 820px; top: 428px; width: 188px; height: 80px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; border-radius: 10px; background: #2d343d; border: 2px solid #76818d; color: #e9edf1; text-decoration: none; font-size: 32px; line-height: 38px; font-weight: 500">Cancelar</a>
+</sc-if>
+
+<sc-if value="{{resultado}}" hint-placeholder-val="{{false}}">
+<div style="position: absolute; left: 496px; top: 76px; font-size: 32px; line-height: 38px; font-weight: 500; color: #a9b3be; white-space: nowrap">Factor nuevo del sensor</div>
+<div style="position: absolute; left: 488px; top: 108px; font-size: 136px; line-height: 119px; font-weight: 600; white-space: nowrap">{{k}}</div>
+<div style="position: absolute; left: 790px; top: 114px; font-size: 36px; line-height: 45px; font-weight: 600; color: #a9b3be; white-space: nowrap">pulsos/L</div>
+<div style="position: absolute; left: 496px; top: 244px; width: 512px; font-size: 32px; line-height: 38px; font-weight: 500; color: #a9b3be">{{pulsos}} pulsos en 10 L. Antes era 396, cambia {{cambio}} %.</div>
+<button type="button" onClick="{{guardar}}" style="position: absolute; left: 488px; top: 428px; width: 320px; height: 80px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: 12px; border-radius: 10px; background: #e3e8ed; border: 2px solid #e3e8ed; color: #14181c; font-family: inherit; cursor: pointer"><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true" style="display: block; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round"><path d="M6 16.5l6.5 6.5L26 9.5"></path></svg><span style="font-size: 36px; line-height: 45px; font-weight: 600">Guardar {{k}}</span></button>
+<button type="button" onClick="{{repetir}}" style="position: absolute; left: 820px; top: 428px; width: 188px; height: 80px; box-sizing: border-box; border-radius: 10px; background: #2d343d; border: 2px solid #76818d; color: #e9edf1; font-family: inherit; font-size: 32px; line-height: 38px; font-weight: 500; cursor: pointer">Repetir</button>
+</sc-if>
+
+<sc-if value="{{guardado}}" hint-placeholder-val="{{false}}">
+<div style="position: absolute; left: 496px; top: 76px; display: flex; align-items: center; gap: 10px; color: #55c993; white-space: nowrap"><svg width="40" height="40" viewBox="0 0 32 32" aria-hidden="true" style="display: block; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round"><circle cx="16" cy="16" r="12.5"></circle><path d="M10.5 16.5l3.6 3.6 7.6-8"></path></svg><span style="font-size: 36px; line-height: 45px; font-weight: 600">Guardado</span></div>
+<div style="position: absolute; left: 496px; top: 140px; width: 512px; font-size: 32px; line-height: 38px; font-weight: 500; color: #a9b3be">F ahora cuenta {{k}} pulsos por litro. Cierra V4 y abre V2.</div>
+<a href="Ajustes.dc.html" style="position: absolute; left: 488px; top: 428px; width: 320px; height: 80px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; border-radius: 10px; background: #e3e8ed; border: 2px solid #e3e8ed; color: #14181c; text-decoration: none; font-size: 36px; line-height: 45px; font-weight: 600">Listo</a>
+</sc-if>
+
+<div style="position: absolute; left: 0; top: 0; width: 1024px; height: 64px">
+<dc-import name="Encabezado" titulo="Prueba de cubeta" atras="Ajustes.dc.html" hint-size="1024px,64px"></dc-import>
+</div>
+<div style="position: absolute; left: 0; top: 520px; width: 1024px; height: 80px">
+<dc-import name="Navegacion" activa="ajustes" hint-size="1024px,80px"></dc-import>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1024,"height":600}}'>
+class Component extends DCLogic {
+  componentDidMount() {
+    this.reloj = setInterval(() => {
+      const st = this.state || {};
+      if (st.fase && st.fase !== 'contando') return;
+      const p = st.pulsos == null ? 2140 : st.pulsos;
+      if (p >= 3872) return;
+      this.setState({ pulsos: Math.min(3872, p + 37) });
+    }, 100);
+  }
+  componentWillUnmount() {
+    clearInterval(this.reloj);
+  }
+  renderVals() {
+    const st = this.state || {};
+    const fase = st.fase || 'contando';
+    const pulsos = st.pulsos == null ? 2140 : st.pulsos;
+    const miles = (n) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    const litros = pulsos / 396;
+    const k = Math.max(1, Math.round(pulsos / 10));
+    const cambio = (k - 396) / 396 * 100;
+    const nivel = Math.min(1, litros / 10);
+    const yw = 128 - nivel * 116;
+    const izq = 10 + 0.1 * (yw - 8), der = 130 - 0.1 * (yw - 8);
+    const agua = nivel > 0 ? [izq.toFixed(1) + ',' + yw.toFixed(1), der.toFixed(1) + ',' + yw.toFixed(1), '118,128', '22,128'].join(' ') : '';
+    const enPaso4 = fase !== 'contando';
+    const activo = { bg: '#2d343d', borde: '2px solid #e9edf1', color: '#e9edf1' };
+    const hecho = { bg: '#232930', borde: '1px solid #3a434d', color: '#a9b3be' };
+    const pendiente = { bg: '#232930', borde: '1px solid #3a434d', color: '#7c8793' };
+    const p3 = Object.assign({}, enPaso4 ? hecho : activo, { hecho: enPaso4, pend: !enPaso4 });
+    const p4 = Object.assign({}, enPaso4 ? activo : pendiente);
+    return {
+      p3: p3,
+      p4: p4,
+      contando: fase === 'contando',
+      resultado: fase === 'resultado',
+      guardado: fase === 'guardado',
+      pulsos: miles(pulsos),
+      litros: litros.toFixed(1),
+      k: String(k),
+      cambio: (cambio >= 0 ? '+' : '−') + Math.abs(cambio).toFixed(1),
+      agua: agua,
+      llegue: () => this.setState({ fase: 'resultado' }),
+      repetir: () => this.setState({ fase: 'contando', pulsos: 0 }),
+      guardar: () => this.setState({ fase: 'guardado' })
+    };
+  }
+}
+</script>
+</body>
+</html>

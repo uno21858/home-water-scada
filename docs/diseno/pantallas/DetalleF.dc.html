@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Sensor de flujo F</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:"Montserrat Tnum";src:url("/_blob/9d5800f4c7bea6e5041333e753b58eb8") format("truetype");font-weight:500;font-style:normal;font-display:block}
+@font-face{font-family:"Montserrat Tnum";src:url("/_blob/f9923e4b0b5fcb8ad1e46b8765af09f2") format("truetype");font-weight:600;font-style:normal;font-display:block}
+body{margin:0}
+</style>
+</helmet>
+<div style="position: relative; width: 1024px; height: 600px; overflow: hidden; background: #1b1f24; color: #e9edf1; font-family: 'Montserrat Tnum', Montserrat, sans-serif; font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased">
+
+<div style="position: absolute; left: 24px; top: 76px; font-size: 32px; line-height: 38px; font-weight: 500; color: #a9b3be; white-space: nowrap">Caudal ahora</div>
+<div style="position: absolute; left: 16px; top: 108px; font-size: 136px; line-height: 119px; font-weight: 600; color: #3cc8ea; white-space: nowrap">12.4</div>
+<div style="position: absolute; left: 352px; top: 114px; font-size: 36px; line-height: 45px; font-weight: 600; color: #a9b3be; white-space: nowrap">L/min</div>
+<div style="position: absolute; left: 352px; top: 168px; height: 44px; box-sizing: border-box; display: flex; align-items: center; gap: 8px; padding: 0 18px 0 10px; border-radius: 999px; border: 2px solid #55c993; background: #16301f; color: #55c993; white-space: nowrap"><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true" style="display: block; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round"><circle cx="16" cy="16" r="12.5"></circle><path d="M10.5 16.5l3.6 3.6 7.6-8"></path></svg><span style="font-size: 26px; line-height: 32px; font-weight: 500">Señal OK</span></div>
+
+<div style="position: absolute; left: 24px; top: 236px; font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be; white-space: nowrap">Rango del YF-B6: 1 a 30 L/min</div>
+<svg width="576" height="56" viewBox="0 0 576 56" role="img" aria-label="12.4 L/min en una escala de 0 a 30" style="position: absolute; left: 24px; top: 272px; overflow: visible">
+<rect x="0" y="4" width="576" height="20" rx="4" style="fill: #2d343d"></rect>
+<rect x="0" y="4" width="19.2" height="20" style="fill: #3a434d"></rect>
+<rect x="0" y="4" width="238" height="20" style="fill: #3cc8ea"></rect>
+<rect x="236" y="-4" width="4" height="36" rx="2" style="fill: #e9edf1"></rect>
+<text x="0" y="54" style="font-size: 26px; font-weight: 500; fill: #7c8793; text-anchor: start">0</text>
+<text x="192" y="54" style="font-size: 26px; font-weight: 500; fill: #7c8793; text-anchor: middle">10</text>
+<text x="384" y="54" style="font-size: 26px; font-weight: 500; fill: #7c8793; text-anchor: middle">20</text>
+<text x="576" y="54" style="font-size: 26px; font-weight: 500; fill: #7c8793; text-anchor: end">30</text>
+</svg>
+
+<div style="position: absolute; left: 16px; top: 344px; width: 600px; height: 164px; box-sizing: border-box; overflow: hidden; background: #232930; border: 1px solid #3a434d; border-radius: 10px">
+<div style="position: absolute; left: 16px; top: 6px; font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be; white-space: nowrap">Pulsos en DI0 · últimos 100 ms</div>
+<svg width="568" height="48" viewBox="0 0 568 48" aria-hidden="true" style="position: absolute; left: 16px; top: 44px">
+<line x1="0" y1="42" x2="568" y2="42" style="stroke: #3a434d; stroke-width: 1"></line>
+<polyline points="{{onda}}" style="fill: none; stroke: #e9edf1; stroke-width: 2.5; stroke-linejoin: miter"></polyline>
+</svg>
+<div style="position: absolute; left: 16px; top: 112px; display: flex; align-items: baseline; gap: 8px; white-space: nowrap"><span style="font-size: 44px; line-height: 38px; font-weight: 600">81.8</span><span style="font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be">Hz</span></div>
+<div style="position: absolute; left: 216px; top: 112px; display: flex; align-items: baseline; gap: 8px; white-space: nowrap"><span style="font-size: 44px; line-height: 38px; font-weight: 600">4,910</span><span style="font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be">pulsos por minuto</span></div>
+</div>
+
+<div style="position: absolute; left: 628px; top: 76px; width: 380px; height: 168px; box-sizing: border-box; background: #232930; border: 1px solid #3a434d; border-radius: 10px">
+<div style="position: absolute; left: 16px; top: 10px; font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be; white-space: nowrap">Factor K</div>
+<div style="position: absolute; left: 16px; top: 46px; display: flex; align-items: baseline; gap: 10px; white-space: nowrap"><span style="font-size: 72px; line-height: 63px; font-weight: 600">396</span><span style="font-size: 36px; line-height: 45px; font-weight: 600; color: #a9b3be">pulsos/L</span></div>
+<div style="position: absolute; left: 16px; top: 120px; font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be; white-space: nowrap">De fábrica · F = 6.6 × Q</div>
+</div>
+<div style="position: absolute; left: 628px; top: 256px; width: 380px; height: 164px; box-sizing: border-box; padding: 12px 16px; display: grid; grid-template-columns: 1fr auto auto; column-gap: 8px; row-gap: 8px; align-items: baseline; background: #232930; border: 1px solid #3a434d; border-radius: 10px; white-space: nowrap">
+<span style="font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be">Hoy</span><span style="font-size: 32px; line-height: 38px; font-weight: 600; text-align: right">1,860</span><span style="font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be">L</span>
+<span style="font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be">Desde la dosis</span><span style="font-size: 32px; line-height: 38px; font-weight: 600; text-align: right">1,850</span><span style="font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be">L</span>
+<span style="font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be">Esta semana</span><span style="font-size: 32px; line-height: 38px; font-weight: 600; text-align: right">13,390</span><span style="font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be">L</span>
+</div>
+<a href="PruebaCubeta.dc.html" style="position: absolute; left: 628px; top: 432px; width: 380px; height: 76px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: 12px; border-radius: 10px; background: #2d343d; border: 2px solid #76818d; color: #e9edf1; text-decoration: none; white-space: nowrap"><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true" style="display: block; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round"><path d="M5.5 12h21l-2.6 15.5H8.1z"></path><path d="M8 12c0-6.5 16-6.5 16 0"></path></svg><span style="font-size: 32px; line-height: 38px; font-weight: 500">Prueba de cubeta</span></a>
+
+<div style="position: absolute; left: 0; top: 0; width: 1024px; height: 64px">
+<dc-import name="Encabezado" titulo="Sensor de flujo F" atras="Flujo.dc.html" hint-size="1024px,64px"></dc-import>
+</div>
+<div style="position: absolute; left: 0; top: 520px; width: 1024px; height: 80px">
+<dc-import name="Navegacion" activa="flujo" hint-size="1024px,80px"></dc-import>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1024,"height":600}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const ancho = 568, alto = 6, bajo = 42;
+    const medio = ancho / 8.18 / 2;
+    const pts = ['0,' + alto];
+    let x = 0, arriba = true;
+    while (x < ancho) {
+      const nx = Math.min(ancho, x + medio);
+      pts.push(nx.toFixed(1) + ',' + (arriba ? alto : bajo));
+      if (nx < ancho) {
+        arriba = !arriba;
+        pts.push(nx.toFixed(1) + ',' + (arriba ? alto : bajo));
+      }
+      x = nx;
+    }
+    return { onda: pts.join(' ') };
+  }
+}
+</script>
+</body>
+</html>

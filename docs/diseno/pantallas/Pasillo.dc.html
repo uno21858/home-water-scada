@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Modo pasillo</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:"Montserrat Tnum";src:url("/_blob/9d5800f4c7bea6e5041333e753b58eb8") format("truetype");font-weight:500;font-style:normal;font-display:block}
+@font-face{font-family:"Montserrat Tnum";src:url("/_blob/f9923e4b0b5fcb8ad1e46b8765af09f2") format("truetype");font-weight:600;font-style:normal;font-display:block}
+body{margin:0}
+a{color:inherit;text-decoration:none}
+.tubo{background-color:#6d7987}
+.fluye .tubo{background-color:#1f8eab;background-image:radial-gradient(circle,#b6f1fd 2.6px,rgba(182,241,253,0) 3.3px);background-size:24px 10px;background-repeat:repeat-x;animation:ps .48s linear infinite}
+@keyframes ps{from{background-position:0 0}to{background-position:24px 0}}
+@media (prefers-reduced-motion:reduce){.fluye .tubo{animation:none}}
+</style>
+</helmet>
+<div class="{{modo}}" style="position: relative; width: 1024px; height: 600px; overflow: hidden; background: #1b1f24; color: #e9edf1; font-family: 'Montserrat Tnum', Montserrat, sans-serif; font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased">
+
+<div style="position: absolute; left: 32px; top: 28px; font-size: 48px; line-height: 58px; font-weight: 600; white-space: nowrap">18:42</div>
+<div style="position: absolute; right: 32px; top: 28px; height: 58px; box-sizing: border-box; display: flex; align-items: center; gap: 10px; padding: 0 22px 0 12px; border-radius: 999px; border: 2px solid #55c993; background: #16301f; color: #55c993; white-space: nowrap"><svg width="40" height="40" viewBox="0 0 32 32" aria-hidden="true" style="display: block; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round"><circle cx="16" cy="16" r="12.5"></circle><path d="M10.5 16.5l3.6 3.6 7.6-8"></path></svg><span style="font-size: 36px; line-height: 45px; font-weight: 600">OK</span></div>
+
+<div style="position: absolute; left: 32px; top: 124px; font-size: 32px; line-height: 38px; font-weight: 500; color: #a9b3be; white-space: nowrap">{{etiquetaCaudal}}</div>
+<div style="position: absolute; left: 22px; top: 164px; font-size: 232px; line-height: 200px; font-weight: 600; color: {{colorCaudal}}; white-space: pre">{{caudal}}</div>
+<div style="position: absolute; left: 584px; top: 288px; font-size: 36px; line-height: 45px; font-weight: 600; color: #a9b3be; white-space: nowrap">L/min</div>
+
+<div style="position: absolute; left: 712px; top: 176px; width: 0; height: 216px; border-left: 2px solid #3a434d"></div>
+<div style="position: absolute; left: 744px; top: 176px; font-size: 32px; line-height: 38px; font-weight: 500; color: #a9b3be; white-space: nowrap">Toca echar</div>
+<div style="position: absolute; left: 740px; top: 222px; font-size: 136px; line-height: 119px; font-weight: 600; white-space: nowrap">37</div>
+<div style="position: absolute; left: 940px; top: 228px; font-size: 36px; line-height: 45px; font-weight: 600; color: #a9b3be; white-space: nowrap">mL</div>
+<div style="position: absolute; left: 744px; top: 350px; font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be; white-space: nowrap">de Cloralex en B</div>
+
+<div style="position: absolute; left: 32px; top: 410px; display: flex; align-items: baseline; gap: 40px; white-space: nowrap">
+<span style="display: flex; align-items: baseline; gap: 10px"><span style="font-size: 32px; line-height: 38px; font-weight: 500; color: #a9b3be">Hoy</span><span style="font-size: 44px; line-height: 38px; font-weight: 600">1,860</span><span style="font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be">L</span></span>
+<span style="display: flex; align-items: baseline; gap: 10px"><span style="font-size: 32px; line-height: 38px; font-weight: 500; color: #a9b3be">Caída</span><span style="font-size: 44px; line-height: 38px; font-weight: 600">4</span><span style="font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be">psi</span><span style="font-size: 26px; line-height: 32px; font-weight: 500; color: #55c993">Normal</span></span>
+<span style="display: flex; align-items: baseline; gap: 10px"><span style="font-size: 32px; line-height: 38px; font-weight: 500; color: #a9b3be">ORP</span><span style="font-size: 44px; line-height: 38px; font-weight: 600">650</span><span style="font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be">mV</span></span>
+</div>
+
+<div class="tubo" style="position: absolute; left: 0; top: 500px; width: 1024px; height: 10px"></div>
+<div style="position: absolute; left: 32px; top: 540px; font-size: 26px; line-height: 32px; font-weight: 500; color: #7c8793; white-space: nowrap">Toca la pantalla para volver al tren</div>
+
+<a href="Main.dc.html" aria-label="Volver al tren" style="position: absolute; left: 0; top: 0; width: 1024px; height: 600px"></a>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"flujo":{"editor":"boolean","default":true},"$preview":{"width":1024,"height":600}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const flujo = this.props.flujo ?? true;
+    return {
+      modo: flujo ? 'fluye' : '',
+      caudal: flujo ? '12.4' : ' 0.0',
+      colorCaudal: flujo ? '#3cc8ea' : '#7c8793',
+      etiquetaCaudal: flujo ? 'Caudal' : 'Sin flujo'
+    };
+  }
+}
+</script>
+</body>
+</html>

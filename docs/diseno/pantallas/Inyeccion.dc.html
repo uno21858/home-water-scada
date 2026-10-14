@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Inyección A y B</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:"Montserrat Tnum";src:url("/_blob/9d5800f4c7bea6e5041333e753b58eb8") format("truetype");font-weight:500;font-style:normal;font-display:block}
+@font-face{font-family:"Montserrat Tnum";src:url("/_blob/f9923e4b0b5fcb8ad1e46b8765af09f2") format("truetype");font-weight:600;font-style:normal;font-display:block}
+body{margin:0}
+</style>
+</helmet>
+<div style="position: relative; width: 1024px; height: 600px; overflow: hidden; background: #1b1f24; color: #e9edf1; font-family: 'Montserrat Tnum', Montserrat, sans-serif; font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased">
+
+<div style="position: absolute; left: 16px; top: 76px; width: 490px; height: 432px; box-sizing: border-box; background: #232930; border: 1px solid #3a434d; border-radius: 10px">
+<div style="position: absolute; left: 16px; top: 10px; display: flex; align-items: baseline; gap: 14px; white-space: nowrap"><span style="font-size: 48px; line-height: 58px; font-weight: 600">A</span><span style="font-size: 32px; line-height: 38px; font-weight: 500; color: #a9b3be">Para después</span></div>
+<div style="position: absolute; left: 16px; top: 106px; font-size: 32px; line-height: 38px; font-weight: 500; white-space: nowrap">Todavía no se usa</div>
+<div style="position: absolute; left: 16px; top: 146px; width: 456px; font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be">Por ahora no sale en el diagrama del tren</div>
+<div style="position: absolute; left: 16px; top: 226px; width: 456px; height: 1px; background: #3a434d"></div>
+<div style="position: absolute; left: 16px; top: 240px; display: flex; align-items: center; gap: 10px; color: #7c8793; white-space: nowrap"><svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true" style="display: block; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round"><rect x="6.5" y="14" width="19" height="14" rx="3"></rect><path d="M10.5 14v-4a5.5 5.5 0 0 1 11 0v4M16 19.5v3"></path></svg><span style="font-size: 26px; line-height: 32px; font-weight: 500">Bomba A · fase 3 · salida DO0</span></div>
+<div role="group" aria-label="Modo de la bomba A, deshabilitado" style="position: absolute; left: 16px; top: 284px; width: 280px; height: 56px; box-sizing: border-box; display: flex; overflow: hidden; border: 2px solid #3a434d; border-radius: 10px; background: #232930"><button type="button" disabled style="flex: 1; border: none; background: #2d343d; color: #7c8793; font-family: inherit; font-size: 26px; line-height: 32px; font-weight: 500">Manual</button><button type="button" disabled style="flex: 1; border: none; border-left: 2px solid #3a434d; background: #232930; color: #7c8793; font-family: inherit; font-size: 26px; line-height: 32px; font-weight: 500">Auto</button></div>
+<button type="button" disabled style="position: absolute; left: 308px; top: 284px; width: 164px; height: 56px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: 8px; border-radius: 10px; background: #232930; border: 2px solid #3a434d; color: #7c8793; font-family: inherit"><svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true" style="display: block; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round"><circle cx="16" cy="16" r="12.5"></circle><path d="M12.5 9.8L22.5 16l-10 6.2z"></path></svg><span style="font-size: 26px; line-height: 32px; font-weight: 500">Prueba</span></button>
+</div>
+
+<div style="position: absolute; left: 518px; top: 76px; width: 490px; height: 432px; box-sizing: border-box; background: #232930; border: 1px solid #3a434d; border-radius: 10px">
+<div style="position: absolute; left: 16px; top: 10px; display: flex; align-items: baseline; gap: 14px; white-space: nowrap"><span style="font-size: 48px; line-height: 58px; font-weight: 600">B</span><span style="font-size: 32px; line-height: 38px; font-weight: 500; color: #a9b3be">Boca a la cisterna</span></div>
+<div style="position: absolute; left: 16px; top: 76px; font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be; white-space: nowrap">Hoy</div>
+<div style="position: absolute; left: 16px; top: 106px; font-size: 32px; line-height: 38px; font-weight: 500; white-space: nowrap">Cloralex a mano por V3</div>
+<div style="position: absolute; left: 16px; top: 146px; width: 456px; font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be; white-space: nowrap">Última: hoy 06:10 · 40 mL</div>
+<div style="position: absolute; left: 16px; top: 226px; width: 456px; height: 1px; background: #3a434d"></div>
+<div style="position: absolute; left: 16px; top: 240px; display: flex; align-items: center; gap: 10px; color: #7c8793; white-space: nowrap"><svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true" style="display: block; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round"><rect x="6.5" y="14" width="19" height="14" rx="3"></rect><path d="M10.5 14v-4a5.5 5.5 0 0 1 11 0v4M16 19.5v3"></path></svg><span style="font-size: 26px; line-height: 32px; font-weight: 500">Bomba B · fase 3 · salida DO1</span></div>
+<div role="group" aria-label="Modo de la bomba B, deshabilitado" style="position: absolute; left: 16px; top: 284px; width: 280px; height: 56px; box-sizing: border-box; display: flex; overflow: hidden; border: 2px solid #3a434d; border-radius: 10px; background: #232930"><button type="button" disabled style="flex: 1; border: none; background: #2d343d; color: #7c8793; font-family: inherit; font-size: 26px; line-height: 32px; font-weight: 500">Manual</button><button type="button" disabled style="flex: 1; border: none; border-left: 2px solid #3a434d; background: #232930; color: #7c8793; font-family: inherit; font-size: 26px; line-height: 32px; font-weight: 500">Auto</button></div>
+<button type="button" disabled style="position: absolute; left: 308px; top: 284px; width: 164px; height: 56px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: 8px; border-radius: 10px; background: #232930; border: 2px solid #3a434d; color: #7c8793; font-family: inherit"><svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true" style="display: block; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round"><circle cx="16" cy="16" r="12.5"></circle><path d="M12.5 9.8L22.5 16l-10 6.2z"></path></svg><span style="font-size: 26px; line-height: 32px; font-weight: 500">Prueba</span></button>
+<a href="Dosis.dc.html" style="position: absolute; left: 16px; top: 352px; width: 456px; height: 64px; box-sizing: border-box; display: flex; align-items: center; gap: 10px; padding: 0 12px 0 20px; border-radius: 10px; background: #2d343d; border: 2px solid #76818d; color: #e9edf1; text-decoration: none; white-space: nowrap"><span style="flex: 1; font-size: 32px; line-height: 38px; font-weight: 500">Toca echar</span><span style="font-size: 44px; line-height: 38px; font-weight: 600">37</span><span style="font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be">mL</span><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true" style="display: block; fill: none; stroke: #a9b3be; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round"><path d="M12 6.5l9.5 9.5-9.5 9.5"></path></svg></a>
+</div>
+
+<div style="position: absolute; left: 0; top: 0; width: 1024px; height: 64px">
+<dc-import name="Encabezado" titulo="Inyección A y B" atras="Dosis.dc.html" hint-size="1024px,64px"></dc-import>
+</div>
+<div style="position: absolute; left: 0; top: 520px; width: 1024px; height: 80px">
+<dc-import name="Navegacion" activa="dosis" hint-size="1024px,80px"></dc-import>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1024,"height":600}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

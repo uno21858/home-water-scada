@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Resumen</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:"Montserrat Tnum";src:url("/_blob/9d5800f4c7bea6e5041333e753b58eb8") format("truetype");font-weight:500;font-style:normal;font-display:block}
+@font-face{font-family:"Montserrat Tnum";src:url("/_blob/f9923e4b0b5fcb8ad1e46b8765af09f2") format("truetype");font-weight:600;font-style:normal;font-display:block}
+body{margin:0}
+a{color:inherit;text-decoration:none}
+.rotor{transform-box:view-box;transform-origin:28px 28px}
+.rotor.gira{animation:gira 2s linear infinite}
+@keyframes gira{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.rotor.gira{animation:none}}
+</style>
+</helmet>
+<div style="position: relative; width: 1024px; height: 600px; overflow: hidden; background: #1b1f24; color: #e9edf1; font-family: 'Montserrat Tnum', Montserrat, sans-serif; font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased">
+
+<a href="Flujo.dc.html" style="position: absolute; left: 16px; top: 76px; width: 600px; height: 236px; box-sizing: border-box; display: block; overflow: hidden; background: #232930; border: 1px solid #3a434d; border-radius: 10px; color: #e9edf1; text-decoration: none">
+<div style="position: absolute; left: 16px; top: 6px; font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be; white-space: nowrap">{{etiquetaCaudal}}</div>
+<svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true" style="position: absolute; right: 14px; top: 8px; fill: none; stroke: #a9b3be; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round"><path d="M12 6.5l9.5 9.5-9.5 9.5"></path></svg>
+<div style="position: absolute; left: 16px; top: 36px; width: 566px; display: flex; align-items: baseline; justify-content: space-between; white-space: nowrap">
+<span style="display: flex; align-items: baseline; gap: 10px"><span style="font-size: 72px; line-height: 63px; font-weight: 600; color: {{colorCaudal}}; white-space: pre">{{caudal}}</span><span style="font-size: 36px; line-height: 45px; font-weight: 600; color: #a9b3be">L/min</span></span>
+<span style="display: flex; align-items: baseline; gap: 8px"><span style="font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be">Hoy</span><span style="font-size: 44px; line-height: 38px; font-weight: 600">1,860</span><span style="font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be">L</span></span>
+</div>
+<svg width="600" height="128" viewBox="0 0 600 128" aria-hidden="true" style="position: absolute; left: -1px; top: 104px; overflow: visible">
+<line x1="141.4" y1="10" x2="141.4" y2="82" style="stroke: #3a434d; stroke-width: 1"></line>
+<line x1="283.4" y1="10" x2="283.4" y2="82" style="stroke: #3a434d; stroke-width: 1"></line>
+<line x1="425.4" y1="10" x2="425.4" y2="82" style="stroke: #3a434d; stroke-width: 1"></line>
+<line x1="16" y1="82" x2="584" y2="82" style="stroke: #76818d; stroke-width: 2"></line>
+<polyline points="{{puntos}}" style="fill: none; stroke: #3cc8ea; stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round"></polyline>
+<circle cx="584" cy="{{yFinal}}" r="6" style="fill: {{colorCaudal}}; stroke: #232930; stroke-width: 3"></circle>
+<text x="141.4" y="112" style="font-size: 26px; font-weight: 500; fill: #7c8793; text-anchor: middle">00:00</text>
+<text x="283.4" y="112" style="font-size: 26px; font-weight: 500; fill: #7c8793; text-anchor: middle">06:00</text>
+<text x="425.4" y="112" style="font-size: 26px; font-weight: 500; fill: #7c8793; text-anchor: middle">12:00</text>
+<text x="584" y="112" style="font-size: 26px; font-weight: 500; fill: #7c8793; text-anchor: end">18:42</text>
+</svg>
+</a>
+
+<div style="position: absolute; left: 628px; top: 76px; width: 380px; height: 236px; box-sizing: border-box; background: #232930; border: 1px solid #3a434d; border-radius: 10px">
+<a href="Dosis.dc.html" style="position: absolute; left: 0; top: 0; width: 378px; height: 130px; display: block; color: #e9edf1; text-decoration: none">
+<div style="position: absolute; left: 16px; top: 6px; font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be; white-space: nowrap">Toca echar</div>
+<svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true" style="position: absolute; right: 14px; top: 8px; fill: none; stroke: #a9b3be; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round"><path d="M12 6.5l9.5 9.5-9.5 9.5"></path></svg>
+<div style="position: absolute; left: 16px; top: 36px; display: flex; align-items: baseline; gap: 10px; white-space: nowrap"><span style="font-size: 72px; line-height: 63px; font-weight: 600">37</span><span style="font-size: 36px; line-height: 45px; font-weight: 600; color: #a9b3be">mL</span></div>
+<div style="position: absolute; left: 16px; top: 98px; font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be; white-space: nowrap">de Cloralex en la boca B</div>
+</a>
+<a href="EstadoConfirmar.dc.html" style="position: absolute; left: 16px; top: 142px; width: 346px; height: 80px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: 12px; padding: 0 20px; border-radius: 10px; background: #e3e8ed; border: 2px solid #e3e8ed; color: #14181c; text-decoration: none; white-space: nowrap"><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true" style="display: block; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round"><path d="M6 16.5l6.5 6.5L26 9.5"></path></svg><span style="font-size: 36px; line-height: 45px; font-weight: 600">Ya le puse</span></a>
+</div>
+
+<div style="position: absolute; left: 16px; top: 324px; width: 490px; height: 184px">
+<sc-if value="{{presion}}" hint-placeholder-val="{{true}}">
+<a href="DetalleCaida.dc.html" style="position: absolute; left: 0; top: 0; width: 490px; height: 184px; box-sizing: border-box; display: block; background: #232930; border: 1px solid #3a434d; border-radius: 10px; color: #e9edf1; text-decoration: none">
+<div style="position: absolute; left: 16px; top: 6px; font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be; white-space: nowrap">Filtros</div>
+<svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true" style="position: absolute; right: 14px; top: 8px; fill: none; stroke: #a9b3be; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round"><path d="M12 6.5l9.5 9.5-9.5 9.5"></path></svg>
+<div style="position: absolute; left: 16px; top: 42px; width: 212px">
+<div style="display: flex; align-items: baseline; gap: 8px; height: 38px; white-space: nowrap"><span style="font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be">P1</span><span style="font-size: 44px; line-height: 38px; font-weight: 600">42</span><span style="font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be">psi</span></div>
+<div style="position: relative; margin-top: 6px; height: 4px; border-radius: 2px; background: #3a434d"><span style="position: absolute; left: 25%; top: 0; width: 37.5%; height: 4px; background: #6d7987"></span><span style="position: absolute; left: 52.5%; top: -3px; width: 3px; height: 10px; margin-left: -1px; background: #e9edf1"></span></div>
+</div>
+<div style="position: absolute; left: 260px; top: 42px; width: 212px">
+<div style="display: flex; align-items: baseline; gap: 8px; height: 38px; white-space: nowrap"><span style="font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be">P2</span><span style="font-size: 44px; line-height: 38px; font-weight: 600">{{p2}}</span><span style="font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be">psi</span></div>
+<div style="position: relative; margin-top: 6px; height: 4px; border-radius: 2px; background: #3a434d"><span style="position: absolute; left: 25%; top: 0; width: 37.5%; height: 4px; background: #6d7987"></span><span style="position: absolute; left: {{p2Pct}}%; top: -3px; width: 3px; height: 10px; margin-left: -1px; background: #e9edf1"></span></div>
+</div>
+<div style="position: absolute; left: 16px; top: 110px; width: 456px; height: 56px; box-sizing: border-box; padding: 0 16px; display: flex; align-items: center; gap: 8px; background: {{dpFondo}}; border: 2px solid {{dpColor}}; border-radius: 10px; white-space: nowrap"><span style="flex: 1; font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be">Caída</span><span style="font-size: 44px; line-height: 38px; font-weight: 600">{{dp}}</span><span style="font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be">psi</span><span style="display: flex; align-items: center; gap: 6px; margin-left: 16px; color: {{dpColor}}"><sc-if value="{{esNormal}}" hint-placeholder-val="{{true}}"><svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true" style="display: block; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round"><circle cx="16" cy="16" r="12.5"></circle><path d="M10.5 16.5l3.6 3.6 7.6-8"></path></svg></sc-if><sc-if value="{{esRevisar}}" hint-placeholder-val="{{false}}"><svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true" style="display: block; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round"><path d="M16 4.5L29 27.5H3z"></path><path d="M16 12.5v7"></path><circle cx="16" cy="23.4" r="1.7" style="fill: currentColor; stroke: none"></circle></svg></sc-if><sc-if value="{{esTapados}}" hint-placeholder-val="{{false}}"><svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true" style="display: block; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round"><path d="M10.6 3h10.8L29 10.6v10.8L21.4 29H10.6L3 21.4V10.6z"></path><path d="M16 9.5V18"></path><circle cx="16" cy="22.4" r="1.7" style="fill: currentColor; stroke: none"></circle></svg></sc-if><span style="font-size: 32px; line-height: 38px; font-weight: 500">{{dpPalabra}}</span></span></div>
+</a>
+</sc-if>
+<sc-if value="{{sinPresion}}" hint-placeholder-val="{{false}}">
+<div style="position: absolute; left: 0; top: 0; width: 490px; height: 184px; box-sizing: border-box; background: #1b1f24; border: 2px solid #3a434d; border-radius: 10px; color: #7c8793">
+<div style="position: absolute; left: 14px; top: 10px; display: flex; align-items: center; gap: 10px; white-space: nowrap"><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true" style="display: block; fill: none; stroke: #a9b3be; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round"><rect x="6.5" y="14" width="19" height="14" rx="3"></rect><path d="M10.5 14v-4a5.5 5.5 0 0 1 11 0v4M16 19.5v3"></path></svg><span style="font-size: 32px; line-height: 38px; font-weight: 500; color: #a9b3be">Filtros</span></div>
+<div style="position: absolute; left: 14px; top: 58px; font-size: 26px; line-height: 32px; font-weight: 500; white-space: nowrap">Próximamente · fase 1.5</div>
+<div style="position: absolute; left: 14px; top: 94px; font-size: 26px; line-height: 32px; font-weight: 500; white-space: nowrap">P1, P2 y caída del tren</div>
+</div>
+</sc-if>
+</div>
+
+<div style="position: absolute; left: 518px; top: 324px; width: 490px; height: 184px">
+<sc-if value="{{rInst}}" hint-placeholder-val="{{true}}">
+<a href="Mezcla.dc.html" style="position: absolute; left: 0; top: 0; width: 490px; height: 184px; box-sizing: border-box; display: block; background: #232930; border: 1px solid #3a434d; border-radius: 10px; color: #e9edf1; text-decoration: none">
+<div style="position: absolute; left: 16px; top: 6px; font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be; white-space: nowrap">Bomba R · mezcla</div>
+<svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true" style="position: absolute; right: 14px; top: 8px; fill: none; stroke: #a9b3be; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round"><path d="M12 6.5l9.5 9.5-9.5 9.5"></path></svg>
+<svg width="56" height="56" viewBox="0 0 56 56" aria-hidden="true" style="position: absolute; left: 16px; top: 44px"><circle cx="28" cy="28" r="25" style="fill: #1b1f24; stroke: #a9b3be; stroke-width: 2.5"></circle><g class="{{rotor}}"><path d="M28 28V12M28 28L41.86 36M28 28L14.14 36" style="fill: none; stroke: {{imp}}; stroke-width: 4; stroke-linecap: round"></path></g></svg>
+<div style="position: absolute; left: 88px; top: 43px; font-size: 48px; line-height: 58px; font-weight: 600; white-space: nowrap">{{rEstado}}</div>
+<sc-if value="{{rLado}}" hint-placeholder-val="{{true}}">
+<div style="position: absolute; right: 16px; top: 40px; display: flex; flex-direction: column; align-items: flex-end; white-space: nowrap"><span style="font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be">Faltan</span><span style="display: flex; align-items: baseline; gap: 6px"><span style="font-size: 44px; line-height: 38px; font-weight: 600">3</span><span style="font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be">min</span></span></div>
+</sc-if>
+<sc-if value="{{rLado}}" hint-placeholder-val="{{true}}">
+<div role="progressbar" aria-label="Avance de la mezcla" aria-valuemin="0" aria-valuemax="100" aria-valuenow="80" style="position: absolute; left: 16px; top: 116px; width: 456px; height: 8px; overflow: hidden; border-radius: 4px; background: #3a434d"><div style="width: 80%; height: 8px; background: #3cc8ea"></div></div>
+</sc-if>
+<div style="position: absolute; left: 16px; top: 134px; font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be; white-space: nowrap">{{rSub}}</div>
+</a>
+</sc-if>
+<sc-if value="{{rNo}}" hint-placeholder-val="{{false}}">
+<div style="position: absolute; left: 0; top: 0; width: 490px; height: 184px; box-sizing: border-box; background: #1b1f24; border: 2px solid #3a434d; border-radius: 10px; color: #7c8793">
+<div style="position: absolute; left: 14px; top: 10px; display: flex; align-items: center; gap: 10px; white-space: nowrap"><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true" style="display: block; fill: none; stroke: #a9b3be; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round"><rect x="6.5" y="14" width="19" height="14" rx="3"></rect><path d="M10.5 14v-4a5.5 5.5 0 0 1 11 0v4M16 19.5v3"></path></svg><span style="font-size: 32px; line-height: 38px; font-weight: 500; color: #a9b3be">Bomba R · mezcla</span></div>
+<div style="position: absolute; left: 14px; top: 58px; font-size: 26px; line-height: 32px; font-weight: 500; white-space: nowrap">Próximamente · fase 2</div>
+<div style="position: absolute; left: 14px; top: 94px; font-size: 26px; line-height: 32px; font-weight: 500; white-space: nowrap">Revuelve el agua de la cisterna</div>
+</div>
+</sc-if>
+</div>
+
+<div style="position: absolute; left: 0; top: 0; width: 1024px; height: 64px">
+<dc-import name="Encabezado" titulo="Resumen" estado="{{estado}}" hint-size="1024px,64px"></dc-import>
+</div>
+<div style="position: absolute; left: 0; top: 520px; width: 1024px; height: 80px">
+<dc-import name="Navegacion" activa="resumen" hint-size="1024px,80px"></dc-import>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"flujo":{"editor":"boolean","default":true},"caida":{"editor":"enum","options":["normal","revisar","tapados"],"default":"normal"},"fase":{"editor":"enum","options":["1","1.5","2"],"default":"2"},"bombaR":{"editor":"boolean","default":true},"$preview":{"width":1024,"height":600}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const flujo = this.props.flujo ?? true;
+    const caida = this.props.caida ?? 'normal';
+    const fase = this.props.fase ?? '2';
+    const bombaR = this.props.bombaR ?? true;
+    const presion = fase !== '1';
+    const rInst = fase === '2';
+    const C = {
+      normal: { p2: 38, dp: 4, palabra: 'Normal', color: '#55c993', fondo: '#16301f', estado: 'ok' },
+      revisar: { p2: 35, dp: 7, palabra: 'Revisar', color: '#f2a83a', fondo: '#3a2a12', estado: 'advertencia' },
+      tapados: { p2: 30, dp: 12, palabra: 'Tapados', color: '#ff7069', fondo: '#46181b', estado: 'alarma' }
+    };
+    const k = C[caida] ? caida : 'normal';
+    const c = C[k];
+    const bloques = [[38, 78, 11.6], [168, 183, 7.0], [453, 458, 2.0], [688, 733, 12.3], [863, 893, 10.5], [1108, 1128, 11.0], [1348, 1373, 6.6], [1390, 1440, 12.2]];
+    const s = [];
+    for (let t = 0; t <= 1440; t += 5) {
+      let v = 0;
+      bloques.forEach((b) => {
+        if (t >= b[0] && t <= b[1]) v = b[2] + 0.35 * Math.sin(t / 6.3) + 0.15 * Math.sin(t / 2.9);
+      });
+      s.push(Math.max(0, v));
+    }
+    const n = s.length - 1;
+    s[n] = flujo ? 12.4 : 0;
+    if (!flujo) s[n - 1] = 0;
+    const X = (i) => 16 + i / n * 568;
+    const Y = (v) => 82 - v / 20 * 72;
+    return {
+      estado: presion ? c.estado : 'ok',
+      etiquetaCaudal: flujo ? 'Caudal' : 'Sin flujo',
+      caudal: flujo ? '12.4' : ' 0.0',
+      colorCaudal: flujo ? '#3cc8ea' : '#7c8793',
+      puntos: s.map((v, i) => X(i).toFixed(1) + ',' + Y(v).toFixed(1)).join(' '),
+      yFinal: Y(s[n]).toFixed(1),
+      presion: presion,
+      sinPresion: !presion,
+      p2: String(c.p2),
+      p2Pct: (c.p2 / 80 * 100).toFixed(1),
+      dp: String(c.dp),
+      dpPalabra: c.palabra,
+      dpColor: c.color,
+      dpFondo: c.fondo,
+      esNormal: k === 'normal',
+      esRevisar: k === 'revisar',
+      esTapados: k === 'tapados',
+      rInst: rInst,
+      rNo: !rInst,
+      rEstado: bombaR ? 'Prendida' : 'Apagada',
+      rLado: bombaR,
+      rSub: bombaR ? 'Auto · programa de las 18:30' : 'Auto · la siguiente a las 22:30',
+      rotor: bombaR ? 'rotor gira' : 'rotor',
+      imp: bombaR ? '#3cc8ea' : '#6d7987'
+    };
+  }
+}
+</script>
+</body>
+</html>

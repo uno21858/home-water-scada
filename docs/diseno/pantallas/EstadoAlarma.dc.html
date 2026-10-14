@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Alarma</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:"Montserrat Tnum";src:url("/_blob/9d5800f4c7bea6e5041333e753b58eb8") format("truetype");font-weight:500;font-style:normal;font-display:block}
+@font-face{font-family:"Montserrat Tnum";src:url("/_blob/f9923e4b0b5fcb8ad1e46b8765af09f2") format("truetype");font-weight:600;font-style:normal;font-display:block}
+body{margin:0}
+</style>
+</helmet>
+<div role="alertdialog" aria-label="{{titulo}}" style="position: relative; width: 1024px; height: 600px; overflow: hidden; background: #a11f1b; color: #ffffff; font-family: 'Montserrat Tnum', Montserrat, sans-serif; font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased">
+
+<svg width="96" height="96" viewBox="0 0 32 32" aria-hidden="true" style="position: absolute; left: 48px; top: 44px; fill: none; stroke: #ffffff; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round"><path d="M10.6 3h10.8L29 10.6v10.8L21.4 29H10.6L3 21.4V10.6z"></path><path d="M16 9.5V18"></path><circle cx="16" cy="22.4" r="1.7" style="fill: #ffffff; stroke: none"></circle></svg>
+
+<div style="position: absolute; left: 176px; top: 44px; width: 800px; display: flex; flex-direction: column">
+<div style="margin-bottom: 20px; font-size: 48px; line-height: 58px; font-weight: 600">{{titulo}}</div>
+<div style="margin-bottom: 16px; font-size: 32px; line-height: 38px; font-weight: 500">{{paso}}</div>
+<div style="margin-bottom: 28px; font-size: 32px; line-height: 38px; font-weight: 500">{{revisa}}</div>
+<div style="display: flex; gap: 12px; flex-wrap: wrap">
+<sc-for list="{{datos}}" as="d" hint-placeholder-count="3">
+<span style="box-sizing: border-box; padding: 6px 14px; border: 2px solid #ffffff; border-radius: 6px; font-size: 26px; line-height: 32px; font-weight: 500; white-space: nowrap">{{d.t}}</span>
+</sc-for>
+</div>
+</div>
+
+<div style="position: absolute; left: 48px; top: 488px; font-size: 26px; line-height: 32px; font-weight: 500; white-space: nowrap">Alarma 1 de 1 · queda en Historial</div>
+<a href="Main.dc.html" style="position: absolute; left: 616px; top: 456px; width: 360px; height: 96px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: 12px; border-radius: 10px; background: #ffffff; border: 2px solid #ffffff; color: #a11f1b; text-decoration: none; white-space: nowrap"><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true" style="display: block; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round"><path d="M6 16.5l6.5 6.5L26 9.5"></path></svg><span style="font-size: 36px; line-height: 45px; font-weight: 600">Entendido</span></a>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"caso":{"editor":"enum","options":["sinFlujo","sensor","tope"],"default":"sinFlujo"},"$preview":{"width":1024,"height":600}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const casos = {
+      sinFlujo: {
+        titulo: 'Sin flujo mientras dosifica',
+        paso: 'Con la bomba B encendida, el sensor F marcó 0 L/min durante 10 s. La bomba se apagó.',
+        revisa: 'Revisa que la válvula V1 esté abierta y que llegue agua del SIAPA.',
+        datos: ['F 0.0 L/min', 'Bomba B apagada', 'Desde 18:42']
+      },
+      sensor: {
+        titulo: 'Sensor F sin señal',
+        paso: 'La caída del tren marca 4 psi, o sea que sí pasa agua, pero F lleva 30 s sin mandar pulsos. El conteo de litros se pausó.',
+        revisa: 'Revisa el cable de F en la caja del pilar y que el conector esté seco.',
+        datos: ['F sin pulsos', 'Caída 4 psi', 'Desde 13:05']
+      },
+      tope: {
+        titulo: 'Tope diario alcanzado',
+        paso: 'La bomba B ya echó 120 mL hoy, el tope que pusiste. Se detuvo hasta mañana.',
+        revisa: 'Si sí hace falta más cloro, sube el tope en Ajustes, Dosis.',
+        datos: ['120 mL hoy', 'Bomba B parada', 'Desde 18:42']
+      }
+    };
+    const c = casos[this.props.caso] || casos.sinFlujo;
+    return {
+      titulo: c.titulo,
+      paso: c.paso,
+      revisa: c.revisa,
+      datos: c.datos.map((t) => ({ t: t }))
+    };
+  }
+}
+</script>
+</body>
+</html>

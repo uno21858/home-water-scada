@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Mezcla de la cisterna</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:"Montserrat Tnum";src:url("/_blob/9d5800f4c7bea6e5041333e753b58eb8") format("truetype");font-weight:500;font-style:normal;font-display:block}
+@font-face{font-family:"Montserrat Tnum";src:url("/_blob/f9923e4b0b5fcb8ad1e46b8765af09f2") format("truetype");font-weight:600;font-style:normal;font-display:block}
+body{margin:0}
+.rotor{transform-box:view-box;transform-origin:28px 28px}
+.rotor.gira{animation:gira 2s linear infinite}
+@keyframes gira{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.rotor.gira{animation:none}}
+</style>
+</helmet>
+<div style="position: relative; width: 1024px; height: 600px; overflow: hidden; background: #1b1f24; color: #e9edf1; font-family: 'Montserrat Tnum', Montserrat, sans-serif; font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased">
+
+<div style="position: absolute; left: 16px; top: 76px; width: 600px; height: 160px; box-sizing: border-box; background: #232930; border: 1px solid #3a434d; border-radius: 10px">
+<svg width="56" height="56" viewBox="0 0 56 56" aria-hidden="true" style="position: absolute; left: 16px; top: 16px"><circle cx="28" cy="28" r="25" style="fill: #1b1f24; stroke: #a9b3be; stroke-width: 2.5"></circle><g class="{{rotor}}"><path d="M28 28V12M28 28L41.86 36M28 28L14.14 36" style="fill: none; stroke: {{imp}}; stroke-width: 4; stroke-linecap: round"></path></g></svg>
+<div style="position: absolute; left: 88px; top: 8px; font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be; white-space: nowrap">Bomba R</div>
+<div style="position: absolute; left: 88px; top: 38px; font-size: 48px; line-height: 58px; font-weight: 600; white-space: nowrap">{{estado}}</div>
+<sc-if value="{{lado}}" hint-placeholder-val="{{true}}">
+<div style="position: absolute; right: 16px; top: 10px; display: flex; flex-direction: column; align-items: flex-end; white-space: nowrap"><span style="font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be">{{ladoTxt}}</span><span style="display: flex; align-items: baseline; gap: 6px"><span style="font-size: 44px; line-height: 38px; font-weight: 600">{{num}}</span><span style="font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be">min</span></span></div>
+</sc-if>
+<sc-if value="{{barra}}" hint-placeholder-val="{{true}}">
+<div role="progressbar" aria-label="Avance de la mezcla" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{pct}}" style="position: absolute; left: 16px; top: 106px; width: 566px; height: 8px; overflow: hidden; border-radius: 4px; background: #3a434d"><div style="width: {{pct}}%; height: 8px; background: #3cc8ea"></div></div>
+</sc-if>
+<div style="position: absolute; left: 16px; top: 120px; font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be; white-space: nowrap">{{sub}}</div>
+</div>
+
+<div role="group" aria-label="Modo de la bomba R" style="position: absolute; left: 16px; top: 248px; width: 600px; height: 64px; box-sizing: border-box; display: flex; overflow: hidden; border: 2px solid #76818d; border-radius: 10px; background: #232930">
+<button type="button" onClick="{{seg.apagada.pick}}" aria-pressed="{{seg.apagada.pressed}}" style="flex: 1; height: 60px; border: none; background: {{seg.apagada.bg}}; color: {{seg.apagada.color}}; font-family: inherit; font-size: 32px; line-height: 38px; font-weight: 500; white-space: nowrap; cursor: pointer">Apagada</button>
+<button type="button" onClick="{{seg.prendida.pick}}" aria-pressed="{{seg.prendida.pressed}}" style="flex: 1; height: 60px; border: none; border-left: 2px solid #76818d; background: {{seg.prendida.bg}}; color: {{seg.prendida.color}}; font-family: inherit; font-size: 32px; line-height: 38px; font-weight: 500; white-space: nowrap; cursor: pointer">Prendida</button>
+<button type="button" onClick="{{seg.auto.pick}}" aria-pressed="{{seg.auto.pressed}}" style="flex: 1; height: 60px; border: none; border-left: 2px solid #76818d; background: {{seg.auto.bg}}; color: {{seg.auto.color}}; font-family: inherit; font-size: 32px; line-height: 38px; font-weight: 500; white-space: nowrap; cursor: pointer">Auto</button>
+</div>
+
+<div style="position: absolute; left: 16px; top: 324px; width: 600px; height: 184px; box-sizing: border-box; background: #232930; border: 1px solid #3a434d; border-radius: 10px">
+<div style="position: absolute; left: 16px; top: 6px; font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be; white-space: nowrap">Programa del modo Auto</div>
+<button type="button" style="position: absolute; left: 0; top: 42px; width: 598px; height: 52px; box-sizing: border-box; display: flex; align-items: center; gap: 8px; padding: 0 16px; border: none; background: transparent; color: #e9edf1; font-family: inherit; white-space: nowrap; cursor: pointer"><span style="flex: 1; text-align: left; font-size: 32px; line-height: 38px; font-weight: 500">Después de cada dosis</span><span style="font-size: 44px; line-height: 38px; font-weight: 600">30</span><span style="font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be">min</span><svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true" style="display: block; flex: none; margin-left: 8px; fill: none; stroke: #a9b3be; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round"><path d="M12 6.5l9.5 9.5-9.5 9.5"></path></svg></button>
+<div style="position: absolute; left: 16px; top: 94px; width: 566px; height: 1px; background: #3a434d"></div>
+<button type="button" style="position: absolute; left: 0; top: 95px; width: 598px; height: 52px; box-sizing: border-box; display: flex; align-items: center; gap: 8px; padding: 0 16px; border: none; background: transparent; color: #e9edf1; font-family: inherit; white-space: nowrap; cursor: pointer"><span style="flex: 1; text-align: left; font-size: 32px; line-height: 38px; font-weight: 500">Cada 4 horas</span><span style="font-size: 44px; line-height: 38px; font-weight: 600">15</span><span style="font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be">min</span><svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true" style="display: block; flex: none; margin-left: 8px; fill: none; stroke: #a9b3be; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round"><path d="M12 6.5l9.5 9.5-9.5 9.5"></path></svg></button>
+<div style="position: absolute; left: 16px; top: 148px; font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be; white-space: nowrap">A mano se apaga sola a los 60 min</div>
+</div>
+
+<div style="position: absolute; left: 628px; top: 76px; width: 380px; height: 160px; box-sizing: border-box; background: #232930; border: 1px solid #3a434d; border-radius: 10px">
+<div style="position: absolute; left: 16px; top: 8px; font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be; white-space: nowrap">Hoy prendida</div>
+<div style="position: absolute; left: 16px; top: 44px; display: flex; align-items: baseline; gap: 10px; white-space: nowrap"><span style="font-size: 72px; line-height: 63px; font-weight: 600">87</span><span style="font-size: 36px; line-height: 45px; font-weight: 600; color: #a9b3be">min</span></div>
+<div style="position: absolute; left: 16px; top: 116px; font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be; white-space: nowrap">5 veces</div>
+</div>
+
+<div style="position: absolute; left: 628px; top: 248px; width: 380px; height: 260px; box-sizing: border-box; background: #232930; border: 1px solid #3a434d; border-radius: 10px">
+<div style="position: absolute; left: 16px; top: 6px; font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be; white-space: nowrap">Últimas veces · min</div>
+<div style="position: absolute; left: 0; top: 42px; width: 378px; height: 52px; box-sizing: border-box; display: flex; align-items: center; padding: 0 16px; white-space: nowrap"><span style="width: 112px; font-size: 32px; line-height: 38px; font-weight: 500">18:30</span><span style="flex: 1; font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be">programa</span><span style="font-size: 26px; line-height: 32px; font-weight: 500; color: #3cc8ea">ahora</span></div>
+<div style="position: absolute; left: 0; top: 94px; width: 378px; height: 52px; box-sizing: border-box; display: flex; align-items: center; padding: 0 16px; border-top: 1px solid #3a434d; white-space: nowrap"><span style="width: 112px; font-size: 32px; line-height: 38px; font-weight: 500">14:30</span><span style="flex: 1; font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be">programa</span><span style="font-size: 32px; line-height: 38px; font-weight: 600">15</span></div>
+<div style="position: absolute; left: 0; top: 146px; width: 378px; height: 52px; box-sizing: border-box; display: flex; align-items: center; padding: 0 16px; border-top: 1px solid #3a434d; white-space: nowrap"><span style="width: 112px; font-size: 32px; line-height: 38px; font-weight: 500">10:30</span><span style="flex: 1; font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be">programa</span><span style="font-size: 32px; line-height: 38px; font-weight: 600">15</span></div>
+<div style="position: absolute; left: 0; top: 198px; width: 378px; height: 52px; box-sizing: border-box; display: flex; align-items: center; padding: 0 16px; border-top: 1px solid #3a434d; white-space: nowrap"><span style="width: 112px; font-size: 32px; line-height: 38px; font-weight: 500">06:10</span><span style="flex: 1; font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be">dosis</span><span style="font-size: 32px; line-height: 38px; font-weight: 600">30</span></div>
+</div>
+
+<div style="position: absolute; left: 0; top: 0; width: 1024px; height: 64px">
+<dc-import name="Encabezado" titulo="Mezcla de la cisterna" atras="Cisterna.dc.html" chip="Fase 2" hint-size="1024px,64px"></dc-import>
+</div>
+<div style="position: absolute; left: 0; top: 520px; width: 1024px; height: 80px">
+<dc-import name="Navegacion" activa="cisterna" hint-size="1024px,80px"></dc-import>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1024,"height":600}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const st = this.state || {};
+    const modo = st.modo || 'auto';
+    const M = {
+      apagada: { estado: 'Apagada', lado: false, ladoTxt: '', num: '', barra: false, pct: 0, sub: 'A mano · el programa no la prende', gira: false },
+      prendida: { estado: 'Prendida', lado: true, ladoTxt: 'Se apaga en', num: '60', barra: true, pct: 0, sub: 'A mano · se apaga sola a las 19:42', gira: true },
+      auto: { estado: 'Prendida', lado: true, ladoTxt: 'Faltan', num: '3', barra: true, pct: 80, sub: 'Auto · programa de las 18:30', gira: true }
+    };
+    const c = M[modo] || M.auto;
+    const seg = {};
+    ['apagada', 'prendida', 'auto'].forEach((k) => {
+      const on = k === modo;
+      seg[k] = {
+        bg: on ? '#e3e8ed' : 'transparent',
+        color: on ? '#14181c' : '#a9b3be',
+        pressed: on ? 'true' : 'false',
+        pick: () => this.setState({ modo: k })
+      };
+    });
+    return {
+      seg: seg,
+      estado: c.estado,
+      lado: c.lado,
+      ladoTxt: c.ladoTxt,
+      num: c.num,
+      barra: c.barra,
+      pct: String(c.pct),
+      sub: c.sub,
+      rotor: c.gira ? 'rotor gira' : 'rotor',
+      imp: c.gira ? '#3cc8ea' : '#6d7987'
+    };
+  }
+}
+</script>
+</body>
+</html>

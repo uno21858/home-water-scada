@@ -1,0 +1,301 @@
+{
+  "v": 3,
+  "attachments": {},
+  "boards": {
+    "Ajustes.dc.html": {
+      "h": 600,
+      "is_interactive": true,
+      "title": "7 · Ajustes",
+      "w": 1024,
+      "x": 4416,
+      "y": 1000
+    },
+    "Alarmas.dc.html": {
+      "h": 600,
+      "is_interactive": true,
+      "title": "Servicio · Alarmas y eventos",
+      "w": 1024,
+      "x": 0,
+      "y": 3000
+    },
+    "Cartuchos.dc.html": {
+      "h": 600,
+      "is_interactive": true,
+      "title": "Detalle · Cartuchos",
+      "w": 1024,
+      "x": 3312,
+      "y": 2000
+    },
+    "Cisterna.dc.html": {
+      "h": 600,
+      "is_interactive": true,
+      "title": "4 · Cisterna",
+      "w": 1024,
+      "x": 1104,
+      "y": 1000
+    },
+    "DetalleCaida.dc.html": {
+      "h": 600,
+      "is_interactive": true,
+      "title": "Detalle · Caída del tren",
+      "w": 1024,
+      "x": 2208,
+      "y": 2000
+    },
+    "DetalleF.dc.html": {
+      "h": 600,
+      "is_interactive": true,
+      "title": "Detalle · Flujo F",
+      "w": 1024,
+      "x": 0,
+      "y": 2000
+    },
+    "DetalleP.dc.html": {
+      "h": 600,
+      "is_interactive": true,
+      "title": "Detalle · Presión P1 y P2",
+      "w": 1024,
+      "x": 1104,
+      "y": 2000
+    },
+    "Diagnostico.dc.html": {
+      "h": 600,
+      "is_interactive": true,
+      "title": "Servicio · Diagnóstico",
+      "w": 1024,
+      "x": 1104,
+      "y": 3000
+    },
+    "Dosis.dc.html": {
+      "h": 600,
+      "is_interactive": true,
+      "title": "5 · Dosis",
+      "w": 1024,
+      "x": 2208,
+      "y": 1000
+    },
+    "Encabezado.dc.html": {
+      "h": 64,
+      "is_interactive": true,
+      "title": "Componente · Encabezado",
+      "w": 1024,
+      "x": 0,
+      "y": 5000
+    },
+    "EstadoAlarma.dc.html": {
+      "h": 600,
+      "is_interactive": true,
+      "title": "Estado · Alarma a pantalla completa",
+      "w": 1024,
+      "x": 0,
+      "y": 4000
+    },
+    "EstadoConfirmar.dc.html": {
+      "h": 600,
+      "is_interactive": true,
+      "title": "Estado · Confirmar dosis",
+      "w": 1024,
+      "x": 1104,
+      "y": 4000
+    },
+    "EstadoSinRed.dc.html": {
+      "h": 600,
+      "is_interactive": true,
+      "title": "Estado · Sin red",
+      "w": 1024,
+      "x": 3312,
+      "y": 4000
+    },
+    "EstadoTeclado.dc.html": {
+      "h": 600,
+      "is_interactive": true,
+      "title": "Estado · Teclado numérico",
+      "w": 1024,
+      "x": 2208,
+      "y": 4000
+    },
+    "Flujo.dc.html": {
+      "h": 600,
+      "is_interactive": true,
+      "title": "3 · Flujo",
+      "w": 1024,
+      "x": 0,
+      "y": 1000
+    },
+    "Historial.dc.html": {
+      "h": 600,
+      "is_interactive": true,
+      "title": "6 · Historial",
+      "w": 1024,
+      "x": 3312,
+      "y": 1000
+    },
+    "Inyeccion.dc.html": {
+      "h": 600,
+      "is_interactive": true,
+      "title": "Detalle · Inyección A y B",
+      "w": 1024,
+      "x": 4416,
+      "y": 2000
+    },
+    "Leyenda.dc.html": {
+      "h": 600,
+      "is_interactive": true,
+      "title": "Ayuda · Símbolos del diagrama",
+      "w": 1024,
+      "x": 3312,
+      "y": 3000
+    },
+    "Main.dc.html": {
+      "h": 600,
+      "is_interactive": true,
+      "title": "1 · Tren de filtros (inicio)",
+      "w": 1024,
+      "x": 0,
+      "y": 0
+    },
+    "Mezcla.dc.html": {
+      "h": 600,
+      "is_interactive": true,
+      "title": "Detalle · Mezcla de la cisterna (bomba R)",
+      "w": 1024,
+      "x": 5520,
+      "y": 2000
+    },
+    "Navegacion.dc.html": {
+      "h": 80,
+      "is_interactive": true,
+      "title": "Componente · Barra de navegación",
+      "w": 1024,
+      "x": 1104,
+      "y": 5000
+    },
+    "Panorama.dc.html": {
+      "h": 600,
+      "is_interactive": true,
+      "title": "Panorama de la casa",
+      "w": 1024,
+      "x": 1104,
+      "y": 0
+    },
+    "Pasillo.dc.html": {
+      "h": 600,
+      "is_interactive": true,
+      "title": "Modo pasillo (sin tocar 2 min)",
+      "w": 1024,
+      "x": 2208,
+      "y": 0
+    },
+    "PruebaCubeta.dc.html": {
+      "h": 600,
+      "is_interactive": true,
+      "title": "Servicio · Prueba de cubeta",
+      "w": 1024,
+      "x": 2208,
+      "y": 3000
+    },
+    "Resumen.dc.html": {
+      "h": 600,
+      "is_interactive": true,
+      "title": "2 · Resumen",
+      "w": 1024,
+      "x": 3312,
+      "y": 0
+    }
+  },
+  "createdOnFiles": {
+    "at": "2026-10-03T08:35:50Z",
+    "v": 1
+  },
+  "designSystems": [
+    {
+      "artifact": "https://claude.ai/artifact/2UbbTw3qjtg1pMfJ9bPHAt",
+      "copiedAt": "2026-10-03T08:35:50Z",
+      "namespace": "hmi",
+      "title": "HMI Cloración",
+      "version": "1791014754-fcf1"
+    }
+  ],
+  "launch": {
+    "view": "canvas"
+  },
+  "notes": {
+    "fila-1": {
+      "kind": "title1",
+      "maxW": 4336,
+      "text": "Nivel 1 · Vista general",
+      "w": 240,
+      "x": 0,
+      "y": -300
+    },
+    "fila-2": {
+      "kind": "title1",
+      "maxW": 5440,
+      "text": "Nivel 2 · Pantallas de la barra",
+      "w": 240,
+      "x": 0,
+      "y": 700
+    },
+    "fila-3": {
+      "kind": "title1",
+      "maxW": 6544,
+      "text": "Nivel 3 · Detalle por sensor y equipo",
+      "w": 240,
+      "x": 0,
+      "y": 1700
+    },
+    "fila-4": {
+      "kind": "title1",
+      "maxW": 4336,
+      "text": "Nivel 4 · Servicio y ayuda",
+      "w": 240,
+      "x": 0,
+      "y": 2700
+    },
+    "fila-5": {
+      "kind": "title1",
+      "maxW": 4336,
+      "text": "Estados globales",
+      "w": 240,
+      "x": 0,
+      "y": 3700
+    },
+    "fila-6": {
+      "kind": "title1",
+      "maxW": 2128,
+      "text": "Componentes reutilizados",
+      "w": 240,
+      "x": 0,
+      "y": 4700
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "Resumen.dc.html",
+    "Panorama.dc.html",
+    "Pasillo.dc.html",
+    "Flujo.dc.html",
+    "Cisterna.dc.html",
+    "Dosis.dc.html",
+    "Historial.dc.html",
+    "Ajustes.dc.html",
+    "DetalleF.dc.html",
+    "DetalleP.dc.html",
+    "DetalleCaida.dc.html",
+    "Cartuchos.dc.html",
+    "Inyeccion.dc.html",
+    "Mezcla.dc.html",
+    "Alarmas.dc.html",
+    "Diagnostico.dc.html",
+    "PruebaCubeta.dc.html",
+    "Leyenda.dc.html",
+    "EstadoAlarma.dc.html",
+    "EstadoConfirmar.dc.html",
+    "EstadoTeclado.dc.html",
+    "EstadoSinRed.dc.html",
+    "Encabezado.dc.html",
+    "Navegacion.dc.html"
+  ],
+  "pages": [],
+  "title": "HMI Cloración · Pantallas"
+}

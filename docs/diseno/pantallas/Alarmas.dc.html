@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Alarmas y eventos</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:"Montserrat Tnum";src:url("/_blob/9d5800f4c7bea6e5041333e753b58eb8") format("truetype");font-weight:500;font-style:normal;font-display:block}
+@font-face{font-family:"Montserrat Tnum";src:url("/_blob/f9923e4b0b5fcb8ad1e46b8765af09f2") format("truetype");font-weight:600;font-style:normal;font-display:block}
+body{margin:0}
+</style>
+</helmet>
+<div style="position: relative; width: 1024px; height: 600px; overflow: hidden; background: #1b1f24; color: #e9edf1; font-family: 'Montserrat Tnum', Montserrat, sans-serif; font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased">
+
+<div role="group" aria-label="Filtro" style="position: absolute; left: 16px; top: 76px; height: 64px; box-sizing: border-box; display: flex; overflow: hidden; border: 2px solid #76818d; border-radius: 10px; background: #232930">
+<button type="button" onClick="{{f.activas.pick}}" aria-pressed="{{f.activas.pressed}}" style="height: 60px; padding: 0 20px; border: none; background: {{f.activas.bg}}; color: {{f.activas.color}}; font-family: inherit; font-size: 32px; line-height: 38px; font-weight: 500; white-space: nowrap; cursor: pointer">Activas</button>
+<button type="button" onClick="{{f.hoy.pick}}" aria-pressed="{{f.hoy.pressed}}" style="height: 60px; padding: 0 20px; border: none; border-left: 2px solid #76818d; background: {{f.hoy.bg}}; color: {{f.hoy.color}}; font-family: inherit; font-size: 32px; line-height: 38px; font-weight: 500; white-space: nowrap; cursor: pointer">Hoy</button>
+<button type="button" onClick="{{f.todas.pick}}" aria-pressed="{{f.todas.pressed}}" style="height: 60px; padding: 0 20px; border: none; border-left: 2px solid #76818d; background: {{f.todas.bg}}; color: {{f.todas.color}}; font-family: inherit; font-size: 32px; line-height: 38px; font-weight: 500; white-space: nowrap; cursor: pointer">Últimos 7 días</button>
+</div>
+<div style="position: absolute; right: 16px; top: 92px; font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be; white-space: nowrap">{{resumen}}</div>
+
+<sc-for list="{{filas}}" as="e" hint-placeholder-count="5">
+<div style="position: absolute; left: 16px; top: {{e.top}}px; width: 992px; height: 64px; box-sizing: border-box; background: {{e.fondo}}; border: 1px solid {{e.borde}}; border-radius: 10px">
+<svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true" style="position: absolute; left: 16px; top: 15px; fill: none; stroke: {{e.color}}; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round"><path d="{{e.ico}}"></path><circle cx="16" cy="{{e.puntoY}}" r="1.7" style="fill: {{e.color}}; stroke: none; display: {{e.punto}}"></circle></svg>
+<span style="position: absolute; left: 60px; top: 2px; font-size: 32px; line-height: 38px; font-weight: 500; color: {{e.colorTexto}}; white-space: nowrap">{{e.titulo}}</span>
+<span style="position: absolute; left: 60px; top: 30px; font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be; white-space: nowrap">{{e.cuando}}</span>
+<span style="position: absolute; right: 16px; top: 15px; font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be; white-space: nowrap">{{e.estado}}</span>
+</div>
+</sc-for>
+
+<sc-if value="{{vacio}}" hint-placeholder-val="{{false}}">
+<div style="position: absolute; left: 16px; top: 152px; width: 992px; height: 356px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; background: #232930; border: 1px solid #3a434d; border-radius: 10px">
+<svg width="56" height="56" viewBox="0 0 32 32" aria-hidden="true" style="display: block; fill: none; stroke: #55c993; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round"><circle cx="16" cy="16" r="12.5"></circle><path d="M10.5 16.5l3.6 3.6 7.6-8"></path></svg>
+<span style="font-size: 36px; line-height: 45px; font-weight: 600">Sin alarmas activas</span>
+<span style="font-size: 26px; line-height: 32px; font-weight: 500; color: #a9b3be">La última fue el mar 29 sep y ya se resolvió</span>
+</div>
+</sc-if>
+
+<div style="position: absolute; left: 0; top: 0; width: 1024px; height: 64px">
+<dc-import name="Encabezado" titulo="Alarmas y eventos" atras="Historial.dc.html" hint-size="1024px,64px"></dc-import>
+</div>
+<div style="position: absolute; left: 0; top: 520px; width: 1024px; height: 80px">
+<dc-import name="Navegacion" activa="historial" hint-size="1024px,80px"></dc-import>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1024,"height":600}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const st = this.state || {};
+    const filtro = st.filtro || 'todas';
+    const ICO = {
+      info: 'M12 3.5h8M13.5 3.5V12L7 24a2.5 2.5 0 0 0 2.2 3.7h13.6A2.5 2.5 0 0 0 25 24l-6.5-12V3.5M9.6 19.5h12.8',
+      cartucho: 'M12.5 3.5h7a3 3 0 0 1 3 3v19a3 3 0 0 1-3 3h-7a3 3 0 0 1-3-3v-19a3 3 0 0 1 3-3zM13 9h6M13 13.5h6M13 18h6M13 22.5h6',
+      advertencia: 'M16 4.5L29 27.5H3zM16 12.5v7',
+      alarma: 'M10.6 3h10.8L29 10.6v10.8L21.4 29H10.6L3 21.4V10.6zM16 9.5V18'
+    };
+    const eventos = [
+      { hoy: true, tipo: 'info', titulo: 'Dosis 40 mL', cuando: 'Hoy 06:10 · en la boca B', estado: 'Registrada' },
+      { hoy: true, tipo: 'advertencia', titulo: 'Sin red 12 min', cuando: 'Hoy 03:20 · se guardó y se mandó después', estado: 'Resuelta 03:32' },
+      { hoy: false, tipo: 'cartucho', titulo: 'Cambio de cartucho 5 µm', cuando: 'Jue 1 oct 16:40', estado: 'Registrado' },
+      { hoy: false, tipo: 'advertencia', titulo: 'Caída del tren 6 psi · Revisar', cuando: 'Mié 30 sep 22:14', estado: 'Resuelta 23:05' },
+      { hoy: false, tipo: 'alarma', titulo: 'Sensor F sin señal', cuando: 'Mar 29 sep 13:05 · reconocida 13:07', estado: 'Resuelta 13:40' }
+    ];
+    const lista = filtro === 'activas' ? [] : (filtro === 'hoy' ? eventos.filter((e) => e.hoy) : eventos);
+    const filas = lista.map((e, i) => {
+      const color = e.tipo === 'alarma' ? '#ff7069' : (e.tipo === 'advertencia' ? '#f2a83a' : '#a9b3be');
+      const conPunto = e.tipo === 'alarma' || e.tipo === 'advertencia';
+      return {
+        top: 152 + i * 73,
+        titulo: e.titulo,
+        cuando: e.cuando,
+        estado: e.estado,
+        ico: ICO[e.tipo],
+        color: color,
+        colorTexto: e.tipo === 'info' || e.tipo === 'cartucho' ? '#e9edf1' : color,
+        punto: conPunto ? 'inline' : 'none',
+        puntoY: e.tipo === 'alarma' ? 22.4 : 23.4,
+        fondo: '#232930',
+        borde: '#3a434d'
+      };
+    });
+    const f = {};
+    ['activas', 'hoy', 'todas'].forEach((k) => {
+      const on = k === filtro;
+      f[k] = {
+        bg: on ? '#e3e8ed' : 'transparent',
+        color: on ? '#14181c' : '#a9b3be',
+        pressed: on ? 'true' : 'false',
+        pick: () => this.setState({ filtro: k })
+      };
+    });
+    const n = lista.length;
+    return {
+      f: f,
+      filas: filas,
+      vacio: filtro === 'activas',
+      resumen: filtro === 'activas' ? '0 activas' : (n === 1 ? '1 evento' : n + ' eventos')
+    };
+  }
+}
+</script>
+</body>
+</html>
