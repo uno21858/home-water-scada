@@ -28,9 +28,22 @@ namespace {
 constexpr int32_t kHeaderHeight = 64;
 constexpr int32_t kContentHeight = 456;  // de y 64 a y 520
 
-constexpr std::array<const char*, kScreenCount> kTitles = {
-    "Tren de filtros", "Resumen", "Flujo", "Cisterna", "Dosis de cloro", "Historial", "Ajustes",
+// Cada pantalla: su encabezado y la pestaña que marca la barra.
+// Mismo orden que el enum Screen. En el encabezado van título, atrás, chip,
+// texto del enlace y a dónde lleva; {} es "no tiene".
+struct Page {
+    HeaderSpec header;
+    Screen tab;
 };
+const std::array<Page, kScreenCount> kPages = {{
+    {{"Tren de filtros", {}, nullptr, nullptr, {}}, Screen::home},
+    {{"Resumen", {}, nullptr, nullptr, {}}, Screen::summary},
+    {{"Flujo", {}, nullptr, nullptr, {}}, Screen::flow},
+    {{"Cisterna", {}, "Fase 2", nullptr, {}}, Screen::cistern},
+    {{"Dosis de cloro", {}, nullptr, nullptr, {}}, Screen::dose},
+    {{"Historial", {}, nullptr, nullptr, {}}, Screen::history},
+    {{"Ajustes", {}, nullptr, nullptr, {}}, Screen::settings},
+}};
 
 Actions actions;
 core::SystemState state;  // la última copia que llegó en update()
@@ -108,8 +121,9 @@ void update(const core::SystemState& s) {
 
 void show(Screen screen) {
     for (size_t i = 0; i < pages.size(); ++i) lv_obj_set_hidden(pages[i], i != index_of(screen));
-    header.set_title(kTitles[index_of(screen)]);
-    nav.set_active(screen);
+    const Page& page = kPages[index_of(screen)];
+    header.set_page(page.header);
+    nav.set_active(page.tab);
 }
 
 void ask_dose_confirmation() {

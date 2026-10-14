@@ -12,7 +12,7 @@ namespace ui {
 class NavBar {
 public:
     void create(lv_obj_t* parent);
-    void set_active(Screen screen);
+    void set_active(Screen active);  // una de las 7 pestañas
 
 private:
     struct Tab {
@@ -20,7 +20,7 @@ private:
         lv_obj_t* icon = nullptr;
         lv_obj_t* text = nullptr;
     };
-    std::array<Tab, kScreenCount> tabs_{};
+    std::array<Tab, kTabCount> tabs_{};
 };
 
 }  // namespace ui

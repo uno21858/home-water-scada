@@ -17,7 +17,7 @@ struct TabDef {
 };
 
 // Mismo orden que el enum Screen. 5 x 146 + 2 x 147 = 1024
-const TabDef kTabs[kScreenCount] = {
+const TabDef kTabs[kTabCount] = {
     {"Tren", &icon_tren_32, 146},          {"Resumen", &icon_resumen_32, 146},
     {"Flujo", &icon_flujo_32, 146},        {"Cisterna", &icon_cisterna_32, 147},
     {"Dosis", &icon_dosis_32, 146},        {"Historial", &icon_historial_32, 146},
@@ -40,7 +40,7 @@ void NavBar::create(lv_obj_t* parent) {
     lv_obj_set_style_bg_opa(line, LV_OPA_COVER, 0);
 
     int32_t x = 0;
-    for (int i = 0; i < kScreenCount; ++i) {
+    for (int i = 0; i < kTabCount; ++i) {
         Tab& tab = tabs_[i];
         tab.obj = box(root, x, 0, kTabs[i].width, 80);
         lv_obj_set_clickable(tab.obj, true);
@@ -67,9 +67,9 @@ void NavBar::create(lv_obj_t* parent) {
     }
 }
 
-void NavBar::set_active(Screen screen) {
-    for (int i = 0; i < kScreenCount; ++i) {
-        const bool on = i == static_cast<int>(screen);
+void NavBar::set_active(Screen active) {
+    for (int i = 0; i < kTabCount; ++i) {
+        const bool on = i == static_cast<int>(active);
         Tab& tab = tabs_[i];
         lv_obj_set_style_bg_opa(tab.obj, on ? LV_OPA_COVER : LV_OPA_TRANSP, 0);
         lv_obj_set_style_border_opa(tab.obj, on ? LV_OPA_COVER : LV_OPA_TRANSP, 0);

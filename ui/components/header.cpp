@@ -6,6 +6,10 @@
 #include "theme/colors.h"
 #include "theme/fonts.h"
 #include "theme/icons.h"
+#include "theme/styles.h"
+
+// Medidas del componente Encabezado del canvas. El borde de abajo no cuenta
+// para el contenido (LVGL respeta border_side): las filas miden 63 px.
 
 namespace ui {
 
@@ -17,8 +21,38 @@ void Header::create(lv_obj_t* parent) {
     lv_obj_set_style_border_width(root, 1, 0);
     lv_obj_set_style_border_color(root, color(colors::border), 0);
 
-    title_ = label(root, &font_title_36, colors::text, "");
-    lv_obj_align(title_, LV_ALIGN_LEFT_MID, 24, 0);
+    // Fila de la izquierda: las piezas escondidas no ocupan lugar
+    left_ = row(root, 12, LV_FLEX_ALIGN_CENTER);
+    lv_obj_set_height(left_, 63);
+
+    back_ = box(left_, 0, 0, 56, 56);
+    lv_obj_set_clickable(back_, true);
+    lv_obj_add_style(back_, &styles::button_secondary, 0);
+    lv_obj_add_style(back_, &styles::button_secondary_pressed, LV_STATE_PRESSED);
+    lv_obj_t* arrow = icon(back_, &icon_atras_32, colors::text);
+    lv_obj_center(arrow);
+    lv_obj_add_event_cb(back_, handle_back, LV_EVENT_CLICKED, this);
+
+    title_ = label(left_, &font_title_36, colors::text, "");
+
+    chip_ = row(left_, 8, LV_FLEX_ALIGN_CENTER);
+    lv_obj_set_height(chip_, 40);
+    lv_obj_set_style_radius(chip_, LV_RADIUS_CIRCLE, 0);
+    lv_obj_set_style_border_width(chip_, 2, 0);
+    lv_obj_set_style_border_color(chip_, color(colors::border_control), 0);
+    lv_obj_set_style_pad_hor(chip_, 14, 0);
+    chip_text_ = label(chip_, &font_label_26, colors::text_secondary, "");
+
+    link_ = row(left_, 4, LV_FLEX_ALIGN_CENTER);
+    lv_obj_set_height(link_, 56);
+    lv_obj_set_clickable(link_, true);
+    lv_obj_add_style(link_, &styles::button_secondary, 0);
+    lv_obj_add_style(link_, &styles::button_secondary_pressed, LV_STATE_PRESSED);
+    lv_obj_set_style_pad_left(link_, 16, 0);
+    lv_obj_set_style_pad_right(link_, 8, 0);
+    link_text_ = label(link_, &font_label_26, colors::text, "");
+    icon(link_, &icon_chevron_28, colors::text_secondary);
+    lv_obj_add_event_cb(link_, handle_link, LV_EVENT_CLICKED, this);
 
     lv_obj_t* right = row(root, 16, LV_FLEX_ALIGN_CENTER);
     lv_obj_align(right, LV_ALIGN_RIGHT_MID, -20, 0);
@@ -38,7 +72,34 @@ void Header::create(lv_obj_t* parent) {
     clock_ = label(right, &font_title_36, colors::text, "--:--");
 }
 
-void Header::set_title(const char* title) { set_text(title_, title); }
+void Header::set_page(const HeaderSpec& spec) {
+    // Con botón atrás la fila arranca en x 4; sin él, el título va en x 24
+    lv_obj_set_pos(left_, spec.back ? 4 : 24, 0);
+    lv_obj_set_hidden(back_, !spec.back);
+    if (spec.back) back_target_ = *spec.back;
+
+    set_text(title_, spec.title);
+
+    lv_obj_set_hidden(chip_, spec.chip == nullptr);
+    if (spec.chip != nullptr) set_text(chip_text_, spec.chip);
+
+    const bool has_link = spec.link_text != nullptr && spec.link;
+    lv_obj_set_hidden(link_, !has_link);
+    if (has_link) {
+        set_text(link_text_, spec.link_text);
+        link_target_ = *spec.link;
+    }
+}
+
+void Header::handle_back(lv_event_t* e) {
+    const auto* self = static_cast<Header*>(lv_event_get_user_data(e));
+    show(self->back_target_);
+}
+
+void Header::handle_link(lv_event_t* e) {
+    const auto* self = static_cast<Header*>(lv_event_get_user_data(e));
+    show(self->link_target_);
+}
 
 void Header::set_level(core::Level level) {
     if (static_cast<int>(level) == level_) return;

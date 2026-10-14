@@ -27,6 +27,7 @@ LV_IMAGE_DECLARE(icon_wifi_off_32);
 // Controles
 LV_IMAGE_DECLARE(icon_chevron_28);
 LV_IMAGE_DECLARE(icon_chevron_32);
+LV_IMAGE_DECLARE(icon_atras_32);        // botón atrás del encabezado
 LV_IMAGE_DECLARE(icon_check_32);
 LV_IMAGE_DECLARE(icon_candado_32);
 LV_IMAGE_DECLARE(icon_candado_28);

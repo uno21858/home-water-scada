@@ -24,8 +24,11 @@ Mientras llega el hardware, se desarrolla en el simulador con SDL (Mac y Fedora)
     generados), `pid/` (símbolos del P&ID en ARGB8888, generados), `styles`,
     `format` (números al formato de México).
   - `components/`: `primitives` (box, label, icon, card, link_to, botones),
-    `header`, `nav_bar`, `confirm_dialog`, `keypad_dialog`, `pipe` (puntos de
-    flujo), `sensor_tag`.
+    `header` (atrás, título, chip y enlace según la pantalla), `nav_bar`,
+    `confirm_dialog`, `keypad_dialog`, `pipe` (puntos de flujo), `sensor_tag`.
+  - Pantallas de detalle: van en el enum `Screen` después de las 7 pestañas.
+    `kPages` en `ui.cpp` dice el encabezado de cada una y qué pestaña marca la
+    barra.
   - `screens/`: `home_screen` (Tren), `summary_screen` (Resumen), `flow_screen`
     (Flujo), `dose_screen` (Dosis). Las demás pestañas son placeholders en `ui.cpp`.
 - `simulator/`: ventana SDL. `demo.cpp` llena el estado con los datos de ejemplo
@@ -105,9 +108,10 @@ Pendiente, en este orden:
 1. Cisterna y su detalle Mezcla (bomba R).
 2. Historial.
 3. Ajustes.
-4. Pasillo (reposo a los 2 min sin tocar) y los enlaces del encabezado: Casa →
-   Panorama, ? → Leyenda, Inyección. El componente `header` todavía no tiene
-   enlace, botón de atrás, chip ni el aviso de sin red; ver `Encabezado.dc.html`.
+4. Pasillo (reposo a los 2 min sin tocar). El `header` ya tiene atrás, chip y
+   enlace; le faltan el "?" de ayuda (Leyenda) y el chip de sin red. Cada enlace
+   se prende en `kPages` cuando exista su pantalla: Casa → Panorama, Sensor F,
+   Inyección, Alarmas, Diagnóstico.
 5. Detalles: DetalleF, DetalleP, DetalleCaida, Cartuchos, Inyeccion.
 6. Estados globales: alarma a pantalla completa (EstadoAlarma) y sin red.
 7. Servicio: Alarmas, Diagnóstico, Prueba de cubeta, Leyenda, Panorama.

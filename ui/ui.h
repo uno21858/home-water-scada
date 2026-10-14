@@ -9,8 +9,11 @@
 
 namespace ui {
 
-// Mismo orden que las pestañas de la barra
+// Primero las 7 pestañas de la barra, en su orden. Después vienen las
+// pantallas de detalle y de servicio: se llega a ellas desde una pestaña y la
+// barra sigue marcando esa pestaña.
 enum class Screen : uint8_t { home, summary, flow, cistern, dose, history, settings };
+inline constexpr int kTabCount = 7;
 inline constexpr int kScreenCount = 7;
 
 // Lo que la interfaz le pide a la app. Cualquiera puede quedar en nullptr.
