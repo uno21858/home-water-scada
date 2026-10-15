@@ -18,7 +18,7 @@ ICONS=(
   "ok 32" "advertencia 32" "alarma 32" "wifi 32" "wifi_off 32"
   "ok 28" "advertencia 28" "alarma 28"
   "chevron 28" "chevron 32" "check 32" "candado 32" "candado 28" "candado 24"
-  "editar 24" "borrar 48" "calendario 32" "reloj 32" "bomba 28" "info 28" "atras 32" "gota 32" "cartucho 32" "medidor 32" "sol 32" "cubeta 32" "editar 32"
+  "editar 24" "borrar 48" "calendario 32" "reloj 32" "bomba 28" "info 28" "info 32" "atras 32" "gota 28" "gota 32" "cartucho 32" "medidor 32" "sol 32" "cubeta 32" "editar 32"
   "ok 40" "advertencia 40" "alarma 40" "alarma 96" "ok 56"
   "impulsor 56" "impulsor_chico 26"
 )

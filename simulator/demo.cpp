@@ -346,6 +346,8 @@ bool set_scenario(const char* name) {
     } else if (std::strcmp(name, "fase15") == 0) {
         s.has_orp = s.has_mixer = false;
         s.devices.ezo_orp = false;
+    } else if (std::strcmp(name, "ro-cocina") == 0) {
+        s.ro_kitchen_planned = true;
     } else if (std::strcmp(name, "revisar") == 0) {
         drop(7);
     } else if (std::strcmp(name, "tapados") == 0) {

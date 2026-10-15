@@ -17,6 +17,7 @@ const core::SystemState& state();
 //   alarma     sin flujo mientras dosifica; sensor y tope, las otras dos
 //   fase1      sin P1 y P2, sin ORP ni bomba R; fase15, sin ORP ni bomba R
 //   revisar    caída de 7 psi; tapados, de 12 psi
+//   ro-cocina  el RO de la cocina por instalar (Panorama)
 // Regresa false si el nombre no existe.
 bool set_scenario(const char* name);
 

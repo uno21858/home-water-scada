@@ -22,7 +22,9 @@
 #include "screens/home_screen.h"
 #include "screens/idle_screen.h"
 #include "screens/injection_screen.h"
+#include "screens/legend_screen.h"
 #include "screens/mixer_screen.h"
+#include "screens/overview_screen.h"
 #include "screens/pressure_screen.h"
 #include "screens/settings_screen.h"
 #include "screens/summary_screen.h"
@@ -42,28 +44,30 @@ constexpr int32_t kContentHeight = 456;  // de y 64 a y 520
 
 // Cada pantalla: su encabezado y la pestaña que marca la barra.
 // Mismo orden que el enum Screen. En el encabezado van título, atrás, chip,
-// texto del enlace y a dónde lleva; {} es "no tiene".
+// texto del enlace, a dónde lleva y el "?"; {} es "no tiene".
 struct Page {
     HeaderSpec header;
     Screen tab;
 };
 const std::array<Page, kScreenCount> kPages = {{
-    {{"Tren de filtros", {}, nullptr, nullptr, {}}, Screen::home},
-    {{"Resumen", {}, nullptr, nullptr, {}}, Screen::summary},
-    {{"Flujo", {}, nullptr, "Sensor F", Screen::flow_sensor}, Screen::flow},
-    {{"Cisterna", {}, "Fase 2", "Bomba R", Screen::mixer}, Screen::cistern},
-    {{"Dosis de cloro", {}, nullptr, "Inyección", Screen::injection}, Screen::dose},
-    {{"Historial", {}, nullptr, "Alarmas", Screen::events}, Screen::history},
-    {{"Ajustes", {}, nullptr, "Diagnóstico", Screen::diagnostics}, Screen::settings},
-    {{"Mezcla de la cisterna", Screen::cistern, "Fase 2", nullptr, {}}, Screen::cistern},
-    {{"Sensor de flujo F", Screen::flow, nullptr, nullptr, {}}, Screen::flow},
-    {{"Presión P1 y P2", Screen::home, nullptr, nullptr, {}}, Screen::home},
-    {{"Caída del tren", Screen::home, nullptr, nullptr, {}}, Screen::home},
-    {{"Cartuchos", Screen::home, nullptr, nullptr, {}}, Screen::home},
-    {{"Inyección A y B", Screen::dose, nullptr, nullptr, {}}, Screen::dose},
-    {{"Alarmas y eventos", Screen::history, nullptr, nullptr, {}}, Screen::history},
-    {{"Diagnóstico", Screen::settings, nullptr, nullptr, {}}, Screen::settings},
-    {{"Prueba de cubeta", Screen::settings, nullptr, nullptr, {}}, Screen::settings},
+    {{"Tren de filtros", {}, nullptr, "Casa", Screen::overview, Screen::legend}, Screen::home},
+    {{"Resumen", {}, nullptr, nullptr, {}, {}}, Screen::summary},
+    {{"Flujo", {}, nullptr, "Sensor F", Screen::flow_sensor, {}}, Screen::flow},
+    {{"Cisterna", {}, "Fase 2", "Bomba R", Screen::mixer, {}}, Screen::cistern},
+    {{"Dosis de cloro", {}, nullptr, "Inyección", Screen::injection, {}}, Screen::dose},
+    {{"Historial", {}, nullptr, "Alarmas", Screen::events, {}}, Screen::history},
+    {{"Ajustes", {}, nullptr, "Diagnóstico", Screen::diagnostics, {}}, Screen::settings},
+    {{"Mezcla de la cisterna", Screen::cistern, "Fase 2", nullptr, {}, {}}, Screen::cistern},
+    {{"Sensor de flujo F", Screen::flow, nullptr, nullptr, {}, {}}, Screen::flow},
+    {{"Presión P1 y P2", Screen::home, nullptr, nullptr, {}, {}}, Screen::home},
+    {{"Caída del tren", Screen::home, nullptr, nullptr, {}, {}}, Screen::home},
+    {{"Cartuchos", Screen::home, nullptr, nullptr, {}, {}}, Screen::home},
+    {{"Inyección A y B", Screen::dose, nullptr, nullptr, {}, {}}, Screen::dose},
+    {{"Alarmas y eventos", Screen::history, nullptr, nullptr, {}, {}}, Screen::history},
+    {{"Diagnóstico", Screen::settings, nullptr, nullptr, {}, {}}, Screen::settings},
+    {{"Prueba de cubeta", Screen::settings, nullptr, nullptr, {}, {}}, Screen::settings},
+    {{"Símbolos del diagrama", Screen::home, nullptr, nullptr, {}, {}}, Screen::home},
+    {{"Panorama de la casa", Screen::home, nullptr, nullptr, {}, {}}, Screen::home},
 }};
 
 Actions app_actions;
@@ -90,6 +94,8 @@ DoseScreen dose;
 EventsScreen events;
 DiagnosticsScreen diagnostics;
 BucketScreen bucket;
+LegendScreen legend;
+OverviewScreen overview;
 std::array<lv_obj_t*, kScreenCount> pages{};
 
 size_t index_of(Screen screen) { return static_cast<size_t>(screen); }
@@ -137,6 +143,8 @@ void init(const core::SystemState& s, const Actions& a) {
     pages[index_of(Screen::events)] = events.create(content);
     pages[index_of(Screen::diagnostics)] = diagnostics.create(content);
     pages[index_of(Screen::bucket_test)] = bucket.create(content);
+    pages[index_of(Screen::legend)] = legend.create(content);
+    pages[index_of(Screen::overview)] = overview.create(content);
 
     header.create(screen);
     nav.create(screen);
@@ -170,6 +178,7 @@ void update(const core::SystemState& s) {
     events.update(s);
     diagnostics.update(s);
     bucket.update(s);
+    overview.update(s);
     idle.update(s);
     alarm.update(s);
 

@@ -26,6 +26,7 @@ LV_IMAGE_DECLARE(icon_alarma_40);
 LV_IMAGE_DECLARE(icon_alarma_96);         // alarma a pantalla completa
 LV_IMAGE_DECLARE(icon_ok_56);             // Sin alarmas activas
 LV_IMAGE_DECLARE(icon_info_28);         // aviso neutro: Sin flujo
+LV_IMAGE_DECLARE(icon_info_32);         // "?" del encabezado: Leyenda
 LV_IMAGE_DECLARE(icon_wifi_32);
 LV_IMAGE_DECLARE(icon_wifi_off_32);
 
@@ -42,6 +43,7 @@ LV_IMAGE_DECLARE(icon_borrar_48);       // tecla borrar
 LV_IMAGE_DECLARE(icon_calendario_32);
 LV_IMAGE_DECLARE(icon_reloj_32);
 LV_IMAGE_DECLARE(icon_bomba_28);        // pulso de prueba (fase 3)
+LV_IMAGE_DECLARE(icon_gota_28);         // RO de la cocina en Panorama
 LV_IMAGE_DECLARE(icon_gota_32);         // Calibrar con tira
 LV_IMAGE_DECLARE(icon_cartucho_32);     // cambio de cartucho en los eventos
 LV_IMAGE_DECLARE(icon_editar_32);       // escribir un valor con el teclado

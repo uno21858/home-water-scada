@@ -20,6 +20,7 @@ struct HeaderSpec {
     const char* chip = nullptr;       // chip junto al título: "Fase 2"
     const char* link_text = nullptr;  // botón a otra pantalla: "Bomba R"
     std::optional<Screen> link;
+    std::optional<Screen> help;       // "?" a la Leyenda (solo en el Tren)
 };
 
 class Header {
@@ -35,6 +36,7 @@ public:
 private:
     static void handle_back(lv_event_t* e);
     static void handle_link(lv_event_t* e);
+    static void handle_help(lv_event_t* e);
 
     lv_obj_t* left_ = nullptr;
     lv_obj_t* back_ = nullptr;
@@ -45,6 +47,8 @@ private:
     lv_obj_t* link_text_ = nullptr;
     Screen back_target_ = Screen::home;
     Screen link_target_ = Screen::home;
+    lv_obj_t* help_ = nullptr;
+    Screen help_target_ = Screen::home;
     bool has_link_ = false;
 
     lv_obj_t* offline_ = nullptr;

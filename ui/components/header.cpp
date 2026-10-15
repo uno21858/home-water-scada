@@ -54,6 +54,14 @@ void Header::create(lv_obj_t* parent) {
     icon(link_, &icon_chevron_28, colors::text_secondary);
     lv_obj_add_event_cb(link_, handle_link, LV_EVENT_CLICKED, this);
 
+    // "?" de ayuda: sin relleno ni borde, solo el ícono en texto-2
+    help_ = box(left_, 0, 0, 56, 56);
+    lv_obj_set_clickable(help_, true);
+    lv_obj_set_style_radius(help_, 10, 0);
+    lv_obj_add_style(help_, &styles::button_secondary_pressed, LV_STATE_PRESSED);
+    lv_obj_center(icon(help_, &icon_info_32, colors::text_secondary));
+    lv_obj_add_event_cb(help_, handle_help, LV_EVENT_CLICKED, this);
+
     lv_obj_t* right = row(root, 16, LV_FLEX_ALIGN_CENTER);
     lv_obj_align(right, LV_ALIGN_RIGHT_MID, -20, 0);
 
@@ -101,6 +109,9 @@ void Header::set_page(const HeaderSpec& spec) {
         set_text(link_text_, spec.link_text);
         link_target_ = *spec.link;
     }
+
+    lv_obj_set_hidden(help_, !spec.help);
+    if (spec.help) help_target_ = *spec.help;
 }
 
 void Header::handle_back(lv_event_t* e) {
@@ -111,6 +122,11 @@ void Header::handle_back(lv_event_t* e) {
 void Header::handle_link(lv_event_t* e) {
     const auto* self = static_cast<Header*>(lv_event_get_user_data(e));
     show(self->link_target_);
+}
+
+void Header::handle_help(lv_event_t* e) {
+    const auto* self = static_cast<Header*>(lv_event_get_user_data(e));
+    show(self->help_target_);
 }
 
 void Header::set_level(core::Level level) {

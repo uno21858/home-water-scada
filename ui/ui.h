@@ -23,9 +23,11 @@ enum class Screen : uint8_t {
     events,         // Alarmas y eventos, desde Historial
     diagnostics,    // Diagnóstico, desde Ajustes
     bucket_test,    // Prueba de cubeta, desde Ajustes y Sensor F
+    legend,         // Símbolos del diagrama, desde el "?" del Tren
+    overview,       // Panorama de la casa, desde Casa en el Tren
 };
 inline constexpr int kTabCount = 7;
-inline constexpr int kScreenCount = 16;
+inline constexpr int kScreenCount = 18;
 
 // Lo que la interfaz le pide a la app. Cualquiera puede quedar en nullptr.
 struct Actions {

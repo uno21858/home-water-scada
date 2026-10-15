@@ -24,7 +24,7 @@ Mientras llega el hardware, se desarrolla en el simulador con SDL (Mac y Fedora)
     generados), `pid/` (símbolos del P&ID en ARGB8888, generados), `styles`,
     `format` (números al formato de México).
   - `components/`: `primitives` (box, label, icon, card, link_to, botones),
-    `header` (atrás, título, chip y enlace según la pantalla), `nav_bar`,
+    `header` (atrás, título, chip, enlace y "?" según la pantalla), `nav_bar`,
     `confirm_dialog`, `keypad_dialog` (unidad y decimales con `KeypadSpec`),
     `segmented` (selector de 2 a 4 opciones), `mixer` (impulsor que gira y el
     renglón de estado de la bomba R), `pipe` (puntos de flujo), `sensor_tag`.
@@ -41,7 +41,9 @@ Mientras llega el hardware, se desarrolla en el simulador con SDL (Mac y Fedora)
     `injection_screen` (Inyección). Servicio: `events_screen` (Alarmas y
     eventos, desde Historial), `diagnostics_screen` (Diagnóstico, desde
     Ajustes) y `bucket_screen` (Prueba de cubeta, desde Ajustes y DetalleF;
-    `show()` le llama `enter()` para que cada vez cuente desde 0).
+    `show()` le llama `enter()` para que cada vez cuente desde 0),
+    `legend_screen` (Símbolos del diagrama, el "?" del Tren) y
+    `overview_screen` (Panorama de la casa, Casa en el Tren).
     `alarm_screen` es la alarma a pantalla completa: va en `lv_layer_top()`
     encima de todo, Pasillo incluido.
   - Lo que la pantalla le pide a la app sale por `actions()`; un campo nuevo
@@ -67,7 +69,7 @@ cmake --build build -j
 
 Para ver un estado del canvas sin tocar código: `HMI_DEMO=alarma ./build/simulator`.
 Escenarios: `sin-flujo`, `sin-red`, `alarma`, `sensor`, `tope`, `fase1`, `fase15`,
-`revisar` y `tapados` (`demo::set_scenario` en `simulator/demo.h`).
+`revisar`, `tapados` y `ro-cocina` (`demo::set_scenario` en `simulator/demo.h`).
 
 En Mac, SDL2 viene de Homebrew (`brew install sdl2`). Si CMake no lo encuentra:
 `-DCMAKE_PREFIX_PATH=/opt/homebrew`.
@@ -130,16 +132,14 @@ En Mac, SDL2 viene de Homebrew (`brew install sdl2`). Si CMake no lo encuentra:
 
 Hecho: las 7 pestañas (Tren, Resumen, Flujo, Cisterna, Dosis, Historial,
 Ajustes), Mezcla, Pasillo, los 5 detalles (DetalleF, DetalleP, DetalleCaida,
-Cartuchos, Inyección), Alarmas, Diagnóstico, Prueba de cubeta, la alarma a
-pantalla completa, el aviso de sin red en
+Cartuchos, Inyección), Alarmas, Diagnóstico, Prueba de cubeta, Leyenda,
+Panorama, la alarma a pantalla completa, el aviso de sin red en
 el encabezado, el diálogo de confirmar y el teclado (Registrar otra cantidad, Calibrar con tira y los
 minutos de la bomba R).
 
 Pendiente, en este orden:
 
-1. Servicio: Leyenda y Panorama. Al `header` le falta el "?" de ayuda
-   (Leyenda) y al Tren el enlace Casa → Panorama.
-2. Firmware de la 7B y del nodo.
+1. Firmware de la 7B y del nodo.
 
 ## Diferencias a propósito con el canvas
 
@@ -199,3 +199,14 @@ Pendiente, en este orden:
   Probar alarma prende la de sin flujo y se quita al tocar Entendido.
 - En Prueba de cubeta el demo cuenta como si F diera 387.2 pulsos por litro y
   se para en 3,872 (la marca), para que proponga 387 como el canvas.
+- En Leyenda los títulos van en etiqueta (26 Medium) y no en 26 SemiBold como
+  en el canvas: el DS no tiene ese estilo y no vale otra fuente por eso. Los
+  dibujos son símbolos del P&ID de 72 x 60 (`pid/svg/leyenda_*.svg`); el tubo
+  de "Con flujo" corre siempre.
+- En Panorama la tarjeta del Tren dice "Caída 4 psi" con el ícono del estado
+  y no "Caída 4 psi · Normal": mide 264 px y caben 232 (en el canvas se sale).
+  La flecha va pegada al título por lo mismo. El presostato mide lo que su
+  texto (en el canvas "35 a 65 psi" se sale de 140 px) y queda centrado en el
+  tubo. Sin P1 y P2 dice "Caída · fase 1.5", sin sonda "ORP · fase 2" y sin
+  bomba R no sale la R. El RO de la cocina sale con `ro_kitchen_planned`
+  (`HMI_DEMO=ro-cocina`); su borde punteado se dibuja a mano.

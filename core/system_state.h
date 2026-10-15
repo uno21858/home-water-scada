@@ -150,6 +150,7 @@ struct SystemState {
     bool has_pressure = false;  // fase 1.5: sensores P1 y P2
     bool has_orp = false;       // fase 2: sonda ORP en la cisterna
     bool has_mixer = false;     // fase 2: bomba R
+    bool ro_kitchen_planned = false;  // Panorama: el RO de la cocina, por instalar
 
     // Fecha, hora y red
     uint32_t today = 0;   // número de día desde una fecha fija: sirve para comparar días
