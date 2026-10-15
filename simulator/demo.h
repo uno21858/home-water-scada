@@ -20,6 +20,7 @@ const core::SystemState& state();
 //   fase1      sin P1 y P2, sin ORP ni bomba R; fase15, sin ORP ni bomba R
 //   revisar    caída de 7 psi; tapados, de 12 psi
 //   ro-cocina  el RO de la cocina por instalar (Panorama)
+//   noche      son las 23:30: a los minutos del Pasillo se apaga la pantalla
 // Regresa false si el nombre no existe.
 bool set_scenario(const char* name);
 
@@ -39,6 +40,9 @@ void on_strip_checked(uint32_t tenths_mgl);
 void on_mixer_mode(core::MixerMode mode);
 void on_mixer_after_dose(uint32_t minutes);
 void on_mixer_every_4h(uint32_t minutes);
+
+// Luz de la pantalla: el simulador solo lo dice en la terminal
+void on_backlight(bool on);
 
 // Ajustes
 void on_flow_factor(uint32_t pulses_per_liter);

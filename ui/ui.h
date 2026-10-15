@@ -44,6 +44,7 @@ struct Actions {
     void (*daily_cap_set)(uint32_t ml) = nullptr;
     void (*night_off_set)(bool on) = nullptr;                 // Apagar la luz de noche: Sí o No
     void (*idle_minutes_set)(uint32_t minutes) = nullptr;     // modo pasillo: 1, 2 o 5
+    void (*backlight_set)(bool on) = nullptr;                 // luz de la pantalla: se apaga de noche
     void (*filter_serviced)(core::Filter filter) = nullptr;   // purgó el prefiltro o cambió un cartucho
     void (*spares_set)(core::Filter filter, uint32_t count) = nullptr;  // repuestos en casa, con − y +
     void (*alarm_acknowledged)(core::AlarmKind kind) = nullptr;  // tocó Entendido en la alarma

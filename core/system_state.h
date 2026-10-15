@@ -296,6 +296,14 @@ inline uint32_t filter_wear_pct(const SystemState& s, Filter filter) {
     return (days * 100 + kFilterLifeDays[i] / 2) / kFilterLifeDays[i];
 }
 
+// Horario de apagar la luz (Ajustes > Pantalla), que puede cruzar la medianoche
+inline bool is_night(const SystemState& s) {
+    if (!s.night_off) return false;
+    const uint16_t now = static_cast<uint16_t>(s.hour * 60 + s.minute);
+    if (s.night_from <= s.night_to) return now >= s.night_from && now < s.night_to;
+    return now >= s.night_from || now < s.night_to;
+}
+
 inline uint16_t minute_of_day(const SystemState& s) {
     return static_cast<uint16_t>(s.hour * 60 + s.minute);
 }

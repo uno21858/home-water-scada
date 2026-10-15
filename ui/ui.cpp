@@ -24,6 +24,7 @@
 #include "screens/injection_screen.h"
 #include "screens/legend_screen.h"
 #include "screens/mixer_screen.h"
+#include "screens/night_screen.h"
 #include "screens/overview_screen.h"
 #include "screens/pressure_screen.h"
 #include "screens/settings_screen.h"
@@ -86,6 +87,7 @@ MixerScreen mixer;
 HistoryScreen history;
 SettingsScreen settings;
 IdleScreen idle;
+NightScreen night;
 AlarmScreen alarm;
 FlowSensorScreen flow_sensor;
 PressureScreen pressure;
@@ -133,6 +135,25 @@ void on_strip_checked(uint32_t tenths_mgl) {
     if (app_actions.strip_checked != nullptr) app_actions.strip_checked(tenths_mgl);
 }
 
+void set_backlight(bool on) {
+    if (app_actions.backlight_set != nullptr) app_actions.backlight_set(on);
+}
+
+// De noche, en lugar del Pasillo: se apaga la luz y una capa negra tapa todo
+void show_night() {
+    dialog.close();
+    keypad.close();
+    idle.close();
+    night.open();
+    set_backlight(false);
+}
+
+// El toque que prende la luz solo prende: regresa al Tren sin tocar nada más
+void wake_from_night() {
+    set_backlight(true);
+    show(Screen::home);
+}
+
 }  // namespace
 
 void init(const core::SystemState& s, const Actions& a) {
@@ -173,6 +194,7 @@ void init(const core::SystemState& s, const Actions& a) {
     dialog.create(lv_layer_top());
     keypad.create(lv_layer_top());
     idle.create(lv_layer_top(), [] { show(Screen::home); });  // encima de los diálogos
+    night.create(lv_layer_top(), wake_from_night);              // la pantalla apagada encima del Pasillo
     alarm.create(lv_layer_top());                                // y la alarma encima de todo
 
     update(s);
@@ -206,9 +228,24 @@ void update(const core::SystemState& s) {
     idle.update(s);
     alarm.update(s);
 
-    // Pasillo: nadie ha tocado la pantalla en los minutos de Ajustes
+    // Pantalla apagada: una alarma la prende, y de mañana prende sola en Pasillo
+    if (night.is_open() && (alarm.is_open() || !core::is_night(s))) {
+        night.close();
+        set_backlight(true);
+        if (!alarm.is_open()) idle.open();
+    }
+
+    // Nadie ha tocado la pantalla en los minutos de Ajustes: Pasillo de día,
+    // apagada de noche (mientras no haya una alarma que atender)
     const uint32_t idle_ms = static_cast<uint32_t>(s.idle_minutes) * 60u * 1000u;
-    if (!idle.is_open() && lv_display_get_inactive_time(nullptr) >= idle_ms) show_idle();
+    const bool resting = idle.is_open() || night.is_open();
+    if (!resting && lv_display_get_inactive_time(nullptr) >= idle_ms) {
+        if (core::is_night(s) && !alarm.is_open()) {
+            show_night();
+        } else {
+            show_idle();
+        }
+    }
 }
 
 void show(Screen screen) {
