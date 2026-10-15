@@ -46,6 +46,9 @@ int main()
     actions.idle_minutes_set = demo::on_idle_minutes;
     actions.filter_serviced = demo::on_filter_serviced;
     actions.alarm_acknowledged = demo::on_alarm_acknowledged;
+    actions.alarm_test = demo::on_alarm_test;
+    actions.restart_requested = demo::on_restart;
+    actions.bucket_test_started = demo::on_bucket_test_started;
     ui::init(demo::state(), actions);
 
     // Cada segundo cambian los datos, como lo haría el firmware

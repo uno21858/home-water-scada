@@ -20,9 +20,12 @@ enum class Screen : uint8_t {
     pressure_drop,  // Caída del tren, desde el Tren, Resumen y Presión
     filters,        // Cartuchos, desde el Tren, la caída y Ajustes
     injection,      // Inyección A y B, desde Dosis
+    events,         // Alarmas y eventos, desde Historial
+    diagnostics,    // Diagnóstico, desde Ajustes
+    bucket_test,    // Prueba de cubeta, desde Ajustes y Sensor F
 };
 inline constexpr int kTabCount = 7;
-inline constexpr int kScreenCount = 13;
+inline constexpr int kScreenCount = 16;
 
 // Lo que la interfaz le pide a la app. Cualquiera puede quedar en nullptr.
 struct Actions {
@@ -40,6 +43,9 @@ struct Actions {
     void (*idle_minutes_set)(uint32_t minutes) = nullptr;     // modo pasillo: 1, 2 o 5
     void (*filter_serviced)(core::Filter filter) = nullptr;   // purgó el prefiltro o cambió un cartucho
     void (*alarm_acknowledged)(core::AlarmKind kind) = nullptr;  // tocó Entendido en la alarma
+    void (*alarm_test)() = nullptr;            // Diagnóstico: Probar alarma
+    void (*restart_requested)() = nullptr;     // Diagnóstico: Reiniciar, ya confirmado
+    void (*bucket_test_started)() = nullptr;   // entró a la prueba de cubeta: bucket_pulses a 0
 };
 
 struct KeypadSpec;  // components/keypad_dialog.h

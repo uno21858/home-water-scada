@@ -93,7 +93,11 @@ enum class EventKind : uint8_t {
     alarm,         // una alarma; value es su AlarmKind
     drop_warning,  // caída del tren en Revisar
     drop_alarm,    // caída del tren en Tapados
+    offline,       // se cayó la red; value son los minutos sin red
 };
+
+inline constexpr uint16_t kNoTime = 0xFFFF;  // "todavía no" en un minuto del día
+inline constexpr int kEventCount = 8;
 
 // Algo que pasó, para la lista de Eventos
 struct Event {
@@ -101,6 +105,16 @@ struct Event {
     uint16_t at = 0;    // minuto del día
     EventKind kind = EventKind::dose;
     uint16_t value = 0; // mL de la dosis, psi de la caída o el Filter que se cambió
+    uint16_t acknowledged_at = kNoTime;  // alarmas: cuándo tocaron Entendido
+    uint16_t resolved_at = kNoTime;      // alarmas y avisos: cuándo se quitó
+};
+
+// Lo que hay en el bus I2C de la 7B y del nodo
+struct Devices {
+    bool ads1115 = true;   // 0x48, presiones
+    bool gt911 = true;     // 0x5D, táctil
+    bool ch422g = true;    // expansor de la 7B
+    bool ezo_orp = false;  // 0x62, fase 2
 };
 
 enum class MixerMode : uint8_t { off, on, automatic };
@@ -189,6 +203,12 @@ struct SystemState {
     Filter last_cartridge = Filter::pp20;        // el último que se cambió
     uint32_t last_cartridge_day = 0;             // mismo conteo que today; 0 = no hay registro
 
+    // Diagnóstico
+    Devices devices{};
+    char firmware[12] = "";       // versión: "0.1"
+    uint32_t uptime_minutes = 0;  // desde que se prendió
+    uint32_t bucket_pulses = 0;   // pulsos de F desde que empezó la prueba de cubeta
+
     // Pantalla
     bool night_off = true;                 // apagar la luz de noche
     uint16_t night_from = 23 * 60;         // minuto del día
@@ -204,7 +224,7 @@ struct SystemState {
     // Historial y eventos
     std::array<Totals, kHistoryDays> days{};  // el último es hoy
     std::array<Totals, 24> hours{};           // las horas de hoy; valen de 0 a la de ahorita
-    std::array<Event, 5> recent_events{};     // el más nuevo primero
+    std::array<Event, kEventCount> recent_events{};  // el más nuevo primero
     uint8_t recent_event_count = 0;
 
     // Bomba R de la cisterna

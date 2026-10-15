@@ -9,9 +9,12 @@
 #include "components/nav_bar.h"
 #include "components/primitives.h"
 #include "screens/alarm_screen.h"
+#include "screens/bucket_screen.h"
 #include "screens/cistern_screen.h"
+#include "screens/diagnostics_screen.h"
 #include "screens/dose_screen.h"
 #include "screens/drop_screen.h"
+#include "screens/events_screen.h"
 #include "screens/filters_screen.h"
 #include "screens/flow_screen.h"
 #include "screens/flow_sensor_screen.h"
@@ -50,14 +53,17 @@ const std::array<Page, kScreenCount> kPages = {{
     {{"Flujo", {}, nullptr, "Sensor F", Screen::flow_sensor}, Screen::flow},
     {{"Cisterna", {}, "Fase 2", "Bomba R", Screen::mixer}, Screen::cistern},
     {{"Dosis de cloro", {}, nullptr, "Inyección", Screen::injection}, Screen::dose},
-    {{"Historial", {}, nullptr, nullptr, {}}, Screen::history},
-    {{"Ajustes", {}, nullptr, nullptr, {}}, Screen::settings},
+    {{"Historial", {}, nullptr, "Alarmas", Screen::events}, Screen::history},
+    {{"Ajustes", {}, nullptr, "Diagnóstico", Screen::diagnostics}, Screen::settings},
     {{"Mezcla de la cisterna", Screen::cistern, "Fase 2", nullptr, {}}, Screen::cistern},
     {{"Sensor de flujo F", Screen::flow, nullptr, nullptr, {}}, Screen::flow},
     {{"Presión P1 y P2", Screen::home, nullptr, nullptr, {}}, Screen::home},
     {{"Caída del tren", Screen::home, nullptr, nullptr, {}}, Screen::home},
     {{"Cartuchos", Screen::home, nullptr, nullptr, {}}, Screen::home},
     {{"Inyección A y B", Screen::dose, nullptr, nullptr, {}}, Screen::dose},
+    {{"Alarmas y eventos", Screen::history, nullptr, nullptr, {}}, Screen::history},
+    {{"Diagnóstico", Screen::settings, nullptr, nullptr, {}}, Screen::settings},
+    {{"Prueba de cubeta", Screen::settings, nullptr, nullptr, {}}, Screen::settings},
 }};
 
 Actions app_actions;
@@ -81,6 +87,9 @@ DropScreen pressure_drop;
 FiltersScreen filters;
 InjectionScreen injection;
 DoseScreen dose;
+EventsScreen events;
+DiagnosticsScreen diagnostics;
+BucketScreen bucket;
 std::array<lv_obj_t*, kScreenCount> pages{};
 
 size_t index_of(Screen screen) { return static_cast<size_t>(screen); }
@@ -125,6 +134,9 @@ void init(const core::SystemState& s, const Actions& a) {
     pages[index_of(Screen::pressure_drop)] = pressure_drop.create(content);
     pages[index_of(Screen::filters)] = filters.create(content);
     pages[index_of(Screen::injection)] = injection.create(content);
+    pages[index_of(Screen::events)] = events.create(content);
+    pages[index_of(Screen::diagnostics)] = diagnostics.create(content);
+    pages[index_of(Screen::bucket_test)] = bucket.create(content);
 
     header.create(screen);
     nav.create(screen);
@@ -155,6 +167,9 @@ void update(const core::SystemState& s) {
     pressure_drop.update(s);
     filters.update(s);
     injection.update(s);
+    events.update(s);
+    diagnostics.update(s);
+    bucket.update(s);
     idle.update(s);
     alarm.update(s);
 
@@ -164,6 +179,7 @@ void update(const core::SystemState& s) {
 }
 
 void show(Screen screen) {
+    if (screen == Screen::bucket_test) bucket.enter();  // cada vez empieza a contar desde 0
     for (size_t i = 0; i < pages.size(); ++i) lv_obj_set_hidden(pages[i], i != index_of(screen));
     const Page& page = kPages[index_of(screen)];
     header.set_page(page.header);

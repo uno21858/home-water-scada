@@ -451,12 +451,15 @@ void HistoryScreen::update_events(const core::SystemState& s) {
     char when[48];
     char date[24];
     char time[8];
+    // Los avisos de red no van aquí: se ven en Alarmas y eventos
+    size_t next = 0;
     for (size_t i = 0; i < events_.size(); ++i) {
         EventRow& r = events_[i];
-        const bool used = i < s.recent_event_count;
+        while (next < s.recent_event_count && s.recent_events[next].kind == core::EventKind::offline) ++next;
+        const bool used = next < s.recent_event_count;
         lv_obj_set_hidden(r.obj, !used);
         if (!used) continue;
-        const core::Event& ev = s.recent_events[i];
+        const core::Event& ev = s.recent_events[next++];
 
         // Cuándo: "Hoy 06:10" o "Vie 2 oct 06:25", más el detalle si hay
         const uint32_t ago = s.today >= ev.day ? s.today - ev.day : 0;
@@ -493,6 +496,8 @@ void HistoryScreen::update_events(const core::SystemState& s) {
                 snprintf(title, sizeof title, "%s", fmt::alarm_title(ev.value));
                 tone = icon_tone = colors::alarm;
                 src = &icon_alarma_32;
+                break;
+            case core::EventKind::offline:  // no llega: se brincan arriba
                 break;
             case core::EventKind::drop_warning:
             case core::EventKind::drop_alarm: {

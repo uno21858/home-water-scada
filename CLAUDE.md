@@ -38,8 +38,12 @@ Mientras llega el hardware, se desarrolla en el simulador con SDL (Mac y Fedora)
     diálogos, y `ui::update()` lo abre con `lv_display_get_inactive_time()`).
     Detalles: `flow_sensor_screen` (DetalleF), `pressure_screen` (DetalleP),
     `drop_screen` (DetalleCaida), `filters_screen` (Cartuchos) e
-    `injection_screen` (Inyección). `alarm_screen` es la alarma a pantalla
-    completa: va en `lv_layer_top()` encima de todo, Pasillo incluido.
+    `injection_screen` (Inyección). Servicio: `events_screen` (Alarmas y
+    eventos, desde Historial), `diagnostics_screen` (Diagnóstico, desde
+    Ajustes) y `bucket_screen` (Prueba de cubeta, desde Ajustes y DetalleF;
+    `show()` le llama `enter()` para que cada vez cuente desde 0).
+    `alarm_screen` es la alarma a pantalla completa: va en `lv_layer_top()`
+    encima de todo, Pasillo incluido.
   - Lo que la pantalla le pide a la app sale por `actions()`; un campo nuevo
     se captura con `open_keypad(KeypadSpec, callback)`.
 - `simulator/`: ventana SDL. `demo.cpp` llena el estado con los datos de ejemplo
@@ -126,16 +130,15 @@ En Mac, SDL2 viene de Homebrew (`brew install sdl2`). Si CMake no lo encuentra:
 
 Hecho: las 7 pestañas (Tren, Resumen, Flujo, Cisterna, Dosis, Historial,
 Ajustes), Mezcla, Pasillo, los 5 detalles (DetalleF, DetalleP, DetalleCaida,
-Cartuchos, Inyección), la alarma a pantalla completa, el aviso de sin red en
+Cartuchos, Inyección), Alarmas, Diagnóstico, Prueba de cubeta, la alarma a
+pantalla completa, el aviso de sin red en
 el encabezado, el diálogo de confirmar y el teclado (Registrar otra cantidad, Calibrar con tira y los
 minutos de la bomba R).
 
 Pendiente, en este orden:
 
-1. Servicio: Alarmas, Diagnóstico, Prueba de cubeta, Leyenda, Panorama. Al
-   `header` le falta el "?" de ayuda (Leyenda). Cada
-   enlace se prende en `kPages` cuando exista su pantalla: Casa → Panorama,
-   Alarmas, Diagnóstico; y los botones de Prueba de cubeta (Ajustes, DetalleF).
+1. Servicio: Leyenda y Panorama. Al `header` le falta el "?" de ayuda
+   (Leyenda) y al Tren el enlace Casa → Panorama.
 2. Firmware de la 7B y del nodo.
 
 ## Diferencias a propósito con el canvas
@@ -143,8 +146,6 @@ Pendiente, en este orden:
 - P1 y P2 bloqueadas dicen "1.5" y no "fase 1.5": con el candado no cabe en 172 px
   (en el canvas se sale de la etiqueta).
 - El label "V3" mide 40 px en lugar de 34.
-- P1, P2, los vasos y la caída del Tren todavía no abren nada: sus pantallas de
-  detalle no existen.
 - Los chips de fecha y hora del teclado solo muestran; no hay selector diseñado.
 - "P1 0.0 P2 0.0" en Ajustes y en DetalleP es el corrimiento del cero que se
   guardó con Hacer cero (`p1_zero_psi`), no la lectura en vivo.
@@ -179,12 +180,22 @@ Pendiente, en este orden:
 - En Pasillo, con 100 mL o más la cifra de Toca echar baja a 72 px (a 136 no
   cabe antes de la orilla). Al entrar se cierran el diálogo y el teclado: el
   toque para salir regresa al Tren.
-- En Ajustes, los botones que llevan a una pantalla que todavía no existe
-  (Prueba de cubeta, Diagnóstico, Ver cartuchos) salen deshabilitados;
-  se prenden con `link_to` cuando exista su pantalla. "Cambiar red" y "Cambiar
-  horario" también, porque el canvas no tiene la vista que abren. "Hacer cero"
+- En Ajustes, "Cambiar red" y "Cambiar horario" salen deshabilitados: el
+  canvas no tiene la vista que abren. "Hacer cero"
   pide confirmación (el DS lo pide para lo que reinicia algo) y el envío de
   datos dice "Por enviar" en ámbar si hay pendientes.
 - En Mezcla, los renglones del programa Auto abren el teclado en minutos (de 1
   a 99) y sin bomba R la pantalla se ve bloqueada. El selector marca la opción
   al tocarla y el estado la confirma en el siguiente `update()`.
+- Alarmas e Historial leen el mismo registro (`SystemState::recent_events`).
+  El demo junta los eventos de los dos canvas, así que la lista no sale igual
+  a ninguno; con más de 5 renglones se recorre con el dedo. "Activas" lista
+  las alarmas activas (reconocidas o no) con "Desde 18:42"; el canvas solo
+  dibuja el caso sin ninguna. Historial no muestra los "Sin red".
+- En Diagnóstico, "Probar alarma" va sin ícono: con él no cabe en 239 px (en el
+  canvas se sale del botón). Lo que es de una fase que no está instalada dice
+  "fase 1.5" o "fase 2" en texto-3 según `has_pressure`, `has_orp` y
+  `has_mixer`; el canvas dibuja la fase 1.5 (`HMI_DEMO=fase15`). En el demo,
+  Probar alarma prende la de sin flujo y se quita al tocar Entendido.
+- En Prueba de cubeta el demo cuenta como si F diera 387.2 pulsos por litro y
+  se para en 3,872 (la marca), para que proponga 387 como el canvas.

@@ -51,4 +51,12 @@ void on_filter_serviced(core::Filter filter);
 // Alarma: tocó Entendido
 void on_alarm_acknowledged(core::AlarmKind kind);
 
+// Diagnóstico: Probar alarma prende la de sin flujo hasta que la reconozcan;
+// Reiniciar no hace nada en el demo
+void on_alarm_test();
+void on_restart();
+
+// Prueba de cubeta: bucket_pulses vuelve a 0 y cuenta con el caudal
+void on_bucket_test_started();
+
 }  // namespace demo

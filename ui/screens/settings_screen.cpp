@@ -142,7 +142,8 @@ lv_obj_t* SettingsScreen::create_sensors(lv_obj_t* page) {
     snprintf(buf, sizeof buf, "De fábrica: %u", static_cast<unsigned>(core::kFactoryPulsesPerLiter));
     lv_obj_t* factory = label(f, &font_label_26, colors::text_disabled, buf);
     lv_obj_align(factory, LV_ALIGN_TOP_RIGHT, -20, 72);
-    pending(small_button(f, 20, 130, 380, "Prueba de cubeta", &icon_cubeta_32, false, nullptr, nullptr));
+    link_to(small_button(f, 20, 130, 380, "Prueba de cubeta", &icon_cubeta_32, false, nullptr, nullptr),
+            Screen::bucket_test, &styles::button_secondary_pressed);
     // Solo el lápiz: escribir el factor a mano
     lv_obj_t* edit = button_secondary(f, 412, 130, 64, "", handle_factor, this);
     lv_obj_set_height(edit, 64);
@@ -203,7 +204,8 @@ lv_obj_t* SettingsScreen::create_connection(lv_obj_t* page) {
     upload_word_ = label(state, &font_title_36, colors::ok, "");
     upload_note_ = label(u, &font_label_26, colors::text_secondary, "");
     lv_obj_set_pos(upload_note_, 20, 98);
-    pending(small_button(u, 20, 136, 300, "Diagnóstico", nullptr, true, nullptr, nullptr));
+    link_to(small_button(u, 20, 136, 300, "Diagnóstico", nullptr, true, nullptr, nullptr), Screen::diagnostics,
+            &styles::button_secondary_pressed);
     return group;
 }
 

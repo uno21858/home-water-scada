@@ -24,6 +24,7 @@ LV_IMAGE_DECLARE(icon_ok_40);           // pastilla de Pasillo
 LV_IMAGE_DECLARE(icon_advertencia_40);
 LV_IMAGE_DECLARE(icon_alarma_40);
 LV_IMAGE_DECLARE(icon_alarma_96);         // alarma a pantalla completa
+LV_IMAGE_DECLARE(icon_ok_56);             // Sin alarmas activas
 LV_IMAGE_DECLARE(icon_info_28);         // aviso neutro: Sin flujo
 LV_IMAGE_DECLARE(icon_wifi_32);
 LV_IMAGE_DECLARE(icon_wifi_off_32);

@@ -1,0 +1,159 @@
+#include "screens/diagnostics_screen.h"
+
+#include <cstdio>
+
+#include "components/primitives.h"
+#include "theme/colors.h"
+#include "theme/fonts.h"
+#include "theme/icons.h"
+#include "ui.h"
+
+// Medidas tomadas del artboard Diagnostico del canvas (cada y menos 64).
+
+namespace ui {
+namespace {
+
+// Tarjeta con título y una tabla de nombre (texto-2) y valor (a la derecha)
+lv_obj_t* table_card(lv_obj_t* page, int32_t x, int32_t y, int32_t h, const char* title) {
+    lv_obj_t* c = card(page, x, y, 490, h);
+    lv_obj_set_style_pad_ver(c, 6, 0);
+    lv_obj_set_style_pad_hor(c, 16, 0);
+    lv_obj_set_flex_flow(c, LV_FLEX_FLOW_COLUMN);
+    label(c, &font_body_32, colors::text, title);
+    lv_obj_set_style_margin_bottom(lv_obj_get_child(c, 0), 4, 0);
+    return c;
+}
+
+// Un renglón: regresa el valor, por si cambia
+lv_obj_t* entry(lv_obj_t* c, const char* name, const char* value, uint32_t tone = colors::text) {
+    lv_obj_t* r = box(c);
+    lv_obj_set_size(r, lv_pct(100), 32);
+    lv_obj_t* n = label(r, &font_label_26, colors::text_secondary, name);
+    lv_obj_align(n, LV_ALIGN_LEFT_MID, 0, 0);
+    lv_obj_t* v = label(r, &font_label_26, tone, value);
+    lv_obj_align(v, LV_ALIGN_RIGHT_MID, 0, 0);
+    return v;
+}
+
+// "Responde" en verde o "No responde" en rojo
+void device(lv_obj_t* value, bool ok) {
+    set_text(value, ok ? "Responde" : "No responde");
+    lv_obj_set_style_text_color(value, color(ok ? colors::ok : colors::alarm), 0);
+}
+
+// Lo de una fase que todavía no se instala: "fase 2" en texto-3
+void future(lv_obj_t* value, const char* text) {
+    set_text(value, text);
+    lv_obj_set_style_text_color(value, color(colors::text_disabled), 0);
+}
+
+}  // namespace
+
+lv_obj_t* DiagnosticsScreen::create(lv_obj_t* parent) {
+    lv_obj_t* page = box(parent, 0, 0, 1024, 456);
+
+    lv_obj_t* in = table_card(page, 16, 12, 216, "Entradas");
+    di0_ = entry(in, "DI0 · flujo F", "");
+    entry(in, "DI1", "libre", colors::text_disabled);
+    a0_ = entry(in, "A0 · presión P1", "");
+    a1_ = entry(in, "A1 · presión P2", "");
+    entry(in, "A2 y A3", "libres", colors::text_disabled);
+
+    lv_obj_t* bus = table_card(page, 16, 240, 184, "Bus I2C");
+    ads_ = entry(bus, "0x48 · ADS1115", "");
+    gt911_ = entry(bus, "0x5D · táctil GT911", "");
+    ch422g_ = entry(bus, "CH422G · expansor", "");
+    ezo_ = entry(bus, "0x62 · EZO-ORP", "");
+
+    lv_obj_t* out = table_card(page, 518, 12, 152, "Salidas");
+    entry(out, "DO0 · bomba A", "apagada · fase 3", colors::text_disabled);
+    entry(out, "DO1 · bomba B", "apagada · fase 3", colors::text_disabled);
+    do2_ = entry(out, "DO2 · bomba R", "");
+
+    lv_obj_t* net = table_card(page, 518, 176, 152, "Red y datos");
+    wifi_ = entry(net, "", "");
+    wifi_name_ = lv_obj_get_child(lv_obj_get_parent(wifi_), 0);
+    server_ = entry(net, "Servidor de la casa", "");
+    pending_ = entry(net, "Por enviar", "");
+
+    // Probar alarma: la app prende una alarma de prueba. Sin el ícono del
+    // canvas: con él no cabe en 239 px (en el canvas se sale del botón)
+    lv_obj_t* test = button_secondary(page, 518, 340, 239, "Probar alarma", [](lv_event_t*) {
+        if (actions().alarm_test != nullptr) actions().alarm_test();
+    }, nullptr);
+    lv_obj_set_height(test, 64);
+
+    lv_obj_t* restart = button_secondary(page, 769, 340, 239, "Reiniciar", [](lv_event_t*) {
+        open_confirm("¿Reiniciar la pantalla?", "Se apaga y se prende sola. Lo que no se ha enviado queda guardado.",
+                     "Sí, reiniciar", [] {
+                         if (actions().restart_requested != nullptr) actions().restart_requested();
+                     });
+    }, nullptr);
+    lv_obj_set_height(restart, 64);
+
+    about_ = label(page, &font_label_26, colors::text_disabled, "");
+    lv_obj_set_pos(about_, 518, 412);
+    return page;
+}
+
+void DiagnosticsScreen::update(const core::SystemState& s) {
+    char buf[64];
+    const float hz = (s.flow_lpm >= 0.05f ? s.flow_lpm : 0.0f) * static_cast<float>(s.flow_pulses_per_liter) / 60.0f;
+    snprintf(buf, sizeof buf, "%.1f Hz", static_cast<double>(hz));
+    set_text(di0_, buf);
+    // P1 y P2 entran por el ADS1115, que llega en la fase 1.5
+    if (s.has_pressure) {
+        snprintf(buf, sizeof buf, "%.3f V", static_cast<double>(s.p1_volts));
+        set_text(a0_, buf);
+        lv_obj_set_style_text_color(a0_, color(colors::text), 0);
+        snprintf(buf, sizeof buf, "%.3f V", static_cast<double>(s.p2_volts));
+        set_text(a1_, buf);
+        lv_obj_set_style_text_color(a1_, color(colors::text), 0);
+        device(ads_, s.devices.ads1115);
+    } else {
+        future(a0_, "fase 1.5");
+        future(a1_, "fase 1.5");
+        future(ads_, "fase 1.5");
+    }
+    device(gt911_, s.devices.gt911);
+    device(ch422g_, s.devices.ch422g);
+    if (s.has_orp) {
+        device(ezo_, s.devices.ezo_orp);
+    } else {
+        future(ezo_, "fase 2");
+    }
+
+    if (s.has_mixer) {
+        set_text(do2_, s.mixer_on ? "prendida" : "apagada");
+        lv_obj_set_style_text_color(do2_, color(colors::text), 0);
+    } else {
+        future(do2_, "apagada · fase 2");
+    }
+
+    snprintf(buf, sizeof buf, "WiFi %s", s.wifi_ssid[0] != '\0' ? s.wifi_ssid : "sin configurar");
+    set_text(wifi_name_, buf);
+    const char* const strength[4] = {"sin señal", "señal débil", "señal regular", "señal buena"};
+    set_text(wifi_, s.wifi_ok ? strength[s.wifi_bars % 4] : "sin conexión");
+    lv_obj_set_style_text_color(wifi_, color(s.wifi_ok ? colors::text : colors::warning), 0);
+    const bool up_to_date = s.wifi_ok && s.pending_uploads == 0;
+    set_text(server_, up_to_date ? "al día" : "pendiente");
+    lv_obj_set_style_text_color(server_, color(up_to_date ? colors::ok : colors::warning), 0);
+    snprintf(buf, sizeof buf, "%u", static_cast<unsigned>(s.pending_uploads));
+    set_text(pending_, buf);
+
+    // "encendida hace 3 días", "hace 5 h" o "hace 12 min"
+    const uint32_t m = s.uptime_minutes;
+    char since[24];
+    if (m >= 24 * 60) {
+        const uint32_t days = m / (24 * 60);
+        snprintf(since, sizeof since, days == 1 ? "1 día" : "%lu días", static_cast<unsigned long>(days));
+    } else if (m >= 60) {
+        snprintf(since, sizeof since, "%lu h", static_cast<unsigned long>(m / 60));
+    } else {
+        snprintf(since, sizeof since, "%lu min", static_cast<unsigned long>(m));
+    }
+    snprintf(buf, sizeof buf, "Firmware %s · encendida hace %s", s.firmware[0] != '\0' ? s.firmware : "?", since);
+    set_text(about_, buf);
+}
+
+}  // namespace ui

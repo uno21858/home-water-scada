@@ -34,6 +34,7 @@ core::SystemState make() {
     s.minute = 42;
     s.wifi_ok = true;
     std::snprintf(s.wifi_ssid, sizeof s.wifi_ssid, "Casa-2.4G");
+    s.devices.ezo_orp = true;
     s.wifi_bars = 3;
     s.last_upload_at = 18 * 60 + 42;
 
@@ -150,14 +151,21 @@ core::SystemState make() {
     }
 
     // Eventos, el más nuevo primero
+    // (los del canvas de Historial y los de Alarmas, juntos)
     s.recent_events = {{
-        {1000, 6 * 60 + 10, core::EventKind::dose, 40},
-        {999, 6 * 60 + 25, core::EventKind::dose, 36},
-        {998, 16 * 60 + 40, core::EventKind::cartridge, static_cast<uint16_t>(core::Filter::pp5)},
-        {998, 7 * 60 + 2, core::EventKind::dose_typed, 45},
-        {997, 22 * 60 + 14, core::EventKind::drop_warning, 6},
+        {1000, 6 * 60 + 10, core::EventKind::dose, 40, core::kNoTime, core::kNoTime},
+        {1000, 3 * 60 + 20, core::EventKind::offline, 12, core::kNoTime, 3 * 60 + 32},
+        {999, 6 * 60 + 25, core::EventKind::dose, 36, core::kNoTime, core::kNoTime},
+        {998, 16 * 60 + 40, core::EventKind::cartridge, static_cast<uint16_t>(core::Filter::pp5), core::kNoTime,
+         core::kNoTime},
+        {998, 7 * 60 + 2, core::EventKind::dose_typed, 45, core::kNoTime, core::kNoTime},
+        {997, 22 * 60 + 14, core::EventKind::drop_warning, 6, core::kNoTime, 23 * 60 + 5},
+        {996, 13 * 60 + 5, core::EventKind::alarm, static_cast<uint16_t>(core::AlarmKind::sensor), 13 * 60 + 7,
+         13 * 60 + 40},
     }};
-    s.recent_event_count = 5;
+    s.recent_event_count = 7;
+    std::snprintf(s.firmware, sizeof s.firmware, "0.1");
+    s.uptime_minutes = 3 * 24 * 60 + 5 * 60;
     s.orp_mv = 650;
 
     // ORP de los últimos 7 días, una muestra por hora: la curva del canvas de
@@ -203,6 +211,13 @@ bool no_flow = false;  // escenario sin-flujo: el caudal se queda en 0
 float liters_fraction = 0.0f;
 uint8_t mixer_run_total = 15;  // minutos de la vuelta de ahorita: 15 en Auto, 60 a mano
 bool mixer_by_hand = false;    // la vuelta de ahorita se prendió a mano
+bool bucket_running = false;   // prueba de cubeta contando
+float bucket_fraction = 0.0f;
+bool test_alarm = false;  // la alarma de ahorita es la de Probar alarma
+// En el demo F en realidad da 387.2 pulsos por litro y no los 396 de fábrica:
+// la cubeta se llena en 3,872 pulsos y la prueba propone K 387, como el canvas
+constexpr float kBucketPulsesPerLiter = 387.2f;
+constexpr uint32_t kBucketFull = 3872;
 
 void start_mixer(core::MixerReason reason, uint8_t minutes) {
     std::rotate(s.mixer_runs.rbegin(), s.mixer_runs.rbegin() + 1, s.mixer_runs.rend());
@@ -219,8 +234,8 @@ void start_mixer(core::MixerReason reason, uint8_t minutes) {
 
 void add_event(core::EventKind kind, uint16_t value) {
     std::rotate(s.recent_events.rbegin(), s.recent_events.rbegin() + 1, s.recent_events.rend());
-    s.recent_events[0] = {s.today, core::minute_of_day(s), kind, value};
-    s.recent_event_count = static_cast<uint8_t>(std::min<int>(s.recent_event_count + 1, 5));
+    s.recent_events[0] = {s.today, core::minute_of_day(s), kind, value, core::kNoTime, core::kNoTime};
+    s.recent_event_count = static_cast<uint8_t>(std::min<int>(s.recent_event_count + 1, core::kEventCount));
 }
 
 void add_dose(uint32_t ml, bool typed) {
@@ -327,8 +342,10 @@ bool set_scenario(const char* name) {
         alarm(core::AlarmKind::daily_cap);
     } else if (std::strcmp(name, "fase1") == 0) {
         s.has_pressure = s.has_orp = s.has_mixer = false;
+        s.devices.ads1115 = s.devices.ezo_orp = false;
     } else if (std::strcmp(name, "fase15") == 0) {
         s.has_orp = s.has_mixer = false;
+        s.devices.ezo_orp = false;
     } else if (std::strcmp(name, "revisar") == 0) {
         drop(7);
     } else if (std::strcmp(name, "tapados") == 0) {
@@ -339,7 +356,34 @@ bool set_scenario(const char* name) {
     return true;
 }
 
-void on_alarm_acknowledged(core::AlarmKind kind) { s.alarms[static_cast<size_t>(kind)].acknowledged = true; }
+void on_alarm_acknowledged(core::AlarmKind kind) {
+    s.alarms[static_cast<size_t>(kind)].acknowledged = true;
+    // El evento de esa alarma (el más nuevo) queda reconocido a esta hora
+    for (uint8_t i = 0; i < s.recent_event_count; ++i) {
+        core::Event& e = s.recent_events[i];
+        if (e.kind == core::EventKind::alarm && e.value == static_cast<uint16_t>(kind)) {
+            if (e.acknowledged_at == core::kNoTime) e.acknowledged_at = core::minute_of_day(s);
+            break;
+        }
+    }
+}
+
+void on_alarm_test() {
+    core::Alarm& a = s.alarms[static_cast<size_t>(core::AlarmKind::no_flow)];
+    a = {true, false, core::minute_of_day(s)};
+    add_event(core::EventKind::alarm, static_cast<uint16_t>(core::AlarmKind::no_flow));
+    test_alarm = true;
+}
+
+void on_restart() {
+    // El demo no se reinicia: el firmware sí
+}
+
+void on_bucket_test_started() {
+    s.bucket_pulses = 0;
+    bucket_fraction = 0.0f;
+    bucket_running = true;
+}
 
 void tick_1s() {
     ++seconds;
@@ -356,6 +400,29 @@ void tick_1s() {
         ++s.days.back().liters;
         for (core::FilterStatus& f : s.filters) {
             if (f.installed) ++f.liters;
+        }
+    }
+
+    // Prueba de cubeta: cuenta hasta que la cubeta llega a la marca
+    if (bucket_running) {
+        bucket_fraction += s.flow_lpm / 60.0f * kBucketPulsesPerLiter;
+        const auto whole = static_cast<uint32_t>(bucket_fraction);
+        bucket_fraction -= static_cast<float>(whole);
+        s.bucket_pulses = std::min(kBucketFull, s.bucket_pulses + whole);
+        if (s.bucket_pulses == kBucketFull) bucket_running = false;
+    }
+
+    // La de Probar alarma se quita sola cuando la reconocen
+    core::Alarm& tested = s.alarms[static_cast<size_t>(core::AlarmKind::no_flow)];
+    if (test_alarm && tested.acknowledged) {
+        tested.active = false;
+        test_alarm = false;
+        for (uint8_t i = 0; i < s.recent_event_count; ++i) {
+            core::Event& e = s.recent_events[i];
+            if (e.kind == core::EventKind::alarm && e.value == static_cast<uint16_t>(core::AlarmKind::no_flow)) {
+                e.resolved_at = core::minute_of_day(s);
+                break;
+            }
         }
     }
 

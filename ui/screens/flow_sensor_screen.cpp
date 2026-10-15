@@ -9,6 +9,7 @@
 #include "theme/fonts.h"
 #include "theme/format.h"
 #include "theme/icons.h"
+#include "theme/styles.h"
 
 // Medidas tomadas del artboard DetalleF del canvas (cada y menos 64).
 
@@ -136,13 +137,12 @@ void FlowSensorScreen::create_side(lv_obj_t* page) {
     since_dose_ = liters_row(rows, "Desde la dosis");
     week_ = liters_row(rows, "Esta semana");
 
-    // Prueba de cubeta: se prende cuando exista su pantalla
     lv_obj_t* bucket = button_secondary(page, 628, 368, 380, "Prueba de cubeta", nullptr, nullptr);
     lv_obj_set_height(bucket, 76);
     lv_obj_t* i = icon(bucket, &icon_cubeta_32, colors::text);
     lv_obj_set_style_image_recolor(i, color(colors::text_disabled), LV_STATE_DISABLED);
     lv_obj_move_to_index(i, 0);
-    lv_obj_set_disabled(bucket, true);
+    link_to(bucket, Screen::bucket_test, &styles::button_secondary_pressed);
 }
 
 void FlowSensorScreen::update(const core::SystemState& s) {
