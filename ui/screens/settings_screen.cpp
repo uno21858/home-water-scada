@@ -245,7 +245,7 @@ lv_obj_t* SettingsScreen::create_display(lv_obj_t* page) {
     lv_obj_set_pos(label(p, &font_body_32, colors::text, "Cifras grandes si nadie toca en"), 20, 52);
     static const char* const kMinutes[3] = {"1 min", "2 min", "5 min"};
     idle_.create(p, 20, 130, 360, 64, kMinutes, 3, on_idle);
-    pending(small_button(p, 392, 130, 208, "Verlo", nullptr, true, nullptr, nullptr));
+    small_button(p, 392, 130, 208, "Verlo", nullptr, true, [](lv_event_t*) { show_idle(); }, nullptr);
     return group;
 }
 

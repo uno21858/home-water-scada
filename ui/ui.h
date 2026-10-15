@@ -53,6 +53,9 @@ void open_strip_keypad();
 // Abre el teclado con lo que diga spec; al guardar llama on_save con el valor
 void open_keypad(const KeypadSpec& spec, void (*on_save)(uint32_t value));
 
+// Muestra Pasillo ahorita (Ajustes → Verlo). Solo, sale a los minutos sin tocar.
+void show_idle();
+
 // Abre el diálogo de confirmación; on_confirm se llama si dice que sí
 void open_confirm(const char* title, const char* body, const char* confirm_text, void (*on_confirm)());
 

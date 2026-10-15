@@ -34,7 +34,8 @@ Mientras llega el hardware, se desarrolla en el simulador con SDL (Mac y Fedora)
   - `screens/`: `home_screen` (Tren), `summary_screen` (Resumen), `flow_screen`
     (Flujo), `cistern_screen` (Cisterna), `mixer_screen` (Mezcla),
     `dose_screen` (Dosis), `history_screen` (Historial), `settings_screen`
-    (Ajustes).
+    (Ajustes) e `idle_screen` (Pasillo: va en `lv_layer_top()`, encima de los
+    diálogos, y `ui::update()` lo abre con `lv_display_get_inactive_time()`).
   - Lo que la pantalla le pide a la app sale por `actions()`; un campo nuevo
     se captura con `open_keypad(KeypadSpec, callback)`.
 - `simulator/`: ventana SDL. `demo.cpp` llena el estado con los datos de ejemplo
@@ -116,19 +117,18 @@ En Mac, SDL2 viene de Homebrew (`brew install sdl2`). Si CMake no lo encuentra:
 ## Estado (octubre 2026)
 
 Hecho: las 7 pestañas (Tren, Resumen, Flujo, Cisterna, Dosis, Historial,
-Ajustes), Mezcla, el diálogo de confirmar y el teclado (Registrar otra cantidad, Calibrar con tira y los
+Ajustes), Mezcla, Pasillo, el diálogo de confirmar y el teclado (Registrar otra cantidad, Calibrar con tira y los
 minutos de la bomba R).
 
 Pendiente, en este orden:
 
-1. Pasillo (reposo a los 2 min sin tocar). El `header` ya tiene atrás, chip y
-   enlace; le faltan el "?" de ayuda (Leyenda) y el chip de sin red. Cada enlace
-   se prende en `kPages` cuando exista su pantalla: Casa → Panorama, Sensor F,
-   Inyección, Alarmas, Diagnóstico.
-2. Detalles: DetalleF, DetalleP, DetalleCaida, Cartuchos, Inyeccion.
-3. Estados globales: alarma a pantalla completa (EstadoAlarma) y sin red.
-4. Servicio: Alarmas, Diagnóstico, Prueba de cubeta, Leyenda, Panorama.
-5. Firmware de la 7B y del nodo.
+1. Detalles: DetalleF, DetalleP, DetalleCaida, Cartuchos, Inyeccion. El
+   `header` ya tiene atrás, chip y enlace; le faltan el "?" de ayuda (Leyenda)
+   y el chip de sin red. Cada enlace se prende en `kPages` cuando exista su
+   pantalla: Casa → Panorama, Sensor F, Inyección, Alarmas, Diagnóstico.
+2. Estados globales: alarma a pantalla completa (EstadoAlarma) y sin red.
+3. Servicio: Alarmas, Diagnóstico, Prueba de cubeta, Leyenda, Panorama.
+4. Firmware de la 7B y del nodo.
 
 ## Diferencias a propósito con el canvas
 
@@ -154,8 +154,11 @@ Pendiente, en este orden:
   fase 1.5" o "fase 2" en lugar de la gráfica. Las marcas de abajo miden 100 px
   y no 80 para que "14 sep" no se parta. "18:00" y "24:00" se tocan igual que en
   el canvas.
+- En Pasillo, con 100 mL o más la cifra de Toca echar baja a 72 px (a 136 no
+  cabe antes de la orilla). Al entrar se cierran el diálogo y el teclado: el
+  toque para salir regresa al Tren.
 - En Ajustes, los botones que llevan a una pantalla que todavía no existe
-  (Prueba de cubeta, Diagnóstico, Ver cartuchos, Verlo) salen deshabilitados;
+  (Prueba de cubeta, Diagnóstico, Ver cartuchos) salen deshabilitados;
   se prenden con `link_to` cuando exista su pantalla. "Cambiar red" y "Cambiar
   horario" también, porque el canvas no tiene la vista que abren. "Hacer cero"
   pide confirmación (el DS lo pide para lo que reinicia algo) y el envío de

@@ -13,6 +13,7 @@
 #include "screens/flow_screen.h"
 #include "screens/history_screen.h"
 #include "screens/home_screen.h"
+#include "screens/idle_screen.h"
 #include "screens/mixer_screen.h"
 #include "screens/settings_screen.h"
 #include "screens/summary_screen.h"
@@ -61,6 +62,7 @@ CisternScreen cistern;
 MixerScreen mixer;
 HistoryScreen history;
 SettingsScreen settings;
+IdleScreen idle;
 DoseScreen dose;
 std::array<lv_obj_t*, kScreenCount> pages{};
 
@@ -106,6 +108,7 @@ void init(const core::SystemState& s, const Actions& a) {
     nav.create(screen);
     dialog.create(lv_layer_top());
     keypad.create(lv_layer_top());
+    idle.create(lv_layer_top(), [] { show(Screen::home); });  // encima de los diálogos
 
     update(s);
     show(Screen::home);  // Tren es la de inicio
@@ -124,6 +127,11 @@ void update(const core::SystemState& s) {
     dose.update(s);
     history.update(s);
     settings.update(s);
+    idle.update(s);
+
+    // Pasillo: nadie ha tocado la pantalla en los minutos de Ajustes
+    const uint32_t idle_ms = static_cast<uint32_t>(s.idle_minutes) * 60u * 1000u;
+    if (!idle.is_open() && lv_display_get_inactive_time(nullptr) >= idle_ms) show_idle();
 }
 
 void show(Screen screen) {
@@ -168,6 +176,13 @@ void open_strip_keypad() {
 }
 
 void open_keypad(const KeypadSpec& spec, void (*on_save)(uint32_t value)) { keypad.open(spec, on_save); }
+
+void show_idle() {
+    // Lo que se estaba capturando se cancela: al volver se regresa al Tren
+    dialog.close();
+    keypad.close();
+    idle.open();
+}
 
 void open_confirm(const char* title, const char* body, const char* confirm_text, void (*on_confirm)()) {
     dialog.open(title, body, confirm_text, on_confirm);
