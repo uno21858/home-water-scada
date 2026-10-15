@@ -230,7 +230,7 @@ void open_strip_keypad() {
     char date[24];
     char time[8];
     fmt::signed_int(mv, sizeof mv, state.orp_mv);
-    snprintf(hint, sizeof hint, "Se guarda con el ORP de ahorita: %s mV", mv);
+    snprintf(hint, sizeof hint, "ORP de ahorita: %s mV", mv);  // con más no cabe en 426 px
     snprintf(date, sizeof date, "Hoy %u %s", static_cast<unsigned>(state.day), fmt::month_short(state.month));
     fmt::clock(time, sizeof time, core::minute_of_day(state));
     keypad.open({"Calibrar con tira", "Cloro libre de la tira", "mg/L", 1, 2, hint, date, time}, on_strip_checked);

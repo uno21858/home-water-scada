@@ -54,15 +54,18 @@ lv_obj_t* DiagnosticsScreen::create(lv_obj_t* parent) {
 
     lv_obj_t* in = table_card(page, 16, 12, 216, "Entradas");
     di0_ = entry(in, "DI0 · flujo F", "");
-    entry(in, "DI1", "libre", colors::text_disabled);
     a0_ = entry(in, "A0 · presión P1", "");
     a1_ = entry(in, "A1 · presión P2", "");
-    entry(in, "A2 y A3", "libres", colors::text_disabled);
+    a3_ = entry(in, "", "");
+    a3_name_ = lv_obj_get_child(lv_obj_get_parent(a3_), 0);
+    // Los libres juntos al final, para que la tarjeta siga de 5 renglones
+    entry(in, "DI1 y A2", "libres", colors::text_disabled);
 
     lv_obj_t* bus = table_card(page, 16, 240, 184, "Bus I2C");
     ads_ = entry(bus, "0x48 · ADS1115", "");
     gt911_ = entry(bus, "0x5D · táctil GT911", "");
-    ch422g_ = entry(bus, "CH422G · expansor", "");
+    // El canvas dice CH422G (el de la 5B); la 7B trae un CH32V003
+    expander_ = entry(bus, "CH32V003 · expansor", "");
     ezo_ = entry(bus, "0x62 · EZO-ORP", "");
 
     lv_obj_t* out = table_card(page, 518, 12, 152, "Salidas");
@@ -109,14 +112,26 @@ void DiagnosticsScreen::update(const core::SystemState& s) {
         snprintf(buf, sizeof buf, "%.3f V", static_cast<double>(s.p2_volts));
         set_text(a1_, buf);
         lv_obj_set_style_text_color(a1_, color(colors::text), 0);
-        device(ads_, s.devices.ads1115);
     } else {
         future(a0_, "fase 1.5");
         future(a1_, "fase 1.5");
+    }
+    // El ADS1115 llega con P1 y P2, o antes si ya está el LDR
+    if (s.has_pressure || s.has_ldr) {
+        device(ads_, s.devices.ads1115);
+    } else {
         future(ads_, "fase 1.5");
     }
+    set_text(a3_name_, s.has_ldr ? "A3 · luz (LDR)" : "A3");
+    if (s.has_ldr) {
+        snprintf(buf, sizeof buf, "%.3f V", static_cast<double>(s.ldr_volts));
+        set_text(a3_, buf);
+        lv_obj_set_style_text_color(a3_, color(colors::text), 0);
+    } else {
+        future(a3_, "libre");
+    }
     device(gt911_, s.devices.gt911);
-    device(ch422g_, s.devices.ch422g);
+    device(expander_, s.devices.expander);
     if (s.has_orp) {
         device(ezo_, s.devices.ezo_orp);
     } else {

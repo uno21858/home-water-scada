@@ -172,7 +172,8 @@ void DropScreen::create_side(lv_obj_t* page) {
     lv_obj_set_pos(rise_, 16, 144);
 
     lv_obj_t* todo = card(page, 628, 220, 380, 136);
-    lv_obj_set_pos(label(todo, &font_label_26, colors::text_secondary, "Si llega a Revisar"), 16, 10);
+    // "Si llega a Revisar" se leía como verbo: dice el número y la zona de la barra
+    lv_obj_set_pos(label(todo, &font_label_26, colors::text_secondary, "Si llega a 5 psi (Revisar)"), 16, 10);
     lv_obj_t* steps = label(todo, &font_label_26, colors::text, "1. Purga el PRF\n2. Cambia el de 20 µm");
     lv_obj_set_pos(steps, 16, 46);
 
@@ -203,7 +204,7 @@ void DropScreen::update(const core::SystemState& s) {
     set_text(formula_, buf);
     const bool flowing = s.flow_lpm >= 0.05f;
     if (flowing) {
-        snprintf(buf, sizeof buf, "con %.1f L/min pasando", static_cast<double>(s.flow_lpm));
+        snprintf(buf, sizeof buf, "con %.1f L/min", static_cast<double>(s.flow_lpm));
     } else {
         snprintf(buf, sizeof buf, "sin agua pasando");
     }
@@ -226,8 +227,9 @@ void DropScreen::update(const core::SystemState& s) {
         lv_obj_set_style_text_color(state_word_, color(z.lit), 0);
     }
 
-    // Al mismo caudal: la caída de nuevos contra la de hoy
-    snprintf(buf, sizeof buf, "Al mismo caudal, %.1f L/min", static_cast<double>(s.flow_lpm));
+    // Al mismo caudal: la caída de nuevos contra la de hoy. Los textos de
+    // esta tarjeta tienen 346 px: "Al mismo caudal, 12.3 L/min" no cabía
+    snprintf(buf, sizeof buf, "Mismo caudal: %.1f L/min", static_cast<double>(s.flow_lpm));
     set_text(same_flow_title_, buf);
     const float fresh = new_drop(s, s.flow_lpm);
     snprintf(buf, sizeof buf, "%.1f", static_cast<double>(fresh));
@@ -240,8 +242,10 @@ void DropScreen::update(const core::SystemState& s) {
     if (measured) {
         const core::Date since = core::date_days_ago(core::today(s), s.year, s.today - s.drop_new_day);
         const float rise = static_cast<float>(drop) - fresh;
-        snprintf(buf, sizeof buf, "%s %.1f psi desde el %u %s", rise >= 0 ? "Subió" : "Bajó",
-                 static_cast<double>(std::fabs(rise)), static_cast<unsigned>(since.day), fmt::month_short(since.month));
+        // De 10 psi para arriba sin decimal, para que quepa con días de 2 cifras
+        const double amount = std::fabs(rise);
+        snprintf(buf, sizeof buf, amount >= 10.0 ? "%s %.0f psi desde %u %s" : "%s %.1f psi desde %u %s",
+                 rise >= 0 ? "Subió" : "Bajó", amount, static_cast<unsigned>(since.day), fmt::month_short(since.month));
         set_text(rise_, buf);
     }
 

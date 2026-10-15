@@ -471,9 +471,10 @@ void HistoryScreen::update_events(const core::SystemState& s) {
                      fmt::month_short(d.month));
         }
         fmt::clock(time, sizeof time, ev.at);
-        const char* detail = ev.kind == core::EventKind::cartridge    ? " · cambio"
-                             : ev.kind == core::EventKind::dose_typed ? " · otra"
-                                                                      : "";
+        const char* detail = ev.kind == core::EventKind::cartridge         ? " · cambio"
+                             : ev.kind == core::EventKind::cartridge_added ? " · puesto"
+                             : ev.kind == core::EventKind::dose_typed      ? " · otra"
+                                                                           : "";
         snprintf(when, sizeof when, "%s %s%s", date, time, detail);
 
         uint32_t tone = colors::text;
@@ -485,6 +486,7 @@ void HistoryScreen::update_events(const core::SystemState& s) {
                 snprintf(title, sizeof title, "Dosis %u mL", static_cast<unsigned>(ev.value));
                 break;
             case core::EventKind::cartridge:
+            case core::EventKind::cartridge_added:
                 snprintf(title, sizeof title, "Cartucho %s", fmt::filter_name(ev.value));
                 src = &icon_cartucho_32;
                 break;
@@ -493,7 +495,7 @@ void HistoryScreen::update_events(const core::SystemState& s) {
                 src = &icon_cartucho_32;
                 break;
             case core::EventKind::alarm:
-                snprintf(title, sizeof title, "%s", fmt::alarm_title(ev.value));
+                snprintf(title, sizeof title, "%s", fmt::alarm_short(ev.value));  // el largo no cabe
                 tone = icon_tone = colors::alarm;
                 src = &icon_alarma_32;
                 break;

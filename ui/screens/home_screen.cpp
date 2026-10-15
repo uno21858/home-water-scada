@@ -128,20 +128,14 @@ void HomeScreen::create_housings(lv_obj_t* page) {
     const char* const names[5] = {"20 µm", "10 µm", "5 µm", "CTO", "Sarro"};
     for (int i = 0; i < 5; ++i) {
         const int32_t x = 294 + i * 140;
-        const bool empty = i == 4;  // el vaso del antisarro todavía no lleva cartucho
-        tag_text(page, names[i], x - 29, 20, 114, LV_TEXT_ALIGN_CENTER,
-                 empty ? colors::text_disabled : colors::text_secondary);
+        // Lleno o vacío lo dice update(): el del sarro empieza sin cartucho
+        housings_[i].name = tag_text(page, names[i], x - 29, 20, 114);
 
         // Mismo truco que el PRF: 12 px más alto, la cabeza tapa las esquinas
         frame(page, x, 66, 56, 76, colors::panel, colors::border_control, 12);
-        lv_obj_t* cartridge = box(page, x + 16, 88, 24, 44);
-        lv_obj_set_style_radius(cartridge, 4, 0);
-        if (empty) {
-            lv_obj_set_style_border_color(cartridge, color(colors::border), 0);
-            lv_obj_set_style_border_width(cartridge, 2, 0);
-        } else {
-            fill(cartridge, colors::panel_raised);
-        }
+        housings_[i].cartridge = box(page, x + 16, 88, 24, 44);
+        lv_obj_set_style_radius(housings_[i].cartridge, 4, 0);
+        lv_obj_set_style_border_color(housings_[i].cartridge, color(colors::border), 0);
         frame(page, x - 8, 60, 72, 20, colors::panel_raised, colors::border_control, 4);
 
         // Zona tocable del vaso (la del canvas): abre Cartuchos
@@ -308,6 +302,19 @@ void HomeScreen::update(const core::SystemState& s) {
     update_pressure(s);
     update_orp(s);
     update_mixer(s);
+
+    // Vasos: cartucho relleno o solo el contorno si está vacío. Los vasos
+    // van del 20 µm al sarro, que en core::Filter empiezan en el 1
+    for (size_t i = 0; i < housings_.size(); ++i) {
+        Housing& h = housings_[i];
+        const bool installed = s.filters[i + 1].installed;
+        if (static_cast<int>(installed) == h.installed) continue;
+        h.installed = installed;
+        lv_obj_set_style_bg_color(h.cartridge, color(colors::panel_raised), 0);
+        lv_obj_set_style_bg_opa(h.cartridge, installed ? LV_OPA_COVER : LV_OPA_TRANSP, 0);
+        lv_obj_set_style_border_width(h.cartridge, installed ? 0 : 2, 0);
+        lv_obj_set_style_text_color(h.name, color(installed ? colors::text_secondary : colors::text_disabled), 0);
+    }
 
     fmt::thousands(buf, sizeof buf, s.liters_today);
     set_text(today_value_, buf);

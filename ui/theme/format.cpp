@@ -55,6 +55,11 @@ const char* alarm_title(unsigned kind) {
     return kind < 3 ? kTitles[kind] : "";
 }
 
+const char* alarm_short(unsigned kind) {
+    static const char* const kTitles[3] = {"Sin flujo al dosificar", "Sensor F sin señal", "Tope diario alcanzado"};
+    return kind < 3 ? kTitles[kind] : "";
+}
+
 const char* filter_name(unsigned filter) {
     static const char* const kNames[6] = {"Prefiltro", "20 µm", "10 µm", "5 µm", "CTO", "Sarro"};
     return filter < 6 ? kNames[filter] : "";

@@ -88,7 +88,8 @@ struct Alarm {
 enum class EventKind : uint8_t {
     dose,          // "Ya le puse"
     dose_typed,    // "Registrar otra cantidad"
-    cartridge,     // cambio de cartucho (o se puso el del sarro)
+    cartridge,     // cambio de cartucho
+    cartridge_added,  // se puso cartucho en un vaso vacío (el del sarro)
     purge,         // purga del prefiltro
     alarm,         // una alarma; value es su AlarmKind
     drop_warning,  // caída del tren en Revisar
@@ -113,7 +114,7 @@ struct Event {
 struct Devices {
     bool ads1115 = true;   // 0x48, presiones
     bool gt911 = true;     // 0x5D, táctil
-    bool ch422g = true;    // expansor de la 7B
+    bool expander = true;  // CH32V003 de la 7B: backlight y salidas
     bool ezo_orp = false;  // 0x62, fase 2
 };
 
@@ -150,6 +151,7 @@ struct SystemState {
     bool has_pressure = false;  // fase 1.5: sensores P1 y P2
     bool has_orp = false;       // fase 2: sonda ORP en la cisterna
     bool has_mixer = false;     // fase 2: bomba R
+    bool has_ldr = false;       // LDR en A3 para el brillo de la pantalla
     bool ro_kitchen_planned = false;  // Panorama: el RO de la cocina, por instalar
 
     // Fecha, hora y red
@@ -189,6 +191,7 @@ struct SystemState {
     float p2_zero_psi = 0.0f;
     float p1_volts = 0.0f;     // lo que lee el ADS1115 en A0 y A1
     float p2_volts = 0.0f;
+    float ldr_volts = 0.0f;    // A3: la luz que le llega a la pantalla
     std::array<uint8_t, 24> p1_24h{};  // una por hora, la última es la de ahorita
     std::array<uint8_t, 24> p2_24h{};
 

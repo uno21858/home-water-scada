@@ -31,6 +31,14 @@ private:
 
     FlowPipes pipes_;
 
+    // Vasos del 20 µm al sarro: nombre arriba y el cartucho adentro
+    struct Housing {
+        lv_obj_t* name = nullptr;
+        lv_obj_t* cartridge = nullptr;
+        int installed = -1;  // -1 = todavía no se pinta
+    };
+    std::array<Housing, 5> housings_{};
+
     // Etiquetas de valor
     SensorTag p1_;
     SensorTag p2_;

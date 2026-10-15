@@ -30,5 +30,7 @@ const char* filter_name(unsigned filter);
 
 // core::AlarmKind -> "Sin flujo mientras dosifica", "Sensor F sin señal"...
 const char* alarm_title(unsigned kind);
+// Lo mismo, corto para las listas angostas: "Sin flujo al dosificar"
+const char* alarm_short(unsigned kind);
 
 }  // namespace ui::fmt

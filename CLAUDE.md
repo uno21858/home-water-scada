@@ -158,6 +158,7 @@ Pendiente, en este orden:
   dibuja el caso con sonda y calibración.
 - "Calibrar con tira" abre el teclado en mg/L con un decimal y guarda la tira con
   el ORP de ese momento (`Actions::strip_checked`). El canvas no tiene esa vista.
+  La pista dice "ORP de ahorita: 650 mV": las pistas del teclado tienen 426 px.
 - En Cisterna, "mV" y el estado se recorren a la derecha si el ORP negativo no
   cabe antes de x 318.
 - En Historial, Presiones sin P1 y P2 y ORP sin sonda muestran "Próximamente ·
@@ -170,8 +171,17 @@ Pendiente, en este orden:
   líneas horizontales o verticales.
 - Textos que en el canvas tampoco caben y se quedaron igual, para arreglar en el
   diseño: en Cartuchos "vaso vacío" queda abajo de la barra y "Lo cambié" toca
-  el borde de su botón; en DetalleCaida "con 12.4 L/min pasando" y "Al mismo
-  caudal, 12.4 L/min" se meten en la tarjeta de al lado.
+  el borde de su botón.
+- En DetalleCaida los textos que no cabían se acortaron: "con 12.4 L/min",
+  "Mismo caudal: 12.4 L/min" y "Subió 1.4 psi desde 2 sep" (de 10 psi para
+  arriba sin decimal). "Si llega a Revisar" se leía como verbo: dice "Si llega
+  a 5 psi (Revisar)".
+- Los vasos del Tren salen llenos o vacíos según `filters[].installed` (en el
+  canvas el del sarro siempre está vacío). Poner cartucho en un vaso vacío se
+  registra como `EventKind::cartridge_added`: "· puesto" en Historial y "Se
+  puso cartucho Sarro" en Alarmas. No hay "Quitar".
+- En la lista de Historial las alarmas van con su título corto
+  (`fmt::alarm_short`): "Sin flujo mientras dosifica" no cabe en 358 px.
 - Sin red, el encabezado esconde su enlace para que quepa el chip (el canvas lo
   hace en Flujo; aquí en todas).
 - La alarma sale mientras haya una activa sin reconocer (`SystemState::alarms`).
@@ -196,7 +206,12 @@ Pendiente, en este orden:
   canvas se sale del botón). Lo que es de una fase que no está instalada dice
   "fase 1.5" o "fase 2" en texto-3 según `has_pressure`, `has_orp` y
   `has_mixer`; el canvas dibuja la fase 1.5 (`HMI_DEMO=fase15`). En el demo,
-  Probar alarma prende la de sin flujo y se quita al tocar Entendido.
+  Probar alarma prende la de sin flujo y se quita al tocar Entendido. El
+  expansor dice CH32V003 y no CH422G: el canvas es de la 5B y la 7B trae un
+  CH32V003, que también lleva el PWM del backlight
+  (https://github.com/esphome/feature-requests/issues/3202). A3 es el LDR del
+  brillo (`has_ldr`, `ldr_volts`); DI1 y A2 van juntos como libres para que la
+  tarjeta siga de 5 renglones.
 - En Prueba de cubeta el demo cuenta como si F diera 387.2 pulsos por litro y
   se para en 3,872 (la marca), para que proponga 387 como el canvas.
 - En Leyenda los títulos van en etiqueta (26 Medium) y no en 26 SemiBold como

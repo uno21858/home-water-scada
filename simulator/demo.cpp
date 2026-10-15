@@ -35,6 +35,8 @@ core::SystemState make() {
     s.wifi_ok = true;
     std::snprintf(s.wifi_ssid, sizeof s.wifi_ssid, "Casa-2.4G");
     s.devices.ezo_orp = true;
+    s.has_ldr = true;
+    s.ldr_volts = 1.84f;  // de día en el pasillo
     s.wifi_bars = 3;
     s.last_upload_at = 18 * 60 + 42;
 
@@ -343,6 +345,7 @@ bool set_scenario(const char* name) {
     } else if (std::strcmp(name, "fase1") == 0) {
         s.has_pressure = s.has_orp = s.has_mixer = false;
         s.devices.ads1115 = s.devices.ezo_orp = false;
+        s.has_ldr = false;
     } else if (std::strcmp(name, "fase15") == 0) {
         s.has_orp = s.has_mixer = false;
         s.devices.ezo_orp = false;
@@ -467,6 +470,7 @@ void on_idle_minutes(uint32_t minutes) { s.idle_minutes = static_cast<uint8_t>(m
 
 void on_filter_serviced(core::Filter filter) {
     const auto i = static_cast<size_t>(filter);
+    const bool was_empty = !s.filters[i].installed;
     s.filters[i] = {s.today, 0, true};
     if (filter == core::Filter::prefilter) {
         add_event(core::EventKind::purge, 0);
@@ -475,7 +479,8 @@ void on_filter_serviced(core::Filter filter) {
     if (s.spares[i] > 0) --s.spares[i];
     s.last_cartridge = filter;
     s.last_cartridge_day = s.today;
-    add_event(core::EventKind::cartridge, static_cast<uint16_t>(filter));
+    add_event(was_empty ? core::EventKind::cartridge_added : core::EventKind::cartridge,
+              static_cast<uint16_t>(filter));
 }
 
 void on_strip_checked(uint32_t tenths_mgl) {

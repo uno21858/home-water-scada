@@ -24,6 +24,7 @@ struct Look {
 Look look_of(core::EventKind kind) {
     switch (kind) {
         case core::EventKind::cartridge:
+        case core::EventKind::cartridge_added:
         case core::EventKind::purge:
             return {&icon_cartucho_32, colors::text_secondary, colors::text};
         case core::EventKind::drop_warning:
@@ -163,6 +164,10 @@ void EventsScreen::refresh() {
                     break;
                 case core::EventKind::cartridge:
                     snprintf(title, sizeof title, "Cambio de cartucho %s", fmt::filter_name(ev.value));
+                    snprintf(status, sizeof status, "Registrado");
+                    break;
+                case core::EventKind::cartridge_added:
+                    snprintf(title, sizeof title, "Se puso cartucho %s", fmt::filter_name(ev.value));
                     snprintf(status, sizeof status, "Registrado");
                     break;
                 case core::EventKind::purge:
