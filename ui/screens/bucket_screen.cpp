@@ -19,6 +19,12 @@ namespace {
 constexpr int32_t kValueY = 44 + 10;  // cifra de 136 bajada como en Cisterna
 constexpr float kBucketLiters = 10.0f;
 
+// Un factor que se aleja más de 30 % del de fábrica es una prueba mal hecha
+// (la cubeta no llegó a la marca, V2 abierta, se tocó Ya llegué sin agua):
+// no se deja guardar
+constexpr uint16_t kFactorMin = core::kFactoryPulsesPerLiter * 7 / 10;
+constexpr uint16_t kFactorMax = core::kFactoryPulsesPerLiter * 13 / 10;
+
 const char* const kSteps[4] = {"Cierra V2, la salida a la cisterna", "Pon la cubeta de 10 L bajo V4",
                                "Abre V4 y llénala hasta la marca", "Cierra V4 y vuelve a abrir V2"};
 
@@ -31,10 +37,11 @@ lv_point_precise_t pt(float x, float y) {
 lv_obj_t* BucketScreen::create(lv_obj_t* parent) {
     lv_obj_t* page = box(parent, 0, 0, 1024, 456);
     create_steps(page);
+    create_prepare(page);
     create_counting(page);
     create_result(page);
     create_saved(page);
-    set_phase(Phase::counting);
+    set_phase(Phase::close_v2);
     return page;
 }
 
@@ -61,6 +68,34 @@ void BucketScreen::create_steps(lv_obj_t* page) {
     }
 }
 
+// Pasos 1 y 2: no están en el canvas (ahí ya salen hechos). Mismo lugar y
+// botones que el conteo: la instrucción grande, por qué, y el botón para seguir.
+void BucketScreen::create_prepare(lv_obj_t* page) {
+    prepare_ = box(page, 0, 0, 1024, 456);
+    lv_obj_t* text = column(prepare_, 12, LV_FLEX_ALIGN_START);
+    lv_obj_set_pos(text, 496, 12);
+    lv_obj_set_width(text, 512);
+    prepare_step_ = label(text, &font_body_32, colors::text_secondary, "");
+    prepare_title_ = label(text, &font_title_xl_48, colors::text, "");
+    lv_obj_set_width(prepare_title_, 512);
+    prepare_note_ = label(text, &font_body_32, colors::text_secondary, "");
+    lv_obj_set_width(prepare_note_, 512);
+
+    lv_obj_t* next = button_primary(prepare_, 488, 364, 320, "", [](lv_event_t* e) {
+        auto* self = static_cast<BucketScreen*>(lv_event_get_user_data(e));
+        if (self->phase_ == Phase::close_v2) {
+            self->set_phase(Phase::place_bucket);
+            return;
+        }
+        // Ya con V2 cerrada y la cubeta puesta: el conteo empieza en 0
+        self->pulses_ = 0;
+        self->set_phase(Phase::counting);
+        if (actions().bucket_test_started != nullptr) actions().bucket_test_started();
+    }, this);
+    prepare_button_ = lv_obj_get_child(next, -1);
+    button_secondary(prepare_, 820, 364, 188, "Cancelar", [](lv_event_t*) { show(Screen::settings); }, nullptr);
+}
+
 void BucketScreen::create_counting(lv_obj_t* page) {
     counting_ = box(page, 0, 0, 1024, 456);
     lv_obj_set_pos(label(counting_, &font_body_32, colors::text_secondary, "Pulsos contados"), 496, 12);
@@ -82,7 +117,7 @@ void BucketScreen::create_counting(lv_obj_t* page) {
     lv_obj_set_width(note, 356);
     lv_obj_set_pos(note, 652, 280);
 
-    button_primary(counting_, 488, 364, 320, "Ya llegué", [](lv_event_t* e) {
+    arrived_ = button_primary(counting_, 488, 364, 320, "Ya llegué", [](lv_event_t* e) {
         auto* self = static_cast<BucketScreen*>(lv_event_get_user_data(e));
         self->new_factor_ = static_cast<uint16_t>(std::max<long>(1, std::lround(self->pulses_ / kBucketLiters)));
         self->set_phase(Phase::result);
@@ -100,12 +135,12 @@ void BucketScreen::create_result(lv_obj_t* page) {
     lv_obj_set_width(explain_, 512);
     lv_obj_set_pos(explain_, 496, 180);
 
-    lv_obj_t* save = button_primary(result_, 488, 364, 320, "", [](lv_event_t* e) {
+    save_ = button_primary(result_, 488, 364, 320, "", [](lv_event_t* e) {
         auto* self = static_cast<BucketScreen*>(lv_event_get_user_data(e));
         if (actions().flow_factor_set != nullptr) actions().flow_factor_set(self->new_factor_);
         self->set_phase(Phase::saved);
     }, this);
-    save_text_ = lv_obj_get_child(save, -1);
+    save_text_ = lv_obj_get_child(save_, -1);
     button_secondary(result_, 820, 364, 188, "Repetir", [](lv_event_t* e) {
         static_cast<BucketScreen*>(lv_event_get_user_data(e))->enter();
     }, this);
@@ -129,18 +164,23 @@ void BucketScreen::create_saved(lv_obj_t* page) {
 
 void BucketScreen::enter() {
     pulses_ = 0;
-    set_phase(Phase::counting);
-    if (actions().bucket_test_started != nullptr) actions().bucket_test_started();
+    set_phase(Phase::close_v2);
 }
 
 void BucketScreen::set_phase(Phase phase) {
     phase_ = phase;
+    const bool preparing = phase == Phase::close_v2 || phase == Phase::place_bucket;
+    lv_obj_set_disabled(arrived_, pulses_ == 0);
+    lv_obj_set_hidden(prepare_, !preparing);
     lv_obj_set_hidden(counting_, phase != Phase::counting);
     lv_obj_set_hidden(result_, phase != Phase::result);
     lv_obj_set_hidden(saved_, phase != Phase::saved);
 
-    // Pasos: 1 y 2 hechos; el 3 es el de ahorita mientras cuenta, luego el 4
-    const int active = phase == Phase::counting ? 2 : 3;
+    // El paso de ahorita; los de antes con palomita
+    const int active = phase == Phase::close_v2       ? 0
+                       : phase == Phase::place_bucket ? 1
+                       : phase == Phase::counting     ? 2
+                                                      : 3;
     for (int i = 0; i < 4; ++i) {
         Step& st = steps_[static_cast<size_t>(i)];
         const bool done = i < active;
@@ -159,14 +199,32 @@ void BucketScreen::set_phase(Phase phase) {
     char buf[96];
     char pulses[16];
     fmt::thousands(pulses, sizeof pulses, pulses_);
-    if (phase == Phase::result) {
+    if (phase == Phase::close_v2) {
+        set_text(prepare_step_, "Paso 1 de 4");
+        set_text(prepare_title_, "Cierra V2");
+        set_text(prepare_note_, "Es la salida a la cisterna. Cerrada, todo lo que cuente F cae en la cubeta.");
+        set_text(prepare_button_, "Ya la cerré");
+    } else if (phase == Phase::place_bucket) {
+        set_text(prepare_step_, "Paso 2 de 4");
+        set_text(prepare_title_, "Pon la cubeta");  // "... bajo V4" a 48 px se parte en dos
+        set_text(prepare_note_, "Bajo V4, vacía y con la marca de 10 L a la vista. Al seguir, el conteo empieza en 0.");
+        set_text(prepare_button_, "Ya está");
+    } else if (phase == Phase::result) {
         snprintf(buf, sizeof buf, "%u", static_cast<unsigned>(new_factor_));
         set_text(new_k_, buf);
-        const float change = (static_cast<float>(new_factor_) - factor_) * 100.0f / std::max<float>(1, factor_);
-        snprintf(buf, sizeof buf, "%s pulsos en 10 L. Antes era %u, cambia %s%.1f %%.", pulses,
-                 static_cast<unsigned>(factor_), change >= 0 ? "+" : "\xE2\x88\x92",
-                 static_cast<double>(std::fabs(change)));
+        const bool valid = new_factor_ >= kFactorMin && new_factor_ <= kFactorMax;
+        lv_obj_set_disabled(save_, !valid);
+        if (valid) {
+            const float change = (static_cast<float>(new_factor_) - factor_) * 100.0f / std::max<float>(1, factor_);
+            snprintf(buf, sizeof buf, "%s pulsos en 10 L. Antes era %u, cambia %s%.1f %%.", pulses,
+                     static_cast<unsigned>(factor_), change >= 0 ? "+" : "\xE2\x88\x92",
+                     static_cast<double>(std::fabs(change)));
+        } else {
+            snprintf(buf, sizeof buf, "%s pulsos en 10 L: muy lejos de %u. Revisa V2 y la marca, y repite.", pulses,
+                     static_cast<unsigned>(core::kFactoryPulsesPerLiter));
+        }
         set_text(explain_, buf);
+        lv_obj_set_style_text_color(explain_, color(valid ? colors::text_secondary : colors::warning), 0);
         snprintf(buf, sizeof buf, "Guardar %u", static_cast<unsigned>(new_factor_));
         set_text(save_text_, buf);
     } else if (phase == Phase::saved) {
@@ -177,9 +235,12 @@ void BucketScreen::set_phase(Phase phase) {
 }
 
 void BucketScreen::update(const core::SystemState& s) {
+    // El factor de ahorita hasta que hay resultado: ahí se queda el de antes
+    // para el "Antes era 396" aunque se guarde el nuevo
+    if (phase_ != Phase::result && phase_ != Phase::saved) factor_ = s.flow_pulses_per_liter;
     if (phase_ == Phase::counting) {
-        factor_ = s.flow_pulses_per_liter;
         pulses_ = s.bucket_pulses;
+        lv_obj_set_disabled(arrived_, pulses_ == 0);  // sin agua todavía no hay qué medir
     }
     char buf[32];
     fmt::thousands(buf, sizeof buf, pulses_);
