@@ -169,7 +169,7 @@ void HomeScreen::create_return(lv_obj_t* page) {
 }
 
 void HomeScreen::create_cistern(lv_obj_t* page) {
-    // Abre Cisterna solo si hay qué ver ahí (ORP o bomba R): update() lo prende
+    // Abre Cisterna solo si hay qué ver ahí (la sonda ORP): update() lo prende
     cistern_ = frame(page, 384, 284, 624, 92, colors::panel, colors::border_control, 10);
     link_to(cistern_, Screen::cistern);
     fill(box(page, 386, 294, 620, 2), colors::water);  // nivel del agua
@@ -377,7 +377,7 @@ void HomeScreen::update_orp(const core::SystemState& s) {
     orp_.set_installed(s.has_orp);
     lv_obj_set_hidden(probe_, !s.has_orp);
     lv_obj_set_hidden(mast_, !s.has_orp && !s.has_mixer);
-    lv_obj_set_clickable(cistern_, s.has_orp || s.has_mixer);  // sin Cisterna en la barra
+    lv_obj_set_clickable(cistern_, s.has_orp);  // sin sonda no hay pestaña Cisterna
     if (!s.has_orp) {
         set_text(cistern_word_, "10 m³");
         lv_obj_set_style_text_color(cistern_word_, color(colors::text_disabled), 0);

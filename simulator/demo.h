@@ -15,6 +15,8 @@ const core::SystemState& state();
 //   sin-flujo  el caudal en 0 (Flujo, Resumen, Pasillo)
 //   sin-red    WiFi caído con 24 lecturas por enviar (encabezado)
 //   alarma     sin flujo mientras dosifica; sensor y tope, las otras dos
+// Sin escenario arranca como la casa: todo menos la sonda ORP y las bombas A y B.
+//   completo   con la sonda ORP, como el canvas (Cisterna, ORP en Tren y Resumen)
 //   fase1      sin P1 y P2, sin ORP ni bomba R; fase15, sin ORP ni bomba R
 //   revisar    caída de 7 psi; tapados, de 12 psi
 //   ro-cocina  el RO de la cocina por instalar (Panorama)

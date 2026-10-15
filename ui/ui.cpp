@@ -104,8 +104,8 @@ size_t index_of(Screen screen) { return static_cast<size_t>(screen); }
 // enlaces del encabezado que llevan a ello
 bool available(Screen screen) {
     switch (screen) {
-        case Screen::cistern:
-            return state.has_orp || state.has_mixer;
+        case Screen::cistern:  // sin la sonda solo quedaría el candado del ORP
+            return state.has_orp;
         case Screen::mixer:
             return state.has_mixer;
         case Screen::pressure:
@@ -215,8 +215,11 @@ void show(Screen screen) {
         spec.link = {};
         spec.link_text = nullptr;
     }
+    // Mezcla sin Cisterna (bomba R sin sonda): atrás y la pestaña van al Tren,
+    // que es de donde se llega (la R)
+    if (spec.back && !available(*spec.back)) spec.back = Screen::home;
     header.set_page(spec);
-    nav.set_active(page.tab);
+    nav.set_active(available(page.tab) ? page.tab : Screen::home);
 }
 
 void ask_dose_confirmation() {

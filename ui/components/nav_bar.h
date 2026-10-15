@@ -1,7 +1,7 @@
 #pragma once
 // Barra de navegación de 1024 x 80 con 7 pestañas de 146 o 147 px.
 // La activa lleva fondo panel-alto y una barra de 4 px arriba. Una pestaña
-// escondida (Cisterna sin ORP ni bomba R) deja su ancho a las demás.
+// escondida (Cisterna sin sonda ORP) deja su ancho a las demás.
 
 #include <array>
 

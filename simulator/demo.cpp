@@ -23,8 +23,10 @@ constexpr Block kBlocks[] = {
 
 core::SystemState make() {
     core::SystemState s;
+    // Lo que hay en la casa (octubre 2026): todo menos la sonda ORP y las
+    // bombas A y B. HMI_DEMO=completo prende la sonda para ver el canvas.
     s.has_pressure = true;
-    s.has_orp = true;
+    s.has_orp = false;
     s.has_mixer = true;
     s.today = 1000;  // cualquier número: solo sirve para comparar días
     s.weekday = 6;   // sábado 3 de octubre
@@ -34,7 +36,7 @@ core::SystemState make() {
     s.minute = 42;
     s.wifi_ok = true;
     std::snprintf(s.wifi_ssid, sizeof s.wifi_ssid, "Casa-2.4G");
-    s.devices.ezo_orp = true;
+    s.devices.ezo_orp = false;
     s.has_ldr = true;
     s.ldr_volts = 1.84f;  // de día en el pasillo
     s.wifi_bars = 3;
@@ -353,6 +355,9 @@ bool set_scenario(const char* name) {
                                               e.kind == core::EventKind::drop_alarm;
                                    });
         s.recent_event_count = static_cast<uint8_t>(end - s.recent_events.begin());
+    } else if (std::strcmp(name, "completo") == 0) {
+        s.has_orp = true;
+        s.devices.ezo_orp = true;
     } else if (std::strcmp(name, "fase15") == 0) {
         s.has_orp = s.has_mixer = false;
         s.devices.ezo_orp = false;

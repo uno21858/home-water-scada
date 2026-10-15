@@ -161,7 +161,7 @@ void OverviewScreen::create_train(lv_obj_t* page) {
 
 void OverviewScreen::create_cistern(lv_obj_t* page) {
     lv_obj_t* c = frame(page, 232, 328, 480, 112, colors::panel, colors::border_control, 10);
-    link_to(c, Screen::cistern);  // solo abre si hay ORP o bomba R (update)
+    link_to(c, Screen::cistern);  // solo abre con la sonda ORP (update)
     cistern_ = c;
     fill(box(c, 0, 8, 476, 2), colors::water);  // nivel del agua
 
@@ -283,7 +283,7 @@ void OverviewScreen::update(const core::SystemState& s) {
     }
 
     lv_obj_set_hidden(orp_row_, !s.has_orp);
-    lv_obj_set_clickable(cistern_, s.has_orp || s.has_mixer);  // sin Cisterna en la barra
+    lv_obj_set_clickable(cistern_, s.has_orp);  // sin sonda no hay pestaña Cisterna
     if (s.has_orp) {
         fmt::signed_int(buf, sizeof buf, s.orp_mv);
         set_text(orp_value_, buf);

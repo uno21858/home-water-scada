@@ -69,9 +69,9 @@ cmake --build build -j
 
 Para ver un estado del canvas sin tocar código: `HMI_DEMO=alarma ./build/simulator`.
 Escenarios: `sin-flujo`, `sin-red`, `alarma`, `sensor`, `tope`, `fase1`, `fase15`,
-`revisar`, `tapados` y `ro-cocina` (`demo::set_scenario` en `simulator/demo.h`).
-El demo arranca con todo instalado menos las bombas A y B; lo de Erick hoy es
-`HMI_DEMO=fase1`.
+`revisar`, `tapados`, `ro-cocina` y `completo` (`demo::set_scenario` en `simulator/demo.h`).
+El demo arranca como la casa de Erick: todo menos la sonda ORP y las bombas A
+y B. `HMI_DEMO=completo` prende la sonda para comparar con el canvas.
 
 En Mac, SDL2 viene de Homebrew (`brew install sdl2`). Si CMake no lo encuentra:
 `-DCMAKE_PREFIX_PATH=/opt/homebrew`.
@@ -91,9 +91,10 @@ En Mac, SDL2 viene de Homebrew (`brew install sdl2`). Si CMake no lo encuentra:
 - Lo de una fase que no está instalada no se muestra (el DS decía candado y
   "Próximamente"; Erick prefirió esconderlo, octubre 2026). Lo dicen
   `has_pressure` (fase 1.5), `has_orp` y `has_mixer` (fase 2) y `has_pumps`
-  (fase 3). Sin ORP ni bomba R no hay pestaña Cisterna (`NavBar::
-  set_tab_visible`), y `available()` en `ui.cpp` quita del encabezado los
-  enlaces a lo que no está. Las pantallas que lo esconden dejan su lugar a lo
+  (fase 3). Sin la sonda ORP no hay pestaña Cisterna (`NavBar::
+  set_tab_visible`): todo lo de ahí sale del ORP. `available()` en `ui.cpp`
+  quita del encabezado los enlaces a lo que no está, y Mezcla sin Cisterna
+  regresa al Tren. Las pantallas que lo esconden dejan su lugar a lo
   demás: no quedan huecos. Diagnóstico sí lo lista, como mapa de pines.
 - Fuentes, íconos y símbolos se regeneran con el `generate.sh` de su carpeta; no
   se editan los `.c` a mano.
@@ -159,9 +160,8 @@ Pendiente, en este orden:
   174 px y en el canvas queda abajo de la tarjeta de Litros hoy (x 700).
 - En Flujo la cifra de 232 px va en y 57 y no en 40 (ver la nota de cifras en
   "LVGL 9.6: lo que ya mordió"); así cae donde la dibuja el canvas.
-- Cisterna sin sonda ORP pero con bomba R (raro: las dos son de fase 2) se ve
-  como una tarjeta bloqueada; sin tira dice "Sin calibrar" y no estima el
-  cloro. El canvas solo dibuja el caso con sonda y calibración.
+- Cisterna sin tira dice "Sin calibrar" y no estima el cloro. El canvas solo
+  dibuja el caso con sonda y calibración.
 - "Calibrar con tira" abre el teclado en mg/L con un decimal y guarda la tira con
   el ORP de ese momento (`Actions::strip_checked`). El canvas no tiene esa vista.
   La pista dice "ORP de ahorita: 650 mV": las pistas del teclado tienen 426 px.
