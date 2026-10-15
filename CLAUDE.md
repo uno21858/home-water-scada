@@ -225,8 +225,11 @@ Pendiente, en este orden:
 - Prueba de cubeta: el canvas da los pasos 1 y 2 por hechos y cuenta desde
   que se entra. Aquí cada uno tiene su botón ("Ya la cerré", "Ya está") y el
   conteo empieza en 0 en el paso 3: con V2 abierta F contaría agua que no cae
-  en la cubeta. "Ya llegué" se apaga con 0 pulsos y "Guardar" solo se deja si
-  el factor queda a 30 % del de fábrica (277 a 514); si no, dice que se repita.
+  en la cubeta. V4 se cierra en la marca antes de "Ya llegué" (paso 3 "Abre V4
+  y ciérrala en la marca", paso 4 "Vuelve a abrir V2"): así lo contado es lo
+  que hay en la cubeta y no cuenta qué tan rápido se toca. "Ya llegué" se
+  prende cuando F lleva 1.5 s sin contar, y "Guardar" solo se deja si el
+  factor queda a 30 % del de fábrica (277 a 514); si no, dice que se repita.
 - En Leyenda los títulos van en etiqueta (26 Medium) y no en 26 SemiBold como
   en el canvas: el DS no tiene ese estilo y no vale otra fuente por eso. Los
   dibujos son símbolos del P&ID de 72 x 60 (`pid/svg/leyenda_*.svg`); el tubo

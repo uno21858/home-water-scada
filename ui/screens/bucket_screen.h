@@ -58,7 +58,9 @@ private:
     lv_obj_t* liters_ = nullptr;
     float level_ = 0.0f;  // de 0 a 1: cuánto lleva la cubeta
 
-    lv_obj_t* arrived_ = nullptr;  // "Ya llegué": apagado con 0 pulsos
+    lv_obj_t* arrived_ = nullptr;  // "Ya llegué": apagado mientras F cuenta
+    uint32_t last_pulses_ = 0;     // para saber si F sigue contando
+    uint32_t last_change_ = 0;     // lv_tick_get() de la última vez que cambió
     lv_obj_t* save_ = nullptr;     // "Guardar 387": apagado si el factor no es creíble
     lv_obj_t* new_k_ = nullptr;
     lv_obj_t* explain_ = nullptr;

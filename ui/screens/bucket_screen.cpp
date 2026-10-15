@@ -25,8 +25,13 @@ constexpr float kBucketLiters = 10.0f;
 constexpr uint16_t kFactorMin = core::kFactoryPulsesPerLiter * 7 / 10;
 constexpr uint16_t kFactorMax = core::kFactoryPulsesPerLiter * 13 / 10;
 
+// V4 se cierra en la marca antes de tocar Ya llegué: así lo que contó F es justo
+// lo que hay en la cubeta y no importa qué tan rápido se toque el botón
 const char* const kSteps[4] = {"Cierra V2, la salida a la cisterna", "Pon la cubeta de 10 L bajo V4",
-                               "Abre V4 y llénala hasta la marca", "Cierra V4 y vuelve a abrir V2"};
+                               "Abre V4 y ciérrala en la marca", "Vuelve a abrir V2"};
+
+// F dejó de contar (V4 cerrada) si los pulsos no cambian en este tiempo
+constexpr uint32_t kStoppedMs = 1500;
 
 lv_point_precise_t pt(float x, float y) {
     return {static_cast<lv_value_precise_t>(x), static_cast<lv_value_precise_t>(y)};
@@ -113,7 +118,7 @@ void BucketScreen::create_counting(lv_obj_t* page) {
     liters_ = label(r, &font_digits_44, colors::text, "");
     label(r, &font_label_26, colors::text_secondary, "L");
     lv_obj_t* note = label(counting_, &font_label_26, colors::text_secondary,
-                           "Cuando el agua toque la marca, toca Ya llegué.");
+                           "Cierra V4 en la marca y luego toca Ya llegué.");
     lv_obj_set_width(note, 356);
     lv_obj_set_pos(note, 652, 280);
 
@@ -170,7 +175,10 @@ void BucketScreen::enter() {
 void BucketScreen::set_phase(Phase phase) {
     phase_ = phase;
     const bool preparing = phase == Phase::close_v2 || phase == Phase::place_bucket;
-    lv_obj_set_disabled(arrived_, pulses_ == 0);
+    // Ya llegué empieza apagado: se prende cuando F deja de contar
+    lv_obj_set_disabled(arrived_, true);
+    last_pulses_ = pulses_;
+    last_change_ = lv_tick_get();
     lv_obj_set_hidden(prepare_, !preparing);
     lv_obj_set_hidden(counting_, phase != Phase::counting);
     lv_obj_set_hidden(result_, phase != Phase::result);
@@ -228,7 +236,7 @@ void BucketScreen::set_phase(Phase phase) {
         snprintf(buf, sizeof buf, "Guardar %u", static_cast<unsigned>(new_factor_));
         set_text(save_text_, buf);
     } else if (phase == Phase::saved) {
-        snprintf(buf, sizeof buf, "F ahora cuenta %u pulsos por litro. Cierra V4 y abre V2.",
+        snprintf(buf, sizeof buf, "F ahora cuenta %u pulsos por litro. Vuelve a abrir V2.",
                  static_cast<unsigned>(new_factor_));
         set_text(saved_text_, buf);
     }
@@ -240,7 +248,12 @@ void BucketScreen::update(const core::SystemState& s) {
     if (phase_ != Phase::result && phase_ != Phase::saved) factor_ = s.flow_pulses_per_liter;
     if (phase_ == Phase::counting) {
         pulses_ = s.bucket_pulses;
-        lv_obj_set_disabled(arrived_, pulses_ == 0);  // sin agua todavía no hay qué medir
+        // Ya llegué se prende cuando F deja de contar: V4 ya cerrada en la marca
+        if (pulses_ != last_pulses_) {
+            last_pulses_ = pulses_;
+            last_change_ = lv_tick_get();
+        }
+        lv_obj_set_disabled(arrived_, pulses_ == 0 || lv_tick_elaps(last_change_) < kStoppedMs);
     }
     char buf[32];
     fmt::thousands(buf, sizeof buf, pulses_);
