@@ -24,8 +24,6 @@ constexpr int32_t kCardH = 210;
 constexpr int32_t kTopY = 12;      // tarjeta de arriba
 constexpr int32_t kBottomY = 234;  // tarjeta de abajo
 
-const char* const kCartridges[5] = {"20 µm", "10 µm", "5 µm", "CTO", "Sarro"};
-
 lv_obj_t* settings_card(lv_obj_t* group, int32_t y, const char* title) {
     lv_obj_t* c = card(group, kCardX, y, kCardW, kCardH);
     lv_obj_t* t = label(c, &font_body_32, colors::text_secondary, title);
@@ -164,7 +162,8 @@ lv_obj_t* SettingsScreen::create_sensors(lv_obj_t* page) {
     p2_raw_ = reading("P2", true);
     lv_obj_t* psi = label(r, &font_title_36, colors::text_secondary, "psi");
     lv_obj_set_style_pad_bottom(psi, 2, 0);
-    small_button(pressure_live_, 20, 130, 240, "Hacer cero", nullptr, false, handle_zero, this);
+    small_button(pressure_live_, 20, 130, 240, "Hacer cero", nullptr, false, [](lv_event_t*) { ask_pressure_zero(); },
+                 nullptr);
     note(pressure_live_, 276, 128, 324, "Con V1 cerrada y el tren sin presión.");
 
     pressure_locked_ = locked_card(group, kCardX, kBottomY, kCardW, kCardH, "Presión P1 y P2",
@@ -226,7 +225,8 @@ lv_obj_t* SettingsScreen::create_cartridges(lv_obj_t* page) {
     lv_obj_set_pos(spares_pp_, 20, 54);
     spares_rest_ = label(s, &font_body_32, colors::text, "");
     lv_obj_set_pos(spares_rest_, 20, 92);
-    pending(small_button(s, 20, 136, 300, "Ver cartuchos", nullptr, true, nullptr, nullptr));
+    link_to(small_button(s, 20, 136, 300, "Ver cartuchos", nullptr, true, nullptr, nullptr), Screen::filters,
+            &styles::button_secondary_pressed);
     return group;
 }
 
@@ -274,9 +274,9 @@ void SettingsScreen::update(const core::SystemState& s) {
     set_text(factor_, buf);
     lv_obj_set_hidden(pressure_live_, !s.has_pressure);
     lv_obj_set_hidden(pressure_locked_, s.has_pressure);
-    snprintf(buf, sizeof buf, "%.1f", static_cast<double>(s.p1_raw_psi));
+    snprintf(buf, sizeof buf, "%.1f", static_cast<double>(s.p1_zero_psi));
     set_text(p1_raw_, buf);
-    snprintf(buf, sizeof buf, "%.1f", static_cast<double>(s.p2_raw_psi));
+    snprintf(buf, sizeof buf, "%.1f", static_cast<double>(s.p2_zero_psi));
     set_text(p2_raw_, buf);
 
     // Dosis
@@ -312,22 +312,24 @@ void SettingsScreen::update(const core::SystemState& s) {
     set_text(upload_note_, buf);
 
     // Cartuchos
-    const auto& sp = s.spares;
-    if (sp[0] == sp[1] && sp[1] == sp[2]) {
-        snprintf(buf, sizeof buf, "PP 20, 10 y 5 µm: %u de cada uno", static_cast<unsigned>(sp[0]));
+    auto spare = [&s](core::Filter f) { return static_cast<unsigned>(s.spares[static_cast<size_t>(f)]); };
+    const unsigned pp20 = spare(core::Filter::pp20);
+    const unsigned pp10 = spare(core::Filter::pp10);
+    const unsigned pp5 = spare(core::Filter::pp5);
+    if (pp20 == pp10 && pp10 == pp5) {
+        snprintf(buf, sizeof buf, "PP 20, 10 y 5 µm: %u de cada uno", pp20);
     } else {
-        snprintf(buf, sizeof buf, "PP 20: %u · 10: %u · 5 µm: %u", static_cast<unsigned>(sp[0]),
-                 static_cast<unsigned>(sp[1]), static_cast<unsigned>(sp[2]));
+        snprintf(buf, sizeof buf, "PP 20: %u · 10: %u · 5 µm: %u", pp20, pp10, pp5);
     }
     set_text(spares_pp_, buf);
-    snprintf(buf, sizeof buf, "CTO: %u · Sarro: %u", static_cast<unsigned>(sp[3]), static_cast<unsigned>(sp[4]));
+    snprintf(buf, sizeof buf, "CTO: %u · Sarro: %u", spare(core::Filter::carbon), spare(core::Filter::scale));
     set_text(spares_rest_, buf);
     if (s.last_cartridge_day == 0) {
         set_text(tabs_[3].summary, "Sin cambios registrados");
     } else {
         const uint32_t ago = s.today >= s.last_cartridge_day ? s.today - s.last_cartridge_day : 0;
         const core::Date d = core::date_days_ago(core::today(s), s.year, ago);
-        snprintf(buf, sizeof buf, "Último: %s, %u %s", kCartridges[static_cast<size_t>(s.last_cartridge) % 5],
+        snprintf(buf, sizeof buf, "Último: %s, %u %s", fmt::filter_name(static_cast<unsigned>(s.last_cartridge)),
                  static_cast<unsigned>(d.day), fmt::month_short(d.month));
         set_text(tabs_[3].summary, buf);
     }
@@ -356,14 +358,6 @@ void SettingsScreen::handle_factor(lv_event_t* e) {
                 [](uint32_t value) {
                     if (actions().flow_factor_set != nullptr) actions().flow_factor_set(value);
                 });
-}
-
-void SettingsScreen::handle_zero(lv_event_t*) {
-    open_confirm("¿Hacer cero de P1 y P2?",
-                 "Con V1 cerrada y el tren sin presión, lo que marquen ahorita queda como 0 psi.", "Sí, hacer cero",
-                 [] {
-                     if (actions().pressure_zeroed != nullptr) actions().pressure_zeroed();
-                 });
 }
 
 void SettingsScreen::handle_ratio(lv_event_t* e) {

@@ -78,13 +78,42 @@ core::SystemState make() {
 
     s.p1_psi = 42;
     s.p2_psi = 38;
-    s.p1_raw_psi = 42.0f;
-    s.p2_raw_psi = 38.0f;
+    s.p1_volts = 0.5f + 42 * 4.0f / 232;  // SEN0257: 0.5 a 4.5 V es 0 a 232 psi
+    s.p2_volts = 0.5f + 38 * 4.0f / 232;
 
-    // Cartuchos: 5 de cada PP, 4 de carbón y ninguno de sarro; el último
-    // cambio fue el de 5 µm el jueves 1 de octubre
-    s.spares = {5, 5, 5, 4, 0};
-    s.last_cartridge = core::Cartridge::pp5;
+    // Últimas 24 h de presión, de las 19:00 de ayer a las 18:00 de hoy (canvas DetalleP)
+    const uint8_t p1_24h[24] = {44, 46, 47, 48, 48, 48, 49, 50, 50, 49, 46, 30,
+                                24, 22, 23, 24, 25, 23, 24, 26, 27, 30, 36, 42};
+    const uint8_t drop_24h[24] = {3, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 4};
+    for (size_t i = 0; i < 24; ++i) {
+        s.p1_24h[i] = p1_24h[i];
+        s.p2_24h[i] = static_cast<uint8_t>(p1_24h[i] - drop_24h[i]);
+    }
+
+    // Caída contra caudal (canvas DetalleCaida): la curva con cartuchos nuevos
+    // del 2 de septiembre y 42 lecturas del último mes que van subiendo
+    auto fresh = [](double q) { return 0.12 * q + 0.0072 * q * q; };
+    for (size_t q = 0; q < 16; ++q) s.drop_new_tenths[q] = static_cast<uint8_t>(std::lround(fresh(static_cast<double>(q)) * 10));
+    s.drop_new_day = 969;
+    auto frac = [](double x) { return x - std::floor(x); };
+    for (int i = 0; i < core::kDropSamples; ++i) {
+        const double day = i * 30.0 / 42.0;
+        const double q = 3 + frac(std::sin(i * 12.9898) * 43758.5453) * 10;
+        const double noise = (frac(std::sin(i * 78.233) * 12345.678) - 0.5) * 0.4;
+        const double p = fresh(q) * (1.05 + 0.45 * day / 30) + noise;
+        s.drop_samples[static_cast<size_t>(i)] = {971 + static_cast<uint32_t>(day), static_cast<uint8_t>(std::lround(q * 10)),
+                                                  static_cast<uint8_t>(std::lround(std::max(0.0, p) * 10))};
+    }
+    s.drop_sample_count = core::kDropSamples;
+
+    // Filtros: el prefiltro se purgó hace 6 días, el de 5 µm se cambió el
+    // jueves 1 de octubre y el vaso del sarro está vacío
+    s.filters = {{
+        {994, 11300, true}, {969, 58900, true}, {969, 58900, true},
+        {998, 4410, true},  {969, 58900, true}, {0, 0, false},
+    }};
+    s.spares = {0, 5, 5, 5, 4, 0};
+    s.last_cartridge = core::Filter::pp5;
     s.last_cartridge_day = 998;
 
     // Historial: las cifras del canvas de Historial. 30 días con la última
@@ -123,7 +152,7 @@ core::SystemState make() {
     s.recent_events = {{
         {1000, 6 * 60 + 10, core::EventKind::dose, 40},
         {999, 6 * 60 + 25, core::EventKind::dose, 36},
-        {998, 16 * 60 + 40, core::EventKind::cartridge, static_cast<uint16_t>(core::Cartridge::pp5)},
+        {998, 16 * 60 + 40, core::EventKind::cartridge, static_cast<uint16_t>(core::Filter::pp5)},
         {998, 7 * 60 + 2, core::EventKind::dose_typed, 45},
         {997, 22 * 60 + 14, core::EventKind::drop_warning, 6},
     }};
@@ -241,6 +270,10 @@ void next_minute() {
     if (s.minute == 0) {
         s.hours[s.hour] = {0, 0, static_cast<uint8_t>(s.p1_psi), static_cast<uint8_t>(s.p2_psi),
                            static_cast<int16_t>(s.orp_mv)};
+        std::rotate(s.p1_24h.begin(), s.p1_24h.begin() + 1, s.p1_24h.end());
+        std::rotate(s.p2_24h.begin(), s.p2_24h.begin() + 1, s.p2_24h.end());
+        s.p1_24h.back() = static_cast<uint8_t>(s.p1_psi);
+        s.p2_24h.back() = static_cast<uint8_t>(s.p2_psi);
         std::rotate(s.orp_7d.begin(), s.orp_7d.begin() + 1, s.orp_7d.end());
         s.orp_7d.back() = static_cast<int16_t>(s.orp_mv);
     }
@@ -273,6 +306,9 @@ void tick_1s() {
         ++s.liters_since_dose;
         ++s.hours[s.hour].liters;
         ++s.days.back().liters;
+        for (core::FilterStatus& f : s.filters) {
+            if (f.installed) ++f.liters;
+        }
     }
 
     if (seconds % 60 == 0) next_minute();
@@ -300,8 +336,8 @@ void on_flow_factor(uint32_t pulses_per_liter) { s.flow_pulses_per_liter = stati
 
 void on_pressure_zeroed() {
     // En la casa se hace con V1 cerrada; el demo nomás deja la lectura en 0
-    s.p1_raw_psi = 0.0f;
-    s.p2_raw_psi = 0.0f;
+    s.p1_zero_psi = 0.3f;
+    s.p2_zero_psi = 0.2f;
 }
 
 void on_dose_ratio(uint32_t thousandths) { s.ml_per_liter = static_cast<float>(thousandths) / 1000.0f; }
@@ -311,6 +347,19 @@ void on_daily_cap(uint32_t ml) { s.daily_cap_ml = static_cast<uint16_t>(ml); }
 void on_night_off(bool on) { s.night_off = on; }
 
 void on_idle_minutes(uint32_t minutes) { s.idle_minutes = static_cast<uint8_t>(minutes); }
+
+void on_filter_serviced(core::Filter filter) {
+    const auto i = static_cast<size_t>(filter);
+    s.filters[i] = {s.today, 0, true};
+    if (filter == core::Filter::prefilter) {
+        add_event(core::EventKind::purge, 0);
+        return;
+    }
+    if (s.spares[i] > 0) --s.spares[i];
+    s.last_cartridge = filter;
+    s.last_cartridge_day = s.today;
+    add_event(core::EventKind::cartridge, static_cast<uint16_t>(filter));
+}
 
 void on_strip_checked(uint32_t tenths_mgl) {
     s.last_strip = {s.weekday, s.day, s.month, static_cast<uint8_t>(tenths_mgl), static_cast<int16_t>(s.orp_mv)};

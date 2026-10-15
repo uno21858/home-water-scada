@@ -49,4 +49,9 @@ const char* month_short(unsigned month) {
     return (month >= 1 && month <= 12) ? kNames[month - 1] : "";
 }
 
+const char* filter_name(unsigned filter) {
+    static const char* const kNames[6] = {"Prefiltro", "20 µm", "10 µm", "5 µm", "CTO", "Sarro"};
+    return filter < 6 ? kNames[filter] : "";
+}
+
 }  // namespace ui::fmt

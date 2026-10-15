@@ -49,13 +49,30 @@ struct Date {
     uint8_t month = 1;
 };
 
-// Cartuchos del tren, en el orden del agua
-enum class Cartridge : uint8_t { pp20, pp10, pp5, carbon, scale };
+// Lo que filtra, en el orden del agua: el prefiltro de malla y los 5 vasos
+enum class Filter : uint8_t { prefilter, pp20, pp10, pp5, carbon, scale };
+inline constexpr int kFilterCount = 6;
+
+// Cómo va cada filtro desde que se purgó o se cambió
+struct FilterStatus {
+    uint32_t since_day = 0;  // mismo conteo que SystemState::today
+    uint32_t liters = 0;     // litros que han pasado desde entonces
+    bool installed = true;   // el vaso del sarro puede estar vacío
+};
+
+// Una lectura de caída contra caudal, para ver si los cartuchos se tapan
+struct DropSample {
+    uint32_t day = 0;         // mismo conteo que SystemState::today
+    uint8_t flow_tenths = 0;  // L/min x 10
+    uint8_t drop_tenths = 0;  // psi x 10
+};
+inline constexpr int kDropSamples = 42;
 
 enum class EventKind : uint8_t {
     dose,          // "Ya le puse"
     dose_typed,    // "Registrar otra cantidad"
-    cartridge,     // cambio de cartucho
+    cartridge,     // cambio de cartucho (o se puso el del sarro)
+    purge,         // purga del prefiltro
     drop_warning,  // caída del tren en Revisar
     drop_alarm,    // caída del tren en Tapados
 };
@@ -65,7 +82,7 @@ struct Event {
     uint32_t day = 0;   // mismo conteo que SystemState::today
     uint16_t at = 0;    // minuto del día
     EventKind kind = EventKind::dose;
-    uint16_t value = 0; // mL de la dosis, psi de la caída o el Cartridge que se cambió
+    uint16_t value = 0; // mL de la dosis, psi de la caída o el Filter que se cambió
 };
 
 enum class MixerMode : uint8_t { off, on, automatic };
@@ -111,6 +128,7 @@ struct SystemState {
     uint8_t hour = 0;
     uint8_t minute = 0;
     bool wifi_ok = false;
+    bool flow_sensor_ok = true;   // llegan pulsos de F cuando debe
     char wifi_ssid[33] = "";      // nombre de la red, hasta 32 letras
     uint8_t wifi_bars = 0;        // señal de 0 a 3
     uint16_t last_upload_at = 0;  // minuto del día del último envío de datos
@@ -133,13 +151,24 @@ struct SystemState {
     // Presión antes (P1) y después (P2) de los filtros
     int p1_psi = 0;
     int p2_psi = 0;
-    float p1_raw_psi = 0.0f;  // con un decimal, para hacer cero con el tren sin presión
-    float p2_raw_psi = 0.0f;
+    float p1_zero_psi = 0.0f;  // corrimiento del cero guardado con Hacer cero
+    float p2_zero_psi = 0.0f;
+    float p1_volts = 0.0f;     // lo que lee el ADS1115 en A0 y A1
+    float p2_volts = 0.0f;
+    std::array<uint8_t, 24> p1_24h{};  // una por hora, la última es la de ahorita
+    std::array<uint8_t, 24> p2_24h{};
 
-    // Cartuchos
-    std::array<uint8_t, 5> spares{};       // repuestos en casa, por Cartridge
-    Cartridge last_cartridge = Cartridge::pp20;
-    uint32_t last_cartridge_day = 0;       // mismo conteo que today; 0 = no hay registro
+    // Caída contra caudal: con cartuchos nuevos y las lecturas del último mes
+    std::array<uint8_t, 16> drop_new_tenths{};  // caída nueva a 0, 1 ... 15 L/min, en décimas
+    uint32_t drop_new_day = 0;                  // cuándo se midió con cartuchos nuevos
+    std::array<DropSample, kDropSamples> drop_samples{};  // la más vieja primero
+    uint8_t drop_sample_count = 0;
+
+    // Filtros y cartuchos
+    std::array<FilterStatus, kFilterCount> filters{};
+    std::array<uint8_t, kFilterCount> spares{};  // repuestos en casa, por Filter
+    Filter last_cartridge = Filter::pp20;        // el último que se cambió
+    uint32_t last_cartridge_day = 0;             // mismo conteo que today; 0 = no hay registro
 
     // Pantalla
     bool night_off = true;                 // apagar la luz de noche

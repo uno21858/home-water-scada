@@ -36,6 +36,9 @@ Mientras llega el hardware, se desarrolla en el simulador con SDL (Mac y Fedora)
     `dose_screen` (Dosis), `history_screen` (Historial), `settings_screen`
     (Ajustes) e `idle_screen` (Pasillo: va en `lv_layer_top()`, encima de los
     diálogos, y `ui::update()` lo abre con `lv_display_get_inactive_time()`).
+    Detalles: `flow_sensor_screen` (DetalleF), `pressure_screen` (DetalleP),
+    `drop_screen` (DetalleCaida), `filters_screen` (Cartuchos) e
+    `injection_screen` (Inyección).
   - Lo que la pantalla le pide a la app sale por `actions()`; un campo nuevo
     se captura con `open_keypad(KeypadSpec, callback)`.
 - `simulator/`: ventana SDL. `demo.cpp` llena el estado con los datos de ejemplo
@@ -117,18 +120,18 @@ En Mac, SDL2 viene de Homebrew (`brew install sdl2`). Si CMake no lo encuentra:
 ## Estado (octubre 2026)
 
 Hecho: las 7 pestañas (Tren, Resumen, Flujo, Cisterna, Dosis, Historial,
-Ajustes), Mezcla, Pasillo, el diálogo de confirmar y el teclado (Registrar otra cantidad, Calibrar con tira y los
+Ajustes), Mezcla, Pasillo, los 5 detalles (DetalleF, DetalleP, DetalleCaida,
+Cartuchos, Inyección), el diálogo de confirmar y el teclado (Registrar otra cantidad, Calibrar con tira y los
 minutos de la bomba R).
 
 Pendiente, en este orden:
 
-1. Detalles: DetalleF, DetalleP, DetalleCaida, Cartuchos, Inyeccion. El
-   `header` ya tiene atrás, chip y enlace; le faltan el "?" de ayuda (Leyenda)
-   y el chip de sin red. Cada enlace se prende en `kPages` cuando exista su
-   pantalla: Casa → Panorama, Sensor F, Inyección, Alarmas, Diagnóstico.
-2. Estados globales: alarma a pantalla completa (EstadoAlarma) y sin red.
-3. Servicio: Alarmas, Diagnóstico, Prueba de cubeta, Leyenda, Panorama.
-4. Firmware de la 7B y del nodo.
+1. Estados globales: alarma a pantalla completa (EstadoAlarma) y sin red. Al
+   `header` le faltan el "?" de ayuda (Leyenda) y el chip de sin red.
+2. Servicio: Alarmas, Diagnóstico, Prueba de cubeta, Leyenda, Panorama. Cada
+   enlace se prende en `kPages` cuando exista su pantalla: Casa → Panorama,
+   Alarmas, Diagnóstico; y los botones de Prueba de cubeta (Ajustes, DetalleF).
+3. Firmware de la 7B y del nodo.
 
 ## Diferencias a propósito con el canvas
 
@@ -138,11 +141,12 @@ Pendiente, en este orden:
 - P1, P2, los vasos y la caída del Tren todavía no abren nada: sus pantallas de
   detalle no existen.
 - Los chips de fecha y hora del teclado solo muestran; no hay selector diseñado.
+- "P1 0.0 P2 0.0" en Ajustes y en DetalleP es el corrimiento del cero que se
+  guardó con Hacer cero (`p1_zero_psi`), no la lectura en vivo.
 - En Flujo el aviso "Sin flujo" va junto al título "Caudal" y no en x 578: mide
   174 px y en el canvas queda abajo de la tarjeta de Litros hoy (x 700).
 - En Flujo la cifra de 232 px va en y 57 y no en 40 (ver la nota de cifras en
   "LVGL 9.6: lo que ya mordió"); así cae donde la dibuja el canvas.
-- El encabezado de Flujo todavía no tiene el enlace "Sensor F" a DetalleF.
 - Cisterna sin sonda ORP (`has_orp` falso) se ve como una tarjeta bloqueada de
   fase 2, y sin tira dice "Sin calibrar" y no estima el cloro. El canvas solo
   dibuja el caso con sonda y calibración.
@@ -154,6 +158,14 @@ Pendiente, en este orden:
   fase 1.5" o "fase 2" en lugar de la gráfica. Las marcas de abajo miden 100 px
   y no 80 para que "14 sep" no se parta. "18:00" y "24:00" se tocan igual que en
   el canvas.
+- En DetalleP, "Con V1 cerrada y sin presión" no cabe en 348 px (en el canvas se
+  sale de la tarjeta): dice "Con V1 cerrada, sin presión".
+- La curva de "nuevos" en DetalleCaida se puntea a mano: LVGL solo puntea
+  líneas horizontales o verticales.
+- Textos que en el canvas tampoco caben y se quedaron igual, para arreglar en el
+  diseño: en Cartuchos "vaso vacío" queda abajo de la barra y "Lo cambié" toca
+  el borde de su botón; en DetalleCaida "con 12.4 L/min pasando" y "Al mismo
+  caudal, 12.4 L/min" se meten en la tarjeta de al lado.
 - En Pasillo, con 100 mL o más la cifra de Toca echar baja a 72 px (a 136 no
   cabe antes de la orilla). Al entrar se cierran el diálogo y el teclado: el
   toque para salir regresa al Tren.

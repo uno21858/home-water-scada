@@ -136,7 +136,7 @@ void SummaryScreen::create_dose_card(lv_obj_t* page) {
 
 void SummaryScreen::create_filters_card(lv_obj_t* page) {
     filters_live_ = card(page, 16, 260, 490, 184);
-    link_to(filters_live_, Screen::home);
+    link_to(filters_live_, Screen::pressure_drop);
 
     lv_obj_t* title = label(filters_live_, &font_label_26, colors::text_secondary, "Filtros");
     lv_obj_set_pos(title, 16, 6);

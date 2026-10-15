@@ -10,11 +10,16 @@
 #include "components/primitives.h"
 #include "screens/cistern_screen.h"
 #include "screens/dose_screen.h"
+#include "screens/drop_screen.h"
+#include "screens/filters_screen.h"
 #include "screens/flow_screen.h"
+#include "screens/flow_sensor_screen.h"
 #include "screens/history_screen.h"
 #include "screens/home_screen.h"
 #include "screens/idle_screen.h"
+#include "screens/injection_screen.h"
 #include "screens/mixer_screen.h"
+#include "screens/pressure_screen.h"
 #include "screens/settings_screen.h"
 #include "screens/summary_screen.h"
 #include "theme/format.h"
@@ -41,12 +46,17 @@ struct Page {
 const std::array<Page, kScreenCount> kPages = {{
     {{"Tren de filtros", {}, nullptr, nullptr, {}}, Screen::home},
     {{"Resumen", {}, nullptr, nullptr, {}}, Screen::summary},
-    {{"Flujo", {}, nullptr, nullptr, {}}, Screen::flow},
+    {{"Flujo", {}, nullptr, "Sensor F", Screen::flow_sensor}, Screen::flow},
     {{"Cisterna", {}, "Fase 2", "Bomba R", Screen::mixer}, Screen::cistern},
-    {{"Dosis de cloro", {}, nullptr, nullptr, {}}, Screen::dose},
+    {{"Dosis de cloro", {}, nullptr, "Inyección", Screen::injection}, Screen::dose},
     {{"Historial", {}, nullptr, nullptr, {}}, Screen::history},
     {{"Ajustes", {}, nullptr, nullptr, {}}, Screen::settings},
     {{"Mezcla de la cisterna", Screen::cistern, "Fase 2", nullptr, {}}, Screen::cistern},
+    {{"Sensor de flujo F", Screen::flow, nullptr, nullptr, {}}, Screen::flow},
+    {{"Presión P1 y P2", Screen::home, nullptr, nullptr, {}}, Screen::home},
+    {{"Caída del tren", Screen::home, nullptr, nullptr, {}}, Screen::home},
+    {{"Cartuchos", Screen::home, nullptr, nullptr, {}}, Screen::home},
+    {{"Inyección A y B", Screen::dose, nullptr, nullptr, {}}, Screen::dose},
 }};
 
 Actions app_actions;
@@ -63,6 +73,11 @@ MixerScreen mixer;
 HistoryScreen history;
 SettingsScreen settings;
 IdleScreen idle;
+FlowSensorScreen flow_sensor;
+PressureScreen pressure;
+DropScreen pressure_drop;
+FiltersScreen filters;
+InjectionScreen injection;
 DoseScreen dose;
 std::array<lv_obj_t*, kScreenCount> pages{};
 
@@ -103,6 +118,11 @@ void init(const core::SystemState& s, const Actions& a) {
     pages[index_of(Screen::history)] = history.create(content);
     pages[index_of(Screen::settings)] = settings.create(content);
     pages[index_of(Screen::mixer)] = mixer.create(content);
+    pages[index_of(Screen::flow_sensor)] = flow_sensor.create(content);
+    pages[index_of(Screen::pressure)] = pressure.create(content);
+    pages[index_of(Screen::pressure_drop)] = pressure_drop.create(content);
+    pages[index_of(Screen::filters)] = filters.create(content);
+    pages[index_of(Screen::injection)] = injection.create(content);
 
     header.create(screen);
     nav.create(screen);
@@ -127,6 +147,11 @@ void update(const core::SystemState& s) {
     dose.update(s);
     history.update(s);
     settings.update(s);
+    flow_sensor.update(s);
+    pressure.update(s);
+    pressure_drop.update(s);
+    filters.update(s);
+    injection.update(s);
     idle.update(s);
 
     // Pasillo: nadie ha tocado la pantalla en los minutos de Ajustes
@@ -151,6 +176,13 @@ void ask_dose_confirmation() {
              "Se registra hoy a las %02u:%02u y el conteo de litros desde la última dosis vuelve a 0.",
              static_cast<unsigned>(state.hour), static_cast<unsigned>(state.minute));
     dialog.open(title, body, "Sí, ya le puse", on_dose_confirmed);
+}
+
+void ask_pressure_zero() {
+    dialog.open("¿Hacer cero de P1 y P2?",
+                "Con V1 cerrada y el tren sin presión, lo que marquen ahorita queda como 0 psi.", "Sí, hacer cero", [] {
+                    if (app_actions.pressure_zeroed != nullptr) app_actions.pressure_zeroed();
+                });
 }
 
 void open_dose_keypad() {

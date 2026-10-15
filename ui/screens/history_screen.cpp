@@ -36,8 +36,6 @@ lv_point_precise_t pt(float x, float y) {
 // Iniciales de los días en el eje de la semana
 const char* const kDayLetters[7] = {"Do", "Lu", "Ma", "Mi", "Ju", "Vi", "Sá"};
 
-const char* const kCartridges[5] = {"20 µm", "10 µm", "5 µm", "CTO", "Sarro"};
-
 // Label de un eje: 26 px en texto-3, con ancho fijo y alineado
 lv_obj_t* axis_label(lv_obj_t* parent, int32_t w, lv_text_align_t align) {
     lv_obj_t* obj = label(parent, &font_label_26, colors::text_disabled, "");
@@ -484,7 +482,11 @@ void HistoryScreen::update_events(const core::SystemState& s) {
                 snprintf(title, sizeof title, "Dosis %u mL", static_cast<unsigned>(ev.value));
                 break;
             case core::EventKind::cartridge:
-                snprintf(title, sizeof title, "Cartucho %s", kCartridges[ev.value % 5]);
+                snprintf(title, sizeof title, "Cartucho %s", fmt::filter_name(ev.value));
+                src = &icon_cartucho_32;
+                break;
+            case core::EventKind::purge:
+                snprintf(title, sizeof title, "Purga del prefiltro");
                 src = &icon_cartucho_32;
                 break;
             case core::EventKind::drop_warning:

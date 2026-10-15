@@ -14,10 +14,15 @@ namespace ui {
 // barra sigue marcando esa pestaña.
 enum class Screen : uint8_t {
     home, summary, flow, cistern, dose, history, settings,  // pestañas
-    mixer,                                                  // Mezcla, desde Cisterna
+    mixer,          // Mezcla, desde Cisterna
+    flow_sensor,    // Sensor de flujo F, desde Flujo
+    pressure,       // Presión P1 y P2, desde el Tren
+    pressure_drop,  // Caída del tren, desde el Tren, Resumen y Presión
+    filters,        // Cartuchos, desde el Tren, la caída y Ajustes
+    injection,      // Inyección A y B, desde Dosis
 };
 inline constexpr int kTabCount = 7;
-inline constexpr int kScreenCount = 8;
+inline constexpr int kScreenCount = 13;
 
 // Lo que la interfaz le pide a la app. Cualquiera puede quedar en nullptr.
 struct Actions {
@@ -33,6 +38,7 @@ struct Actions {
     void (*daily_cap_set)(uint32_t ml) = nullptr;
     void (*night_off_set)(bool on) = nullptr;                 // Apagar la luz de noche: Sí o No
     void (*idle_minutes_set)(uint32_t minutes) = nullptr;     // modo pasillo: 1, 2 o 5
+    void (*filter_serviced)(core::Filter filter) = nullptr;   // purgó el prefiltro o cambió un cartucho
 };
 
 struct KeypadSpec;  // components/keypad_dialog.h
@@ -43,6 +49,9 @@ void show(Screen screen);
 
 // Abre "¿Ya le pusiste X mL?". Lo usan Resumen y Dosis.
 void ask_dose_confirmation();
+
+// Pregunta antes de hacer cero de P1 y P2. Lo usan Ajustes y Presión.
+void ask_pressure_zero();
 
 // Abre el teclado de "Registrar otra cantidad"
 void open_dose_keypad();

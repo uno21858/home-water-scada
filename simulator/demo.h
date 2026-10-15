@@ -35,4 +35,7 @@ void on_daily_cap(uint32_t ml);
 void on_night_off(bool on);
 void on_idle_minutes(uint32_t minutes);
 
+// Cartuchos: purgó el prefiltro o cambió (o puso) un cartucho
+void on_filter_serviced(core::Filter filter);
+
 }  // namespace demo

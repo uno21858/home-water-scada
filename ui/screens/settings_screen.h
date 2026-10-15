@@ -38,7 +38,6 @@ private:
 
     static void handle_category(lv_event_t* e);
     static void handle_factor(lv_event_t* e);
-    static void handle_zero(lv_event_t* e);
     static void handle_ratio(lv_event_t* e);
     static void handle_cap(lv_event_t* e);
 

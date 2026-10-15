@@ -37,6 +37,7 @@ int main()
     actions.daily_cap_set = demo::on_daily_cap;
     actions.night_off_set = demo::on_night_off;
     actions.idle_minutes_set = demo::on_idle_minutes;
+    actions.filter_serviced = demo::on_filter_serviced;
     ui::init(demo::state(), actions);
 
     // Cada segundo cambian los datos, como lo haría el firmware

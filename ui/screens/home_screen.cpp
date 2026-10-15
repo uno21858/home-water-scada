@@ -114,6 +114,7 @@ void HomeScreen::create_inlet(lv_obj_t* page) {
     symbol(page, &pid_malla, 102, 307);
     frame(page, 88, 283, 52, 18, colors::panel_raised, colors::border_control, 4);
     symbol(page, &pid_purga, 104, 347);
+    link_to(box(page, 94, 299, 40, 48), Screen::filters, &styles::button_secondary_pressed);
 
     symbol(page, &pid_valvula_v1, 160, 269);
     tag_text(page, "V1", 155, 308, 38);
@@ -142,6 +143,9 @@ void HomeScreen::create_housings(lv_obj_t* page) {
             fill(cartridge, colors::panel_raised);
         }
         frame(page, x - 8, 60, 72, 20, colors::panel_raised, colors::border_control, 4);
+
+        // Zona tocable del vaso (la del canvas): abre Cartuchos
+        link_to(box(page, x, 78, 56, 64), Screen::filters, &styles::button_secondary_pressed);
     }
 }
 
@@ -191,6 +195,7 @@ void HomeScreen::create_tags(lv_obj_t* page) {
     // mide 180 px y no cabe en 172 (en el canvas se sale de la etiqueta).
     auto pressure_tag = [page](SensorTag& tag, lv_obj_t*& marker, int32_t x, int32_t y, const char* name) {
         tag = sensor_tag(page, x, y, 172, name, "psi", "1.5");
+        link_to(tag.live, Screen::pressure, &styles::button_secondary_pressed);
         lv_obj_set_style_radius(tag_bar(tag, 0, tag.bar_w, colors::border), 2, 0);
         tag_bar(tag, range_x(20, tag.bar_w), range_x(50, tag.bar_w) - range_x(20, tag.bar_w), colors::pipe);
         marker = tag_marker(tag);
@@ -199,7 +204,7 @@ void HomeScreen::create_tags(lv_obj_t* page) {
 
     // B: la boca donde se echa el cloro a mano
     lv_obj_t* b = frame(page, 378, 196, 168, 56, colors::panel_raised, colors::border, 6);
-    link_to(b, Screen::dose, &styles::button_secondary_pressed);
+    link_to(b, Screen::injection, &styles::button_secondary_pressed);
     lv_obj_t* b_row = row(b, 10, LV_FLEX_ALIGN_CENTER);
     lv_obj_align(b_row, LV_ALIGN_LEFT_MID, 12, 0);
     label(b_row, &font_label_26, colors::text_secondary, "B");
@@ -209,7 +214,7 @@ void HomeScreen::create_tags(lv_obj_t* page) {
 
     // F: barra que se llena de 0 a 30 L/min
     f_ = sensor_tag(page, 772, 196, 236, "F", "L/min", "");
-    link_to(f_.live, Screen::flow, &styles::button_secondary_pressed);
+    link_to(f_.live, Screen::flow_sensor, &styles::button_secondary_pressed);
     lv_obj_set_style_radius(tag_bar(f_, 0, f_.bar_w, colors::border), 2, 0);
     f_fill_ = tag_bar(f_, 0, 0, colors::water);
     lv_obj_set_style_radius(f_fill_, 2, 0);
@@ -241,6 +246,7 @@ void HomeScreen::create_tags(lv_obj_t* page) {
 void HomeScreen::create_strip(lv_obj_t* page) {
     // Caída del tren: el color y la palabra dicen si está bien
     drop_live_ = box(page, 16, 388, 360, 56);
+    link_to(drop_live_, Screen::pressure_drop, &styles::button_secondary_pressed);
     lv_obj_set_style_radius(drop_live_, 10, 0);
     lv_obj_set_style_border_width(drop_live_, 2, 0);
     lv_obj_set_style_bg_opa(drop_live_, LV_OPA_COVER, 0);
