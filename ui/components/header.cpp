@@ -57,6 +57,17 @@ void Header::create(lv_obj_t* parent) {
     lv_obj_t* right = row(root, 16, LV_FLEX_ALIGN_CENTER);
     lv_obj_align(right, LV_ALIGN_RIGHT_MID, -20, 0);
 
+    // Sin red: chip ámbar con lo que falta por enviar. Nunca un diálogo.
+    offline_ = row(right, 0, LV_FLEX_ALIGN_CENTER);
+    lv_obj_set_height(offline_, 40);
+    lv_obj_set_style_radius(offline_, LV_RADIUS_CIRCLE, 0);
+    lv_obj_set_style_border_width(offline_, 2, 0);
+    lv_obj_set_style_border_color(offline_, color(colors::warning), 0);
+    fill(offline_, colors::warning_bg);
+    lv_obj_set_style_pad_hor(offline_, 14, 0);
+    offline_text_ = label(offline_, &font_label_26, colors::warning, "");
+    lv_obj_set_hidden(offline_, true);
+
     // Pastilla: ícono y palabra, nunca solo color
     pill_ = row(right, 8, LV_FLEX_ALIGN_CENTER);
     lv_obj_set_height(pill_, 44);
@@ -84,7 +95,8 @@ void Header::set_page(const HeaderSpec& spec) {
     if (spec.chip != nullptr) set_text(chip_text_, spec.chip);
 
     const bool has_link = spec.link_text != nullptr && spec.link;
-    lv_obj_set_hidden(link_, !has_link);
+    has_link_ = has_link;
+    lv_obj_set_hidden(link_, !has_link || !lv_obj_is_hidden(offline_));
     if (has_link) {
         set_text(link_text_, spec.link_text);
         link_target_ = *spec.link;
@@ -135,9 +147,16 @@ void Header::set_time(uint8_t hour, uint8_t minute) {
     set_text(clock_, buf);
 }
 
-void Header::set_wifi(bool ok) {
+void Header::set_network(bool ok, uint16_t pending) {
+    if (!ok) {
+        char buf[32];
+        snprintf(buf, sizeof buf, "Sin red · %u por enviar", static_cast<unsigned>(pending));
+        set_text(offline_text_, buf);
+    }
     if (static_cast<int>(ok) == wifi_ok_) return;
     wifi_ok_ = ok;
+    lv_obj_set_hidden(offline_, ok);
+    lv_obj_set_hidden(link_, !has_link_ || !ok);
     lv_image_set_src(wifi_, ok ? &icon_wifi_32 : &icon_wifi_off_32);
     set_icon_color(wifi_, ok ? colors::text_secondary : colors::warning);
 }

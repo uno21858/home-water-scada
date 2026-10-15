@@ -4,6 +4,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 
 namespace demo {
 namespace {
@@ -198,6 +199,7 @@ core::SystemState make() {
 
 core::SystemState s = make();
 uint32_t seconds = 0;
+bool no_flow = false;  // escenario sin-flujo: el caudal se queda en 0
 float liters_fraction = 0.0f;
 uint8_t mixer_run_total = 15;  // minutos de la vuelta de ahorita: 15 en Auto, 60 a mano
 bool mixer_by_hand = false;    // la vuelta de ahorita se prendió a mano
@@ -293,9 +295,55 @@ void next_minute() {
 
 const core::SystemState& state() { return s; }
 
+bool set_scenario(const char* name) {
+    auto alarm = [](core::AlarmKind kind) {
+        core::Alarm& a = s.alarms[static_cast<size_t>(kind)];
+        a = {true, false, core::minute_of_day(s)};
+        add_event(core::EventKind::alarm, static_cast<uint16_t>(kind));
+    };
+    auto drop = [](int psi) {
+        s.p2_psi = s.p1_psi - psi;
+        s.p2_24h.back() = static_cast<uint8_t>(s.p2_psi);
+    };
+    auto stop_flow = [] {
+        no_flow = true;
+        s.flow_lpm = 0.0f;
+        for (int i = 114; i < core::kFlowSamples2h; ++i) s.flow_2h[static_cast<size_t>(i)] = 0.0f;
+        s.flow_24h.back() = 0.0f;
+    };
+    if (std::strcmp(name, "sin-flujo") == 0) {
+        stop_flow();
+    } else if (std::strcmp(name, "sin-red") == 0) {
+        s.wifi_ok = false;
+        s.wifi_bars = 0;
+        s.pending_uploads = 24;
+    } else if (std::strcmp(name, "alarma") == 0) {
+        stop_flow();
+        alarm(core::AlarmKind::no_flow);
+    } else if (std::strcmp(name, "sensor") == 0) {
+        s.flow_sensor_ok = false;
+        alarm(core::AlarmKind::sensor);
+    } else if (std::strcmp(name, "tope") == 0) {
+        alarm(core::AlarmKind::daily_cap);
+    } else if (std::strcmp(name, "fase1") == 0) {
+        s.has_pressure = s.has_orp = s.has_mixer = false;
+    } else if (std::strcmp(name, "fase15") == 0) {
+        s.has_orp = s.has_mixer = false;
+    } else if (std::strcmp(name, "revisar") == 0) {
+        drop(7);
+    } else if (std::strcmp(name, "tapados") == 0) {
+        drop(12);
+    } else {
+        return false;
+    }
+    return true;
+}
+
+void on_alarm_acknowledged(core::AlarmKind kind) { s.alarms[static_cast<size_t>(kind)].acknowledged = true; }
+
 void tick_1s() {
     ++seconds;
-    s.flow_lpm = 12.4f + 0.15f * std::sin(seconds / 3.0f);
+    s.flow_lpm = no_flow ? 0.0f : 12.4f + 0.15f * std::sin(seconds / 3.0f);
     s.flow_24h.back() = s.flow_lpm;
     s.flow_2h.back() = s.flow_lpm;
 

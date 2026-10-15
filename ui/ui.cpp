@@ -8,6 +8,7 @@
 #include "components/keypad_dialog.h"
 #include "components/nav_bar.h"
 #include "components/primitives.h"
+#include "screens/alarm_screen.h"
 #include "screens/cistern_screen.h"
 #include "screens/dose_screen.h"
 #include "screens/drop_screen.h"
@@ -73,6 +74,7 @@ MixerScreen mixer;
 HistoryScreen history;
 SettingsScreen settings;
 IdleScreen idle;
+AlarmScreen alarm;
 FlowSensorScreen flow_sensor;
 PressureScreen pressure;
 DropScreen pressure_drop;
@@ -129,6 +131,7 @@ void init(const core::SystemState& s, const Actions& a) {
     dialog.create(lv_layer_top());
     keypad.create(lv_layer_top());
     idle.create(lv_layer_top(), [] { show(Screen::home); });  // encima de los diálogos
+    alarm.create(lv_layer_top());                                // y la alarma encima de todo
 
     update(s);
     show(Screen::home);  // Tren es la de inicio
@@ -138,7 +141,7 @@ void update(const core::SystemState& s) {
     state = s;
     header.set_level(core::overall_level(s));
     header.set_time(s.hour, s.minute);
-    header.set_wifi(s.wifi_ok);
+    header.set_network(s.wifi_ok, s.pending_uploads);
     home.update(s);
     summary.update(s);
     flow.update(s);
@@ -153,6 +156,7 @@ void update(const core::SystemState& s) {
     filters.update(s);
     injection.update(s);
     idle.update(s);
+    alarm.update(s);
 
     // Pasillo: nadie ha tocado la pantalla en los minutos de Ajustes
     const uint32_t idle_ms = static_cast<uint32_t>(s.idle_minutes) * 60u * 1000u;

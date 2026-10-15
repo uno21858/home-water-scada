@@ -28,4 +28,7 @@ const char* month_short(unsigned month);
 // core::Filter -> "Prefiltro", "20 µm", "10 µm", "5 µm", "CTO", "Sarro"
 const char* filter_name(unsigned filter);
 
+// core::AlarmKind -> "Sin flujo mientras dosifica", "Sensor F sin señal"...
+const char* alarm_title(unsigned kind);
+
 }  // namespace ui::fmt

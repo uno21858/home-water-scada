@@ -39,6 +39,7 @@ struct Actions {
     void (*night_off_set)(bool on) = nullptr;                 // Apagar la luz de noche: Sí o No
     void (*idle_minutes_set)(uint32_t minutes) = nullptr;     // modo pasillo: 1, 2 o 5
     void (*filter_serviced)(core::Filter filter) = nullptr;   // purgó el prefiltro o cambió un cartucho
+    void (*alarm_acknowledged)(core::AlarmKind kind) = nullptr;  // tocó Entendido en la alarma
 };
 
 struct KeypadSpec;  // components/keypad_dialog.h

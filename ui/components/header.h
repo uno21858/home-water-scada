@@ -1,8 +1,8 @@
 #pragma once
 // Encabezado de 1024 x 64. A la izquierda: botón atrás (en las pantallas de
 // detalle), título, chip ("Fase 2") y un enlace a otra pantalla ("Bomba R").
-// A la derecha: pastilla de estado, WiFi y hora. Se crea una vez; al cambiar
-// de pantalla solo se esconden o se muestran sus piezas.
+// A la derecha: aviso de sin red, pastilla de estado, WiFi y hora. Se crea una
+// vez; al cambiar de pantalla solo se esconden o se muestran sus piezas.
 
 #include <cstdint>
 #include <optional>
@@ -28,7 +28,9 @@ public:
     void set_page(const HeaderSpec& spec);
     void set_level(core::Level level);
     void set_time(uint8_t hour, uint8_t minute);
-    void set_wifi(bool ok);
+    // Sin red sale el chip ámbar "Sin red · 24 por enviar" y el enlace se
+    // esconde para que quepa (así lo hace Flujo en el canvas)
+    void set_network(bool ok, uint16_t pending);
 
 private:
     static void handle_back(lv_event_t* e);
@@ -43,6 +45,10 @@ private:
     lv_obj_t* link_text_ = nullptr;
     Screen back_target_ = Screen::home;
     Screen link_target_ = Screen::home;
+    bool has_link_ = false;
+
+    lv_obj_t* offline_ = nullptr;
+    lv_obj_t* offline_text_ = nullptr;
 
     lv_obj_t* pill_ = nullptr;
     lv_obj_t* pill_icon_ = nullptr;

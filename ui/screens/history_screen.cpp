@@ -489,6 +489,11 @@ void HistoryScreen::update_events(const core::SystemState& s) {
                 snprintf(title, sizeof title, "Purga del prefiltro");
                 src = &icon_cartucho_32;
                 break;
+            case core::EventKind::alarm:
+                snprintf(title, sizeof title, "%s", fmt::alarm_title(ev.value));
+                tone = icon_tone = colors::alarm;
+                src = &icon_alarma_32;
+                break;
             case core::EventKind::drop_warning:
             case core::EventKind::drop_alarm: {
                 const bool alarm = ev.kind == core::EventKind::drop_alarm;

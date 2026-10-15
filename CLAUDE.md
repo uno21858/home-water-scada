@@ -38,7 +38,8 @@ Mientras llega el hardware, se desarrolla en el simulador con SDL (Mac y Fedora)
     diálogos, y `ui::update()` lo abre con `lv_display_get_inactive_time()`).
     Detalles: `flow_sensor_screen` (DetalleF), `pressure_screen` (DetalleP),
     `drop_screen` (DetalleCaida), `filters_screen` (Cartuchos) e
-    `injection_screen` (Inyección).
+    `injection_screen` (Inyección). `alarm_screen` es la alarma a pantalla
+    completa: va en `lv_layer_top()` encima de todo, Pasillo incluido.
   - Lo que la pantalla le pide a la app sale por `actions()`; un campo nuevo
     se captura con `open_keypad(KeypadSpec, callback)`.
 - `simulator/`: ventana SDL. `demo.cpp` llena el estado con los datos de ejemplo
@@ -59,6 +60,10 @@ cmake -S simulator -B build -DCMAKE_BUILD_TYPE=Debug
 cmake --build build -j
 ./build/simulator
 ```
+
+Para ver un estado del canvas sin tocar código: `HMI_DEMO=alarma ./build/simulator`.
+Escenarios: `sin-flujo`, `sin-red`, `alarma`, `sensor`, `tope`, `fase1`, `fase15`,
+`revisar` y `tapados` (`demo::set_scenario` en `simulator/demo.h`).
 
 En Mac, SDL2 viene de Homebrew (`brew install sdl2`). Si CMake no lo encuentra:
 `-DCMAKE_PREFIX_PATH=/opt/homebrew`.
@@ -121,17 +126,17 @@ En Mac, SDL2 viene de Homebrew (`brew install sdl2`). Si CMake no lo encuentra:
 
 Hecho: las 7 pestañas (Tren, Resumen, Flujo, Cisterna, Dosis, Historial,
 Ajustes), Mezcla, Pasillo, los 5 detalles (DetalleF, DetalleP, DetalleCaida,
-Cartuchos, Inyección), el diálogo de confirmar y el teclado (Registrar otra cantidad, Calibrar con tira y los
+Cartuchos, Inyección), la alarma a pantalla completa, el aviso de sin red en
+el encabezado, el diálogo de confirmar y el teclado (Registrar otra cantidad, Calibrar con tira y los
 minutos de la bomba R).
 
 Pendiente, en este orden:
 
-1. Estados globales: alarma a pantalla completa (EstadoAlarma) y sin red. Al
-   `header` le faltan el "?" de ayuda (Leyenda) y el chip de sin red.
-2. Servicio: Alarmas, Diagnóstico, Prueba de cubeta, Leyenda, Panorama. Cada
+1. Servicio: Alarmas, Diagnóstico, Prueba de cubeta, Leyenda, Panorama. Al
+   `header` le falta el "?" de ayuda (Leyenda). Cada
    enlace se prende en `kPages` cuando exista su pantalla: Casa → Panorama,
    Alarmas, Diagnóstico; y los botones de Prueba de cubeta (Ajustes, DetalleF).
-3. Firmware de la 7B y del nodo.
+2. Firmware de la 7B y del nodo.
 
 ## Diferencias a propósito con el canvas
 
@@ -166,6 +171,11 @@ Pendiente, en este orden:
   diseño: en Cartuchos "vaso vacío" queda abajo de la barra y "Lo cambié" toca
   el borde de su botón; en DetalleCaida "con 12.4 L/min pasando" y "Al mismo
   caudal, 12.4 L/min" se meten en la tarjeta de al lado.
+- Sin red, el encabezado esconde su enlace para que quepa el chip (el canvas lo
+  hace en Flujo; aquí en todas).
+- La alarma sale mientras haya una activa sin reconocer (`SystemState::alarms`).
+  Entendido la quita y avisa por `Actions::alarm_acknowledged`; la pastilla
+  sigue en Alarma hasta que la alarma deje de estar activa.
 - En Pasillo, con 100 mL o más la cifra de Toca echar baja a 72 px (a 136 no
   cabe antes de la orilla). Al entrar se cierran el diálogo y el teclado: el
   toque para salir regresa al Tren.

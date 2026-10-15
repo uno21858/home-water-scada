@@ -10,6 +10,16 @@ namespace demo {
 
 const core::SystemState& state();
 
+// Escenarios para ver cada estado del canvas sin tocar código. Se eligen con
+// la variable HMI_DEMO al correr el simulador:
+//   sin-flujo  el caudal en 0 (Flujo, Resumen, Pasillo)
+//   sin-red    WiFi caído con 24 lecturas por enviar (encabezado)
+//   alarma     sin flujo mientras dosifica; sensor y tope, las otras dos
+//   fase1      sin P1 y P2, sin ORP ni bomba R; fase15, sin ORP ni bomba R
+//   revisar    caída de 7 psi; tapados, de 12 psi
+// Regresa false si el nombre no existe.
+bool set_scenario(const char* name);
+
 // Avanza un segundo: el caudal se mueve un poco, suben los litros,
 // y cada minuto avanzan la hora y la cuenta de la bomba R.
 void tick_1s();
@@ -37,5 +47,8 @@ void on_idle_minutes(uint32_t minutes);
 
 // Cartuchos: purgó el prefiltro o cambió (o puso) un cartucho
 void on_filter_serviced(core::Filter filter);
+
+// Alarma: tocó Entendido
+void on_alarm_acknowledged(core::AlarmKind kind);
 
 }  // namespace demo

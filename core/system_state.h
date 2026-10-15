@@ -68,11 +68,29 @@ struct DropSample {
 };
 inline constexpr int kDropSamples = 42;
 
+// Alarmas a pantalla completa (DS: las tres de la fase 3)
+enum class AlarmKind : uint8_t {
+    no_flow,    // sin flujo mientras dosifica
+    sensor,     // F sin pulsos aunque la caída dice que pasa agua
+    daily_cap,  // la bomba B llegó al tope del día
+};
+inline constexpr int kAlarmKinds = 3;
+
+// Una alarma activa. Al tocar Entendido se reconoce y se quita de la
+// pantalla, pero sigue activa (y la pastilla en Alarma) hasta que la
+// condición se quite.
+struct Alarm {
+    bool active = false;
+    bool acknowledged = false;
+    uint16_t since = 0;  // minuto del día en que empezó
+};
+
 enum class EventKind : uint8_t {
     dose,          // "Ya le puse"
     dose_typed,    // "Registrar otra cantidad"
     cartridge,     // cambio de cartucho (o se puso el del sarro)
     purge,         // purga del prefiltro
+    alarm,         // una alarma; value es su AlarmKind
     drop_warning,  // caída del tren en Revisar
     drop_alarm,    // caída del tren en Tapados
 };
@@ -129,6 +147,7 @@ struct SystemState {
     uint8_t minute = 0;
     bool wifi_ok = false;
     bool flow_sensor_ok = true;   // llegan pulsos de F cuando debe
+    std::array<Alarm, kAlarmKinds> alarms{};  // una por AlarmKind
     char wifi_ssid[33] = "";      // nombre de la red, hasta 32 letras
     uint8_t wifi_bars = 0;        // señal de 0 a 3
     uint16_t last_upload_at = 0;  // minuto del día del último envío de datos
@@ -229,6 +248,9 @@ constexpr Level orp_level(int mv) {
 
 // La pastilla del encabezado: lo peor de lo que se está vigilando
 inline Level overall_level(const SystemState& s) {
+    for (const Alarm& a : s.alarms) {
+        if (a.active) return Level::alarm;
+    }
     Level worst = Level::ok;
     if (s.has_pressure) worst = pressure_drop_level(s.p1_psi - s.p2_psi);
     if (s.has_orp && orp_level(s.orp_mv) > worst) worst = orp_level(s.orp_mv);
