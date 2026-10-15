@@ -67,6 +67,33 @@ void NavBar::create(lv_obj_t* parent) {
     }
 }
 
+void NavBar::set_tab_visible(Screen tab, bool visible) {
+    lv_obj_t* obj = tabs_[static_cast<size_t>(tab)].obj;
+    if (lv_obj_is_hidden(obj) == !visible) return;
+    lv_obj_set_hidden(obj, !visible);
+    layout();
+}
+
+void NavBar::layout() {
+    int shown = 0;
+    for (const Tab& tab : tabs_) shown += lv_obj_is_hidden(tab.obj) ? 0 : 1;
+    // Con las 7, los anchos del canvas; con menos, parejo y el sobrante de
+    // 1 px en las últimas (6 pestañas: 170 o 171 px)
+    const int32_t base = 1024 / shown;
+    const int32_t extra_from = shown - 1024 % shown;
+    int32_t x = 0;
+    int k = 0;
+    for (int i = 0; i < kTabCount; ++i) {
+        lv_obj_t* obj = tabs_[static_cast<size_t>(i)].obj;
+        if (lv_obj_is_hidden(obj)) continue;
+        const int32_t w = shown == kTabCount ? kTabs[i].width : base + (k >= extra_from ? 1 : 0);
+        lv_obj_set_pos(obj, x, 0);
+        lv_obj_set_width(obj, w);
+        x += w;
+        ++k;
+    }
+}
+
 void NavBar::set_active(Screen active) {
     for (int i = 0; i < kTabCount; ++i) {
         const bool on = i == static_cast<int>(active);

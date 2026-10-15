@@ -44,6 +44,7 @@ lv_obj_t* SummaryScreen::create(lv_obj_t* parent) {
     create_dose_card(page);
     create_filters_card(page);
     create_mixer_card(page);
+    create_cartridges_card(page);
     return page;
 }
 
@@ -178,9 +179,6 @@ void SummaryScreen::create_filters_card(lv_obj_t* page) {
     lv_obj_t* state = row(drop_tile_, 6, LV_FLEX_ALIGN_CENTER);
     drop_icon_ = icon(state, &icon_ok_28, colors::ok);
     drop_word_ = label(state, &font_body_32, colors::ok, "");
-
-    filters_locked_ = locked_card(page, 16, 260, 490, 184, "Filtros", "Próximamente · fase 1.5",
-                                  "P1, P2 y caída del tren");
 }
 
 void SummaryScreen::create_mixer_card(lv_obj_t* page) {
@@ -217,9 +215,38 @@ void SummaryScreen::create_mixer_card(lv_obj_t* page) {
 
     mixer_sub_ = label(mixer_live_, &font_label_26, colors::text_secondary, "");
     lv_obj_set_pos(mixer_sub_, 16, 134);
+}
 
-    mixer_locked_ = locked_card(page, 518, 260, 490, 184, "Bomba R · mezcla", "Próximamente · fase 2",
-                                "Revuelve el agua de la cisterna");
+// Cartuchos: ocupa el lugar que dejan Filtros (fase 1.5) y Bomba R (fase 2)
+// mientras no estén. Dice cuál es el que sigue: el que lleva más de su vida.
+// No está en el canvas; copia el acomodo de la tarjeta de la bomba R.
+void SummaryScreen::create_cartridges_card(lv_obj_t* page) {
+    cartridges_ = card(page, 16, 260, 490, 184);
+    link_to(cartridges_, Screen::filters);
+
+    lv_obj_t* title = label(cartridges_, &font_label_26, colors::text_secondary, "Cartuchos · el que sigue");
+    lv_obj_set_pos(title, 16, 6);
+    chevron(cartridges_);
+
+    next_name_ = label(cartridges_, &font_title_xl_48, colors::text, "");
+    lv_obj_set_pos(next_name_, 16, 43);
+
+    lv_obj_t* days = column(cartridges_, 0, LV_FLEX_ALIGN_END);
+    lv_obj_align(days, LV_ALIGN_TOP_RIGHT, -16, 40);
+    label(days, &font_label_26, colors::text_secondary, "Lleva");
+    lv_obj_t* r = row(days, 6, LV_FLEX_ALIGN_END);
+    next_days_ = label(r, &font_digits_44, colors::text, "");
+    next_unit_ = label(r, &font_label_26, colors::text_secondary, "");
+
+    next_track_ = box(cartridges_, 16, 116, 456, 8);
+    lv_obj_set_style_radius(next_track_, 4, 0);
+    lv_obj_set_style_clip_corner(next_track_, true, 0);
+    fill(next_track_, colors::border);
+    next_bar_ = box(next_track_, 0, 0, 0, 8);
+    fill(next_bar_, colors::text_secondary);
+
+    next_sub_ = label(cartridges_, &font_label_26, colors::text_secondary, "");
+    lv_obj_set_pos(next_sub_, 16, 134);
 }
 
 void SummaryScreen::update(const core::SystemState& s) {
@@ -234,6 +261,7 @@ void SummaryScreen::update(const core::SystemState& s) {
 
     update_filters(s);
     update_mixer(s);
+    update_cartridges(s);
 }
 
 void SummaryScreen::update_flow(const core::SystemState& s) {
@@ -291,9 +319,63 @@ void SummaryScreen::update_time_marks(const core::SystemState& s) {
     }
 }
 
+void SummaryScreen::update_cartridges(const core::SystemState& s) {
+    // Va donde no hay Filtros ni Bomba R: a todo lo ancho, a la izquierda o a la derecha
+    const int slot = s.has_pressure && s.has_mixer ? 0 : !s.has_pressure && !s.has_mixer ? 3 : s.has_pressure ? 2 : 1;
+    if (slot != cartridges_slot_) {
+        cartridges_slot_ = slot;
+        lv_obj_set_hidden(cartridges_, slot == 0);
+        const int32_t w = slot == 3 ? 992 : 490;
+        lv_obj_set_pos(cartridges_, slot == 2 ? 518 : 16, 260);
+        lv_obj_set_width(cartridges_, w);
+        lv_obj_set_width(next_track_, w - 2 - 32);  // menos borde y márgenes
+    }
+    if (slot == 0) return;
+
+    // El que lleva más de su vida; con empate, el primero (el prefiltro)
+    size_t next = 0;
+    uint32_t most = 0;
+    for (size_t i = 0; i < core::kFilterCount; ++i) {
+        const uint32_t pct = core::filter_wear_pct(s, static_cast<core::Filter>(i));
+        if (s.filters[i].installed && pct > most) {
+            most = pct;
+            next = i;
+        }
+    }
+    const bool prefilter = next == static_cast<size_t>(core::Filter::prefilter);
+    char buf[48];
+    if (prefilter) {
+        snprintf(buf, sizeof buf, "Prefiltro");
+    } else {
+        snprintf(buf, sizeof buf, "Cartucho %s", fmt::filter_name(static_cast<unsigned>(next)));
+    }
+    set_text(next_name_, buf);
+
+    const core::FilterStatus& f = s.filters[next];
+    const uint32_t days = s.today >= f.since_day ? s.today - f.since_day : 0;
+    snprintf(buf, sizeof buf, "%lu", static_cast<unsigned long>(days));
+    set_text(next_days_, buf);
+    set_text(next_unit_, days == 1 ? "día" : "días");
+
+    const bool due = most >= 100;
+    const int32_t track_w = (cartridges_slot_ == 3 ? 992 : 490) - 2 - 32;  // el ancho de la pista
+    lv_obj_set_width(next_bar_, static_cast<int32_t>(track_w * static_cast<int32_t>(std::min<uint32_t>(most, 100)) / 100));
+    fill(next_bar_, due ? colors::warning : colors::text_secondary);
+
+    // Ya toca: la palabra en ámbar, no solo la barra
+    if (due) {
+        snprintf(buf, sizeof buf, prefilter ? "Ya toca purgarlo" : "Ya toca cambiarlo");
+    } else if (prefilter) {
+        snprintf(buf, sizeof buf, "Se purga %s", fmt::filter_every(static_cast<unsigned>(next)));
+    } else {
+        snprintf(buf, sizeof buf, "Dura %s", fmt::filter_every(static_cast<unsigned>(next)));
+    }
+    set_text(next_sub_, buf);
+    lv_obj_set_style_text_color(next_sub_, color(due ? colors::warning : colors::text_secondary), 0);
+}
+
 void SummaryScreen::update_filters(const core::SystemState& s) {
     lv_obj_set_hidden(filters_live_, !s.has_pressure);
-    lv_obj_set_hidden(filters_locked_, s.has_pressure);
     if (!s.has_pressure) return;
 
     char buf[12];
@@ -337,7 +419,6 @@ void SummaryScreen::update_filters(const core::SystemState& s) {
 
 void SummaryScreen::update_mixer(const core::SystemState& s) {
     lv_obj_set_hidden(mixer_live_, !s.has_mixer);
-    lv_obj_set_hidden(mixer_locked_, s.has_mixer);
     if (!s.has_mixer) {
         impeller_.set_spinning(false);
         return;

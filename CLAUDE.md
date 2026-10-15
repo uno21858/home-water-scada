@@ -70,6 +70,8 @@ cmake --build build -j
 Para ver un estado del canvas sin tocar código: `HMI_DEMO=alarma ./build/simulator`.
 Escenarios: `sin-flujo`, `sin-red`, `alarma`, `sensor`, `tope`, `fase1`, `fase15`,
 `revisar`, `tapados` y `ro-cocina` (`demo::set_scenario` en `simulator/demo.h`).
+El demo arranca con todo instalado menos las bombas A y B; lo de Erick hoy es
+`HMI_DEMO=fase1`.
 
 En Mac, SDL2 viene de Homebrew (`brew install sdl2`). Si CMake no lo encuentra:
 `-DCMAKE_PREFIX_PATH=/opt/homebrew`.
@@ -85,8 +87,14 @@ En Mac, SDL2 viene de Homebrew (`brew install sdl2`). Si CMake no lo encuentra:
 - Formato de México: `1,860` y `12.4`. Abajo de 10 se rellena con espacio de cifra
   U+2007 para que el número no brinque (`fmt::one_decimal`).
 - Estado nunca solo en color: siempre con palabra o ícono. Una acción primaria por
-  vista. Lo de fases futuras se ve pero no se toca: candado y texto en texto-3.
-  Detalle en `docs/diseno/ds/README.md`.
+  vista. Detalle en `docs/diseno/ds/README.md`.
+- Lo de una fase que no está instalada no se muestra (el DS decía candado y
+  "Próximamente"; Erick prefirió esconderlo, octubre 2026). Lo dicen
+  `has_pressure` (fase 1.5), `has_orp` y `has_mixer` (fase 2) y `has_pumps`
+  (fase 3). Sin ORP ni bomba R no hay pestaña Cisterna (`NavBar::
+  set_tab_visible`), y `available()` en `ui.cpp` quita del encabezado los
+  enlaces a lo que no está. Las pantallas que lo esconden dejan su lugar a lo
+  demás: no quedan huecos. Diagnóstico sí lo lista, como mapa de pines.
 - Fuentes, íconos y símbolos se regeneran con el `generate.sh` de su carpeta; no
   se editan los `.c` a mano.
 
@@ -143,8 +151,6 @@ Pendiente, en este orden:
 
 ## Diferencias a propósito con el canvas
 
-- P1 y P2 bloqueadas dicen "1.5" y no "fase 1.5": con el candado no cabe en 172 px
-  (en el canvas se sale de la etiqueta).
 - El label "V3" mide 40 px en lugar de 34.
 - Los chips de fecha y hora del teclado solo muestran; no hay selector diseñado.
 - "P1 0.0 P2 0.0" en Ajustes y en DetalleP es el corrimiento del cero que se
@@ -153,18 +159,20 @@ Pendiente, en este orden:
   174 px y en el canvas queda abajo de la tarjeta de Litros hoy (x 700).
 - En Flujo la cifra de 232 px va en y 57 y no en 40 (ver la nota de cifras en
   "LVGL 9.6: lo que ya mordió"); así cae donde la dibuja el canvas.
-- Cisterna sin sonda ORP (`has_orp` falso) se ve como una tarjeta bloqueada de
-  fase 2, y sin tira dice "Sin calibrar" y no estima el cloro. El canvas solo
-  dibuja el caso con sonda y calibración.
+- Cisterna sin sonda ORP pero con bomba R (raro: las dos son de fase 2) se ve
+  como una tarjeta bloqueada; sin tira dice "Sin calibrar" y no estima el
+  cloro. El canvas solo dibuja el caso con sonda y calibración.
 - "Calibrar con tira" abre el teclado en mg/L con un decimal y guarda la tira con
   el ORP de ese momento (`Actions::strip_checked`). El canvas no tiene esa vista.
   La pista dice "ORP de ahorita: 650 mV": las pistas del teclado tienen 426 px.
 - En Cisterna, "mV" y el estado se recorren a la derecha si el ORP negativo no
   cabe antes de x 318.
-- En Historial, Presiones sin P1 y P2 y ORP sin sonda muestran "Próximamente ·
-  fase 1.5" o "fase 2" en lugar de la gráfica. Las marcas de abajo miden 100 px
-  y no 80 para que "14 sep" no se parta. "18:00" y "24:00" se tocan igual que en
-  el canvas.
+- En Historial, Presiones sale con P1 y P2 y ORP con la sonda; con solo Litros
+  y dosis no hay selector. Las marcas de abajo miden 100 px y no 80 para que
+  "14 sep" no se parta, y el día no lleva "24:00" (se encimaba con "18:00").
+  Los ejes son los del canvas (600 L por hora, 3,000 por día, 60 mL, 60 psi)
+  pero crecen si un dato no cabe (`nice_step`): antes la barra se salía hasta
+  el título. Con 100 mL o más, las marcas de la derecha se recorren 12 px.
 - En DetalleP, "Con V1 cerrada y sin presión" no cabe en 348 px (en el canvas se
   sale de la tarjeta): dice "Con V1 cerrada, sin presión".
 - La curva de "nuevos" en DetalleCaida se puntea a mano: LVGL solo puntea
@@ -222,6 +230,15 @@ Pendiente, en este orden:
   y no "Caída 4 psi · Normal": mide 264 px y caben 232 (en el canvas se sale).
   La flecha va pegada al título por lo mismo. El presostato mide lo que su
   texto (en el canvas "35 a 65 psi" se sale de 140 px) y queda centrado en el
-  tubo. Sin P1 y P2 dice "Caída · fase 1.5", sin sonda "ORP · fase 2" y sin
-  bomba R no sale la R. El RO de la cocina sale con `ro_kitchen_planned`
+  tubo. Sin P1 y P2 no sale la caída, sin sonda no sale el ORP y sin bomba R
+  no sale la R. El RO de la cocina sale con `ro_kitchen_planned`
   (`HMI_DEMO=ro-cocina`); su borde punteado se dibuja a mano.
+- Leyenda no lleva la tarjeta "Fase futura": ya no hay candados que explicar.
+- Resumen: donde no van Filtros (fase 1.5) o Bomba R (fase 2) sale "Cartuchos
+  · el que sigue" (el de más vida gastada, `core::filter_wear_pct`), a lo
+  ancho si faltan los dos. No está en el canvas; copia el acomodo de la de la
+  bomba R. "Ya toca" va en ámbar con la palabra.
+- Sin bombas A y B (`has_pumps`, fase 3) Dosis no lleva su tarjeta y lo demás
+  mide 992; Inyección no se abre (el enlace del encabezado se quita) y la B
+  del Tren lleva a Dosis. En el Tren, sin P1 y P2, Hoy y Toca echar se
+  reparten el renglón de abajo.

@@ -100,6 +100,24 @@ std::array<lv_obj_t*, kScreenCount> pages{};
 
 size_t index_of(Screen screen) { return static_cast<size_t>(screen); }
 
+// Lo de fases que no están instaladas no se muestra: ni su pestaña ni los
+// enlaces del encabezado que llevan a ello
+bool available(Screen screen) {
+    switch (screen) {
+        case Screen::cistern:
+            return state.has_orp || state.has_mixer;
+        case Screen::mixer:
+            return state.has_mixer;
+        case Screen::pressure:
+        case Screen::pressure_drop:
+            return state.has_pressure;
+        case Screen::injection:
+            return state.has_pumps;
+        default:
+            return true;
+    }
+}
+
 void on_dose_confirmed() {
     if (app_actions.dose_confirmed != nullptr) app_actions.dose_confirmed(core::dose_ml(state));
 }
@@ -162,6 +180,7 @@ void update(const core::SystemState& s) {
     header.set_level(core::overall_level(s));
     header.set_time(s.hour, s.minute);
     header.set_network(s.wifi_ok, s.pending_uploads);
+    nav.set_tab_visible(Screen::cistern, available(Screen::cistern));
     home.update(s);
     summary.update(s);
     flow.update(s);
@@ -191,7 +210,12 @@ void show(Screen screen) {
     if (screen == Screen::bucket_test) bucket.enter();  // cada vez empieza a contar desde 0
     for (size_t i = 0; i < pages.size(); ++i) lv_obj_set_hidden(pages[i], i != index_of(screen));
     const Page& page = kPages[index_of(screen)];
-    header.set_page(page.header);
+    HeaderSpec spec = page.header;
+    if (spec.link && !available(*spec.link)) {  // "Bomba R" sin bomba, "Inyección" sin bombas A y B
+        spec.link = {};
+        spec.link_text = nullptr;
+    }
+    header.set_page(spec);
     nav.set_active(page.tab);
 }
 

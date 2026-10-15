@@ -28,12 +28,18 @@ private:
     void create_history(lv_obj_t* page);
     void create_phase3_panel(lv_obj_t* page);
     void layout_due(bool three_digits);
+    void layout_width(bool with_pumps);  // con o sin la tarjeta de fase 3
 
     lv_obj_t* due_value_ = nullptr;
     lv_obj_t* due_unit_ = nullptr;
     lv_obj_t* due_liters_ = nullptr;
     lv_obj_t* due_ratio_ = nullptr;
+    lv_obj_t* due_card_ = nullptr;
     lv_obj_t* done_button_ = nullptr;
+    lv_obj_t* other_button_ = nullptr;
+    lv_obj_t* phase3_ = nullptr;
+    int32_t due_right_ = 702 - 16;  // margen derecho por dentro de la tarjeta
+    int with_pumps_ = -1;
     lv_obj_t* cap_ = nullptr;
     std::array<Tile, 5> tiles_{};
     int three_digits_ = -1;

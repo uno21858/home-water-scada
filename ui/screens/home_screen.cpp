@@ -56,8 +56,8 @@ lv_obj_t* frame(lv_obj_t* page, int32_t x, int32_t y, int32_t w, int32_t h, uint
 }
 
 // Toma de presión: circulito de 16 px
-void tap(lv_obj_t* page, int32_t x, int32_t y) {
-    frame(page, x, y, 16, 16, colors::background, colors::text, LV_RADIUS_CIRCLE);
+lv_obj_t* tap(lv_obj_t* page, int32_t x, int32_t y) {
+    return frame(page, x, y, 16, 16, colors::background, colors::text, LV_RADIUS_CIRCLE);
 }
 
 // Barra de rango de P1 y P2: de 0 a 80 psi
@@ -119,9 +119,10 @@ void HomeScreen::create_inlet(lv_obj_t* page) {
     symbol(page, &pid_valvula_v1, 160, 269);
     tag_text(page, "V1", 155, 308, 38);
 
-    // Toma P1 en la subida
-    fill(box(page, 188, 125, 16, 2), colors::pipe);
-    tap(page, 204, 118);
+    // Toma P1 en la subida (fase 1.5)
+    pressure_parts_[0] = box(page, 188, 125, 16, 2);
+    fill(pressure_parts_[0], colors::pipe);
+    pressure_parts_[1] = tap(page, 204, 118);
 }
 
 void HomeScreen::create_housings(lv_obj_t* page) {
@@ -149,9 +150,10 @@ void HomeScreen::create_return(lv_obj_t* page) {
     symbol(page, &pid_turbina, 880, 167);
     fill(box(page, 893, 189, 2, 7), colors::pipe);
 
-    // Toma P2
-    tap(page, 692, 167);
-    fill(box(page, 699, 183, 2, 13), colors::pipe);
+    // Toma P2 (fase 1.5)
+    pressure_parts_[2] = tap(page, 692, 167);
+    pressure_parts_[3] = box(page, 699, 183, 2, 13);
+    fill(pressure_parts_[3], colors::pipe);
 
     // Bajada final: V5, boca B con V3, descarga V4 y V2 antes de la cisterna
     symbol(page, &pid_valvula_v, 238, 190);
@@ -167,28 +169,28 @@ void HomeScreen::create_return(lv_obj_t* page) {
 }
 
 void HomeScreen::create_cistern(lv_obj_t* page) {
-    lv_obj_t* cistern = frame(page, 384, 284, 624, 92, colors::panel, colors::border_control, 10);
-    link_to(cistern, Screen::cistern);
+    // Abre Cisterna solo si hay qué ver ahí (ORP o bomba R): update() lo prende
+    cistern_ = frame(page, 384, 284, 624, 92, colors::panel, colors::border_control, 10);
+    link_to(cistern_, Screen::cistern);
     fill(box(page, 386, 294, 620, 2), colors::water);  // nivel del agua
 
     tag_text(page, "Cisterna", 396, 304);
     cistern_word_ = tag_text(page, "", 396, 332);
 
-    // Mástil con la sonda ORP y la bomba R abajo
-    fill(box(page, 539, 276, 3, 72), colors::text_secondary);
-    lv_obj_t* probe = box(page, 535, 308, 11, 20);
-    lv_obj_set_style_radius(probe, 3, 0);
-    fill(probe, colors::text_secondary);
+    // Mástil con la sonda ORP (fase 2) y la bomba R abajo (fase 2)
+    mast_ = box(page, 539, 276, 3, 72);
+    fill(mast_, colors::text_secondary);
+    probe_ = box(page, 535, 308, 11, 20);
+    lv_obj_set_style_radius(probe_, 3, 0);
+    fill(probe_, colors::text_secondary);
     pump_ring_ = frame(page, 528, 347, 25, 25, colors::background, colors::text_secondary, LV_RADIUS_CIRCLE);
     pump_rotor_ = place(icon(page, &icon_impulsor_chico_26, colors::pipe), 527, 346);
 }
 
 void HomeScreen::create_tags(lv_obj_t* page) {
-    // P1 y P2: barra de 0 a 80 psi con la banda normal de 20 a 50.
-    // Bloqueadas dicen "1.5" y no "fase 1.5": "P1 + candado + fase 1.5"
-    // mide 180 px y no cabe en 172 (en el canvas se sale de la etiqueta).
+    // P1 y P2: barra de 0 a 80 psi con la banda normal de 20 a 50
     auto pressure_tag = [page](SensorTag& tag, lv_obj_t*& marker, int32_t x, int32_t y, const char* name) {
-        tag = sensor_tag(page, x, y, 172, name, "psi", "1.5");
+        tag = sensor_tag(page, x, y, 172, name, "psi");
         link_to(tag.live, Screen::pressure, &styles::button_secondary_pressed);
         lv_obj_set_style_radius(tag_bar(tag, 0, tag.bar_w, colors::border), 2, 0);
         tag_bar(tag, range_x(20, tag.bar_w), range_x(50, tag.bar_w) - range_x(20, tag.bar_w), colors::pipe);
@@ -196,9 +198,18 @@ void HomeScreen::create_tags(lv_obj_t* page) {
     };
     pressure_tag(p1_, p1_marker_, 16, 98, "P1");
 
-    // B: la boca donde se echa el cloro a mano
+    // B: la boca donde se echa el cloro a mano. Abre Inyección con las bombas
+    // de la fase 3; antes, Dosis (donde se registra lo que se echó)
     lv_obj_t* b = frame(page, 378, 196, 168, 56, colors::panel_raised, colors::border, 6);
-    link_to(b, Screen::injection, &styles::button_secondary_pressed);
+    lv_obj_set_clickable(b, true);
+    lv_obj_add_style(b, &styles::button_secondary_pressed, LV_STATE_PRESSED);
+    lv_obj_add_event_cb(
+        b,
+        [](lv_event_t* e) {
+            const auto* self = static_cast<HomeScreen*>(lv_event_get_user_data(e));
+            show(self->has_pumps_ ? Screen::injection : Screen::dose);
+        },
+        LV_EVENT_CLICKED, this);
     lv_obj_t* b_row = row(b, 10, LV_FLEX_ALIGN_CENTER);
     lv_obj_align(b_row, LV_ALIGN_LEFT_MID, 12, 0);
     label(b_row, &font_label_26, colors::text_secondary, "B");
@@ -207,14 +218,14 @@ void HomeScreen::create_tags(lv_obj_t* page) {
     pressure_tag(p2_, p2_marker_, 584, 196, "P2");
 
     // F: barra que se llena de 0 a 30 L/min
-    f_ = sensor_tag(page, 772, 196, 236, "F", "L/min", "");
+    f_ = sensor_tag(page, 772, 196, 236, "F", "L/min");
     link_to(f_.live, Screen::flow_sensor, &styles::button_secondary_pressed);
     lv_obj_set_style_radius(tag_bar(f_, 0, f_.bar_w, colors::border), 2, 0);
     f_fill_ = tag_bar(f_, 0, 0, colors::water);
     lv_obj_set_style_radius(f_fill_, 2, 0);
 
     // ORP: tres zonas; la de ahorita va en su color fuerte
-    orp_ = sensor_tag(page, 566, 302, 244, "ORP", "mV", "fase 2");
+    orp_ = sensor_tag(page, 566, 302, 244, "ORP", "mV");
     link_to(orp_.live, Screen::cistern, &styles::button_secondary_pressed);
     orp_zones_[0] = tag_bar(orp_, 0, 45, colors::alarm_bg);
     orp_zones_[1] = tag_bar(orp_, 47, 126, colors::warning_bg);
@@ -228,13 +239,6 @@ void HomeScreen::create_tags(lv_obj_t* page) {
     lv_obj_align(r_row, LV_ALIGN_LEFT_MID, 10, 0);
     label(r_row, &font_label_26, colors::text_secondary, "R");
     r_state_ = label(r_row, &font_label_26, colors::text, "");
-
-    r_locked_ = frame(page, 822, 302, 176, 56, colors::background, colors::border, 6);
-    lv_obj_t* r_lock = row(r_locked_, 8, LV_FLEX_ALIGN_CENTER);
-    lv_obj_align(r_lock, LV_ALIGN_LEFT_MID, 10, 0);
-    label(r_lock, &font_label_26, colors::text_disabled, "R");
-    icon(r_lock, &icon_candado_24, colors::text_disabled);
-    label(r_lock, &font_label_26, colors::text_disabled, "fase 2");
 }
 
 void HomeScreen::create_strip(lv_obj_t* page) {
@@ -254,34 +258,39 @@ void HomeScreen::create_strip(lv_obj_t* page) {
     drop_word_ = label(drop_live_, &font_label_26, colors::ok, "");
     lv_obj_set_style_margin_left(drop_word_, 8, 0);
 
-    drop_locked_ = frame(page, 16, 388, 360, 56, colors::background, colors::border, 10);
-    lv_obj_t* lock = row(drop_locked_, 10, LV_FLEX_ALIGN_CENTER);
-    lv_obj_align(lock, LV_ALIGN_LEFT_MID, 14, 0);
-    icon(lock, &icon_candado_28, colors::text_disabled);
-    label(lock, &font_label_26, colors::text_disabled, "Caída · fase 1.5");
-
-    // Litros de hoy
-    lv_obj_t* today = card(page, 388, 388, 264, 56);
-    lv_obj_set_style_pad_hor(today, 16, 0);
-    lv_obj_set_flex_flow(today, LV_FLEX_FLOW_ROW);
-    lv_obj_set_flex_align(today, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-    lv_obj_set_style_pad_column(today, 8, 0);
-    lv_obj_set_flex_grow(label(today, &font_label_26, colors::text_secondary, "Hoy"), 1);
-    today_value_ = label(today, &font_digits_44, colors::text, "");
-    label(today, &font_label_26, colors::text_secondary, "L");
+    // Litros de hoy. Sin P1 y P2 la caída no sale y Hoy y Toca echar
+    // ocupan todo el renglón (layout_strip)
+    today_ = card(page, 388, 388, 264, 56);
+    lv_obj_set_style_pad_hor(today_, 16, 0);
+    lv_obj_set_flex_flow(today_, LV_FLEX_FLOW_ROW);
+    lv_obj_set_flex_align(today_, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    lv_obj_set_style_pad_column(today_, 8, 0);
+    lv_obj_set_flex_grow(label(today_, &font_label_26, colors::text_secondary, "Hoy"), 1);
+    today_value_ = label(today_, &font_digits_44, colors::text, "");
+    label(today_, &font_label_26, colors::text_secondary, "L");
 
     // Toca echar: lleva a Dosis
-    lv_obj_t* due = frame(page, 664, 388, 344, 56, colors::panel_raised, colors::border_control, 10);
-    link_to(due, Screen::dose, &styles::button_secondary_pressed);
-    lv_obj_set_style_pad_left(due, 16, 0);
-    lv_obj_set_style_pad_right(due, 12, 0);
-    lv_obj_set_flex_flow(due, LV_FLEX_FLOW_ROW);
-    lv_obj_set_flex_align(due, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-    lv_obj_set_style_pad_column(due, 8, 0);
-    lv_obj_set_flex_grow(label(due, &font_label_26, colors::text_secondary, "Toca echar"), 1);
-    dose_value_ = label(due, &font_digits_44, colors::text, "");
-    label(due, &font_label_26, colors::text_secondary, "mL");
-    lv_obj_set_style_margin_left(icon(due, &icon_chevron_32, colors::text_secondary), 4, 0);
+    due_ = frame(page, 664, 388, 344, 56, colors::panel_raised, colors::border_control, 10);
+    link_to(due_, Screen::dose, &styles::button_secondary_pressed);
+    lv_obj_set_style_pad_left(due_, 16, 0);
+    lv_obj_set_style_pad_right(due_, 12, 0);
+    lv_obj_set_flex_flow(due_, LV_FLEX_FLOW_ROW);
+    lv_obj_set_flex_align(due_, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    lv_obj_set_style_pad_column(due_, 8, 0);
+    lv_obj_set_flex_grow(label(due_, &font_label_26, colors::text_secondary, "Toca echar"), 1);
+    dose_value_ = label(due_, &font_digits_44, colors::text, "");
+    label(due_, &font_label_26, colors::text_secondary, "mL");
+    lv_obj_set_style_margin_left(icon(due_, &icon_chevron_32, colors::text_secondary), 4, 0);
+}
+
+void HomeScreen::layout_strip(bool with_drop) {
+    if (static_cast<int>(with_drop) == with_drop_) return;
+    with_drop_ = with_drop;
+    // Con caída: 360 + 264 + 344 como el canvas. Sin ella: 484 + 496
+    lv_obj_set_pos(today_, with_drop ? 388 : 16, 388);
+    lv_obj_set_width(today_, with_drop ? 264 : 484);
+    lv_obj_set_pos(due_, with_drop ? 664 : 512, 388);
+    lv_obj_set_width(due_, with_drop ? 344 : 496);
 }
 
 void HomeScreen::update(const core::SystemState& s) {
@@ -299,6 +308,7 @@ void HomeScreen::update(const core::SystemState& s) {
     const float fraction = std::clamp(flowing ? s.flow_lpm / 30.0f : 0.0f, 0.0f, 1.0f);
     lv_obj_set_width(f_fill_, static_cast<int32_t>(fraction * static_cast<float>(f_.bar_w)));
 
+    has_pumps_ = s.has_pumps;
     update_pressure(s);
     update_orp(s);
     update_mixer(s);
@@ -325,8 +335,9 @@ void HomeScreen::update(const core::SystemState& s) {
 void HomeScreen::update_pressure(const core::SystemState& s) {
     p1_.set_installed(s.has_pressure);
     p2_.set_installed(s.has_pressure);
+    for (lv_obj_t* part : pressure_parts_) lv_obj_set_hidden(part, !s.has_pressure);
     lv_obj_set_hidden(drop_live_, !s.has_pressure);
-    lv_obj_set_hidden(drop_locked_, s.has_pressure);
+    layout_strip(s.has_pressure);
     if (!s.has_pressure) return;
 
     char buf[12];
@@ -364,6 +375,9 @@ void HomeScreen::update_pressure(const core::SystemState& s) {
 
 void HomeScreen::update_orp(const core::SystemState& s) {
     orp_.set_installed(s.has_orp);
+    lv_obj_set_hidden(probe_, !s.has_orp);
+    lv_obj_set_hidden(mast_, !s.has_orp && !s.has_mixer);
+    lv_obj_set_clickable(cistern_, s.has_orp || s.has_mixer);  // sin Cisterna en la barra
     if (!s.has_orp) {
         set_text(cistern_word_, "10 m³");
         lv_obj_set_style_text_color(cistern_word_, color(colors::text_disabled), 0);
@@ -393,7 +407,8 @@ void HomeScreen::update_orp(const core::SystemState& s) {
 
 void HomeScreen::update_mixer(const core::SystemState& s) {
     lv_obj_set_hidden(r_live_, !s.has_mixer);
-    lv_obj_set_hidden(r_locked_, s.has_mixer);
+    lv_obj_set_hidden(pump_ring_, !s.has_mixer);
+    lv_obj_set_hidden(pump_rotor_, !s.has_mixer);
     if (s.has_mixer) set_text(r_state_, s.mixer_on ? "Prendida" : "Apagada");
 
     // 0 = no instalada, 1 = apagada, 2 = girando

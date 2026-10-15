@@ -2,7 +2,8 @@
 // Etiqueta de valor del P&ID (P1, P2, F, ORP): 56 px de alto, panel-alto,
 // borde de 2 px y radio 6. Arriba "P1 42 psi" y abajo una barra de 4 px
 // que dibuja cada pantalla a su modo (rango, llenado o zonas).
-// Trae también su versión bloqueada: candado y "fase 1.5" o "fase 2".
+// Lo de una fase que no está instalada no se muestra: set_installed(false)
+// la esconde.
 
 #include <cstdint>
 
@@ -13,7 +14,6 @@ namespace ui {
 struct SensorTag {
     lv_obj_t* live = nullptr;    // la etiqueta con valor
     lv_obj_t* value = nullptr;   // el label de la cifra
-    lv_obj_t* locked = nullptr;  // la versión de fase futura
     int32_t bar_x = 12;          // dónde empieza la barra (dentro del borde)
     int32_t bar_y = 45;
     int32_t bar_w = 0;           // ancho útil de la barra
@@ -21,8 +21,7 @@ struct SensorTag {
     void set_installed(bool installed) const;
 };
 
-SensorTag sensor_tag(lv_obj_t* parent, int32_t x, int32_t y, int32_t w, const char* name, const char* unit,
-                     const char* locked_text);
+SensorTag sensor_tag(lv_obj_t* parent, int32_t x, int32_t y, int32_t w, const char* name, const char* unit);
 
 // Pedazo de barra de 4 px dentro de la etiqueta
 lv_obj_t* tag_bar(const SensorTag& tag, int32_t x, int32_t w, uint32_t hex);

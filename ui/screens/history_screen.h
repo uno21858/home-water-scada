@@ -51,6 +51,7 @@ private:
 
     Segmented range_picker_;
     Segmented signal_picker_;
+    lv_obj_t* signals_ = nullptr;  // el marco del selector de señal
     Range range_ = Range::week;
     Signal signal_ = Signal::liters;
 

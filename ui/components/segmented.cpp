@@ -49,6 +49,10 @@ lv_obj_t* Segmented::create(lv_obj_t* parent, int32_t x, int32_t y, int32_t w, i
     return frame;
 }
 
+void Segmented::set_option_hidden(int index, bool hidden) {
+    if (index >= 0 && index < count_) lv_obj_set_hidden(buttons_[index], hidden);
+}
+
 void Segmented::set_selected(int index) {
     if (index == selected_) return;
     selected_ = index;

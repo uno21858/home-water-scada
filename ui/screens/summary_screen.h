@@ -21,11 +21,13 @@ private:
     void create_dose_card(lv_obj_t* page);
     void create_filters_card(lv_obj_t* page);
     void create_mixer_card(lv_obj_t* page);
+    void create_cartridges_card(lv_obj_t* page);
 
     void update_flow(const core::SystemState& s);
     void update_time_marks(const core::SystemState& s);
     void update_filters(const core::SystemState& s);
     void update_mixer(const core::SystemState& s);
+    void update_cartridges(const core::SystemState& s);
 
     // Caudal
     lv_obj_t* flow_title_ = nullptr;
@@ -48,7 +50,6 @@ private:
 
     // Filtros
     lv_obj_t* filters_live_ = nullptr;
-    lv_obj_t* filters_locked_ = nullptr;
     lv_obj_t* p1_value_ = nullptr;
     lv_obj_t* p2_value_ = nullptr;
     lv_obj_t* p1_marker_ = nullptr;
@@ -61,13 +62,22 @@ private:
 
     // Bomba R
     lv_obj_t* mixer_live_ = nullptr;
-    lv_obj_t* mixer_locked_ = nullptr;
     Impeller impeller_;
     lv_obj_t* mixer_state_ = nullptr;
     lv_obj_t* mixer_left_ = nullptr;
     lv_obj_t* mixer_minutes_ = nullptr;
     lv_obj_t* mixer_bar_ = nullptr;
     lv_obj_t* mixer_sub_ = nullptr;
+
+    // Cartuchos (sin Filtros o sin Bomba R)
+    lv_obj_t* cartridges_ = nullptr;
+    lv_obj_t* next_name_ = nullptr;
+    lv_obj_t* next_days_ = nullptr;
+    lv_obj_t* next_unit_ = nullptr;
+    lv_obj_t* next_track_ = nullptr;
+    lv_obj_t* next_bar_ = nullptr;
+    lv_obj_t* next_sub_ = nullptr;
+    int cartridges_slot_ = -1;  // 0 no sale, 1 izquierda, 2 derecha, 3 todo el ancho
 };
 
 }  // namespace ui

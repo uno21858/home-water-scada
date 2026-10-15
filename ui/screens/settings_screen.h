@@ -48,7 +48,6 @@ private:
     // Sensores
     lv_obj_t* factor_ = nullptr;
     lv_obj_t* pressure_live_ = nullptr;
-    lv_obj_t* pressure_locked_ = nullptr;
     lv_obj_t* p1_raw_ = nullptr;
     lv_obj_t* p2_raw_ = nullptr;
 
@@ -56,6 +55,7 @@ private:
     lv_obj_t* ratio_ = nullptr;
     lv_obj_t* ratio_note_ = nullptr;
     lv_obj_t* cap_ = nullptr;
+    lv_obj_t* cap_note_ = nullptr;
 
     // Conexión
     lv_obj_t* ssid_ = nullptr;

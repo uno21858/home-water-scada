@@ -3,10 +3,10 @@
 #include "components/primitives.h"
 #include "theme/colors.h"
 #include "theme/fonts.h"
-#include "theme/icons.h"
 #include "theme/pid.h"
 
-// Medidas tomadas del artboard Leyenda del canvas (cada y menos 64).
+// Medidas tomadas del artboard Leyenda del canvas (cada y menos 64). Sin la
+// tarjeta "Fase futura": lo que no está instalado ya no se muestra.
 // Rejilla de 3 columnas de 320 px con 16 de hueco; renglones de 76 con 12.
 
 namespace ui {
@@ -28,7 +28,7 @@ void symbol(lv_obj_t* c, const lv_image_dsc_t* src) {
     lv_obj_set_pos(img, 12, 7);
 }
 
-// Recuadro chico de 40 px de alto con borde de 2 (Etiqueta y Fase futura)
+// Recuadro chico de 40 px de alto con borde de 2 (Etiqueta)
 lv_obj_t* small_box(lv_obj_t* c, int32_t x, int32_t w, uint32_t bg) {
     lv_obj_t* b = box(c, x, 18, w, 40);
     fill(b, bg);
@@ -77,11 +77,6 @@ lv_obj_t* LegendScreen::create(lv_obj_t* parent) {
     lv_obj_set_style_pad_column(tag, 4, 0);
     label(tag, &font_label_26, colors::text, "42");
     label(tag, &font_label_26, colors::text_secondary, "psi");
-
-    // Fase futura: el recuadro vacío con el candado
-    c = tile(page, index++, "Fase futura", "aún no está");
-    lv_obj_t* locked = small_box(c, 10, 78, colors::background);
-    lv_obj_center(icon(locked, &icon_candado_28, colors::text_disabled));
 
     // Colores: verde, ámbar y rojo
     c = tile(page, index++, "Colores", "con su palabra");

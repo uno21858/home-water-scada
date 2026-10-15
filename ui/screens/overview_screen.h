@@ -27,6 +27,7 @@ private:
 
     // Tren
     lv_obj_t* flow_ = nullptr;
+    lv_obj_t* drop_row_ = nullptr;  // "Caída 4 psi" con su ícono; sin P1 y P2 se esconde
     lv_obj_t* drop_ = nullptr;
     lv_obj_t* drop_icon_ = nullptr;  // ok, advertencia o alarma
 
@@ -34,7 +35,7 @@ private:
     lv_obj_t* orp_row_ = nullptr;   // ORP 650 mV Oxidante; sin sonda se esconde
     lv_obj_t* orp_value_ = nullptr;
     lv_obj_t* orp_word_ = nullptr;
-    lv_obj_t* orp_locked_ = nullptr;
+    lv_obj_t* cistern_ = nullptr;
     lv_obj_t* mast_ = nullptr;
     lv_obj_t* mixer_ = nullptr;     // R, aro y aspas; sin bomba R se esconde
     lv_obj_t* rotor_ = nullptr;
@@ -47,7 +48,6 @@ private:
 
     // -1 = todavía no se pinta
     int flowing_ = -1;
-    int has_pressure_ = -1;
     int drop_level_ = -1;
     int orp_level_ = -1;
     int spinning_ = -1;

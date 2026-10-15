@@ -28,6 +28,18 @@ float hour_x(int h) { return kL + static_cast<float>(h) * kW / 24.0f; }
 float value_y(float v, float min, float max) { return kB - (v - min) / (max - min) * kH; }
 int32_t px(float v) { return static_cast<int32_t>(std::lround(v)); }
 
+// Paso de las marcas del eje: el del canvas (least) o, si el dato no cabe, el
+// primero de 1, 1.5, 2, 2.5, 3 o 5 por 10^n que alcance para "need"
+float nice_step(float least, float need) {
+    if (need <= least) return least;
+    const float mults[6] = {1.0f, 1.5f, 2.0f, 2.5f, 3.0f, 5.0f};
+    for (float decade = 1.0f;; decade *= 10.0f) {
+        for (const float m : mults) {
+            if (m * decade >= need) return m * decade;
+        }
+    }
+}
+
 // Punto para lv_draw_line y lv_draw_triangle (float o entero según lv_conf.h)
 lv_point_precise_t pt(float x, float y) {
     return {static_cast<lv_value_precise_t>(x), static_cast<lv_value_precise_t>(y)};
@@ -52,8 +64,8 @@ lv_obj_t* HistoryScreen::create(lv_obj_t* parent) {
     static const char* const kRanges[3] = {"Día", "Semana", "Mes"};
     static const char* const kSignals[3] = {"Litros y dosis", "Presiones", "ORP"};
     range_picker_.create(page, 16, 12, 0, 64, kRanges, 3, on_range, this);
-    lv_obj_t* signals = signal_picker_.create(page, 0, 12, 0, 64, kSignals, 3, on_signal, this);
-    lv_obj_align(signals, LV_ALIGN_TOP_RIGHT, -16, 12);
+    signals_ = signal_picker_.create(page, 0, 12, 0, 64, kSignals, 3, on_signal, this);
+    lv_obj_align(signals_, LV_ALIGN_TOP_RIGHT, -16, 12);
     range_picker_.set_selected(static_cast<int>(range_));
     signal_picker_.set_selected(static_cast<int>(signal_));
 
@@ -88,7 +100,7 @@ void HistoryScreen::create_chart(lv_obj_t* page) {
         lv_obj_set_x(l, 76 - 100);
     }
     for (lv_obj_t*& l : y2_labels_) {
-        l = axis_label(c, 44, LV_TEXT_ALIGN_LEFT);
+        l = axis_label(c, 56, LV_TEXT_ALIGN_LEFT);  // hasta "120"
     }
     // Marcas de abajo: en el canvas miden 80 px pero "14 sep" no cabe y se
     // partiría en dos renglones. Miden 100 y se acomodan con el mismo centro.
@@ -142,6 +154,15 @@ void HistoryScreen::update(const core::SystemState& s) {
         shown_year_ = s.year;
         shown_pressure_ = s.has_pressure;
         shown_orp_installed_ = s.has_orp;
+        // Presiones y ORP salen cuando están sus sensores; con solo Litros y
+        // dosis no hay qué escoger y el selector se quita
+        signal_picker_.set_option_hidden(static_cast<int>(Signal::pressure), !s.has_pressure);
+        signal_picker_.set_option_hidden(static_cast<int>(Signal::orp), !s.has_orp);
+        lv_obj_set_hidden(signals_, !s.has_pressure && !s.has_orp);
+        if ((signal_ == Signal::pressure && !s.has_pressure) || (signal_ == Signal::orp && !s.has_orp)) {
+            signal_ = Signal::liters;
+            signal_picker_.set_selected(static_cast<int>(signal_));
+        }
         rebuild();
     }
     update_events(s);
@@ -190,12 +211,20 @@ void HistoryScreen::rebuild() {
     int name_count = 0;
     const char* title = "";
 
+    float dose_max = 60.0f;  // eje derecho de las dosis
     if (signal_ == Signal::liters) {
-        max = range_ == Range::day ? 600.0f : 3000.0f;
-        const int hour_ticks[4] = {0, 200, 400, 600};
-        const int day_ticks[4] = {0, 1000, 2000, 3000};
-        const int* src = range_ == Range::day ? hour_ticks : day_ticks;
-        std::copy(src, src + 4, ticks);
+        // Ejes del canvas (600 L por hora, 3,000 por día y 60 mL), pero crecen
+        // si un dato no cabe: antes la barra se salía por arriba hasta el título
+        float most_liters = 0.0f;
+        float most_dose = 0.0f;
+        for (int i = 0; i < count; ++i) {
+            most_liters = std::max(most_liters, static_cast<float>(totals(i).liters));
+            most_dose = std::max(most_dose, static_cast<float>(totals(i).dose_ml));
+        }
+        const float step = nice_step(range_ == Range::day ? 200.0f : 1000.0f, most_liters / 3.0f);
+        max = 3.0f * step;
+        dose_max = 2.0f * nice_step(30.0f, most_dose / 2.0f);
+        for (int i = 0; i < 4; ++i) ticks[i] = static_cast<int>(static_cast<float>(i) * step);
         tick_count = 4;
         title = range_ == Range::day ? "Litros y dosis por hora"
                 : range_ == Range::week ? "Litros y dosis por día"
@@ -215,14 +244,17 @@ void HistoryScreen::rebuild() {
             bars_a_[static_cast<size_t>(bars_a_count_++)] = {px(cx - off - w / 2), px(value_y(t.liters, min, max)),
                                                              px(w)};
             if (t.dose_ml > 0) {
-                bars_b_[static_cast<size_t>(bars_b_count_++)] = {px(cx + off - w / 2), px(value_y(t.dose_ml, 0, 60)),
-                                                                 px(w)};
+                bars_b_[static_cast<size_t>(bars_b_count_++)] = {px(cx + off - w / 2),
+                                                                 px(value_y(t.dose_ml, 0, dose_max)), px(w)};
             }
         }
     } else if (signal_ == Signal::pressure) {
-        max = 60.0f;
-        const int p_ticks[4] = {0, 20, 40, 60};
-        std::copy(p_ticks, p_ticks + 4, ticks);
+        // 60 psi como el canvas; el presostato llega a 65, así que también crece
+        float most = 0.0f;
+        for (int i = 0; i < count; ++i) most = std::max(most, static_cast<float>(totals(i).p1_psi));
+        const float step = nice_step(20.0f, most / 3.0f);
+        max = 3.0f * step;
+        for (int i = 0; i < 4; ++i) ticks[i] = static_cast<int>(static_cast<float>(i) * step);
         tick_count = 4;
         title = "P1 y P2 · psi";
         names = {"P1", "P2", "Caída del tren"};
@@ -285,13 +317,14 @@ void HistoryScreen::rebuild() {
         lv_obj_set_y(y_labels_[static_cast<size_t>(i)], y - 16);
         if (ticks[i] != static_cast<int>(min)) grid_y_[static_cast<size_t>(grid_count_++)] = y;
     }
-    const int dose_ticks[3] = {0, 30, 60};
     for (size_t i = 0; i < y2_labels_.size(); ++i) {
         const bool used = signal_ == Signal::liters;
         lv_obj_set_hidden(y2_labels_[i], !used);
-        snprintf(buf, sizeof buf, "%d", dose_ticks[i]);
+        const float tick = dose_max * static_cast<float>(i) / 2.0f;
+        snprintf(buf, sizeof buf, "%d", static_cast<int>(tick));
         set_text(y2_labels_[i], buf);
-        lv_obj_set_pos(y2_labels_[i], 516, px(value_y(static_cast<float>(dose_ticks[i]), 0, 60)) - 16);
+        // Con 3 cifras (el tope diario es de 120 mL) se recorre a la izquierda para caber
+        lv_obj_set_pos(y2_labels_[i], dose_max >= 100.0f ? 504 : 516, px(value_y(tick, 0, dose_max)) - 16);
     }
 
     // Horas, días o fechas abajo. La primera va pegada a la izquierda, la
@@ -315,7 +348,7 @@ void HistoryScreen::rebuild() {
         add(hour_x(6), "6:00", LV_TEXT_ALIGN_CENTER);
         add(hour_x(12), "12:00", LV_TEXT_ALIGN_CENTER);
         add(hour_x(18), "18:00", LV_TEXT_ALIGN_CENTER);
-        add(hour_x(24), "24:00", LV_TEXT_ALIGN_RIGHT);
+        // Sin "24:00": en el canvas se enciman con "18:00" y el eje ya acaba ahí
     } else if (range_ == Range::week) {
         for (int i = 0; i < 7; ++i) {
             const core::Date d = core::date_days_ago(shown_date_, shown_year_, static_cast<uint32_t>(6 - i));

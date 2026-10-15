@@ -3,6 +3,7 @@
 // Lógica pura: sin LVGL ni hardware, así lo usan igual el firmware y el simulador.
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
 
 namespace core {
@@ -52,6 +53,10 @@ struct Date {
 // Lo que filtra, en el orden del agua: el prefiltro de malla y los 5 vasos
 enum class Filter : uint8_t { prefilter, pp20, pp10, pp5, carbon, scale };
 inline constexpr int kFilterCount = 6;
+
+// Cada cuánto se purga o se cambia cada filtro, en días (DS): prefiltro, 20 µm,
+// 10 µm, 5 µm, CTO y sarro
+inline constexpr uint16_t kFilterLifeDays[kFilterCount] = {7, 75, 135, 135, 180, 365};
 
 // Cómo va cada filtro desde que se purgó o se cambió
 struct FilterStatus {
@@ -152,6 +157,7 @@ struct SystemState {
     bool has_orp = false;       // fase 2: sonda ORP en la cisterna
     bool has_mixer = false;     // fase 2: bomba R
     bool has_ldr = false;       // LDR en A3 para el brillo de la pantalla
+    bool has_pumps = false;     // fase 3: bombas A y B de cloro
     bool ro_kitchen_planned = false;  // Panorama: el RO de la cocina, por instalar
 
     // Fecha, hora y red
@@ -279,6 +285,15 @@ inline Level overall_level(const SystemState& s) {
     if (s.has_pressure) worst = pressure_drop_level(s.p1_psi - s.p2_psi);
     if (s.has_orp && orp_level(s.orp_mv) > worst) worst = orp_level(s.orp_mv);
     return worst;
+}
+
+// Lo que lleva un cartucho de su vida, en %: puede pasar de 100 si ya toca
+inline uint32_t filter_wear_pct(const SystemState& s, Filter filter) {
+    const auto i = static_cast<std::size_t>(filter);
+    const FilterStatus& f = s.filters[i];
+    if (!f.installed) return 0;
+    const uint32_t days = s.today >= f.since_day ? s.today - f.since_day : 0;
+    return (days * 100 + kFilterLifeDays[i] / 2) / kFilterLifeDays[i];
 }
 
 inline uint16_t minute_of_day(const SystemState& s) {

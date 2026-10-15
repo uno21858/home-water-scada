@@ -166,9 +166,6 @@ lv_obj_t* SettingsScreen::create_sensors(lv_obj_t* page) {
     small_button(pressure_live_, 20, 130, 240, "Hacer cero", nullptr, false, [](lv_event_t*) { ask_pressure_zero(); },
                  nullptr);
     note(pressure_live_, 276, 128, 324, "Con V1 cerrada y el tren sin presión.");
-
-    pressure_locked_ = locked_card(group, kCardX, kBottomY, kCardW, kCardH, "Presión P1 y P2",
-                                   "Próximamente · fase 1.5", "Hacer cero con V1 cerrada");
     return group;
 }
 
@@ -183,7 +180,7 @@ lv_obj_t* SettingsScreen::create_dose(lv_obj_t* page) {
     lv_obj_t* c = settings_card(group, kBottomY, "Tope diario");
     cap_ = big_value(c, "mL al día");
     small_button(c, 20, 130, 240, "Cambiar", &icon_editar_32, false, handle_cap, this);
-    note(c, 276, 128, 324, "En fase 3 la bomba se para al llegar.");
+    cap_note_ = note(c, 276, 128, 324, "La bomba B se para al llegar.");  // solo con bombas (fase 3)
     return group;
 }
 
@@ -275,7 +272,8 @@ void SettingsScreen::update(const core::SystemState& s) {
     snprintf(buf, sizeof buf, "%u", static_cast<unsigned>(factor_value_));
     set_text(factor_, buf);
     lv_obj_set_hidden(pressure_live_, !s.has_pressure);
-    lv_obj_set_hidden(pressure_locked_, s.has_pressure);
+    set_text(tabs_[0].summary, s.has_pressure ? "Flujo y presión" : "Flujo");
+    lv_obj_set_hidden(cap_note_, !s.has_pumps);
     snprintf(buf, sizeof buf, "%.1f", static_cast<double>(s.p1_zero_psi));
     set_text(p1_raw_, buf);
     snprintf(buf, sizeof buf, "%.1f", static_cast<double>(s.p2_zero_psi));

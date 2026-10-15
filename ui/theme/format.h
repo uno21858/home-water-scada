@@ -33,4 +33,7 @@ const char* alarm_title(unsigned kind);
 // Lo mismo, corto para las listas angostas: "Sin flujo al dosificar"
 const char* alarm_short(unsigned kind);
 
+// core::Filter -> cada cuánto se purga o se cambia: "cada 7 días", "2 a 3 meses"
+const char* filter_every(unsigned filter);
+
 }  // namespace ui::fmt

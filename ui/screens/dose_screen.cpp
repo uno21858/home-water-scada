@@ -18,7 +18,6 @@ namespace {
 // Tarjeta "Toca echar": 704 de ancho, 702 por dentro del borde
 constexpr int32_t kDueTextX = 238;        // texto a la derecha de una cifra de 2 dígitos
 constexpr int32_t kDueTextXWide = 334;    // con 3 dígitos (100 mL o más)
-constexpr int32_t kDueRight = 702 - 16;   // margen derecho por dentro
 
 // Selector Manual | Auto deshabilitado, como en el DS para la fase 3
 void disabled_segmented(lv_obj_t* parent, int32_t x, int32_t y) {
@@ -65,8 +64,8 @@ lv_obj_t* DoseScreen::create(lv_obj_t* parent) {
 
     done_button_ = button_primary(page, 16, 204, 280, "Ya le puse",
                                   [](lv_event_t*) { ask_dose_confirmation(); }, nullptr);
-    button_secondary(page, 308, 204, 412, "Registrar otra cantidad",
-                     [](lv_event_t*) { open_dose_keypad(); }, nullptr);
+    other_button_ = button_secondary(page, 308, 204, 412, "Registrar otra cantidad",
+                                     [](lv_event_t*) { open_dose_keypad(); }, nullptr);
 
     create_history(page);
     create_phase3_panel(page);
@@ -75,6 +74,7 @@ lv_obj_t* DoseScreen::create(lv_obj_t* parent) {
 
 void DoseScreen::create_due_card(lv_obj_t* page) {
     lv_obj_t* c = card(page, 16, 12, 704, 180);
+    due_card_ = c;
 
     lv_obj_t* title = label(c, &font_body_32, colors::text_secondary, "Toca echar");
     lv_obj_set_pos(title, 24, 8);
@@ -117,6 +117,7 @@ void DoseScreen::create_history(lv_obj_t* page) {
 void DoseScreen::create_phase3_panel(lv_obj_t* page) {
     lv_obj_t* p = box(page, 732, 12, 276, 432);
     lv_obj_add_style(p, &styles::card_locked, 0);
+    phase3_ = p;
 
     lv_obj_t* head = row(p, 10, LV_FLEX_ALIGN_CENTER);
     lv_obj_set_pos(head, 14, 10);
@@ -149,11 +150,41 @@ void DoseScreen::layout_due(bool three_digits) {
     lv_obj_set_x(due_unit_, x);
     lv_obj_set_x(due_liters_, x);
     lv_obj_set_x(due_ratio_, x);
-    lv_obj_set_width(due_liters_, three_digits ? kDueRight - x : LV_SIZE_CONTENT);
+    lv_obj_set_width(due_liters_, three_digits ? due_right_ - x : LV_SIZE_CONTENT);
     lv_obj_set_hidden(due_ratio_, three_digits);
 }
 
+void DoseScreen::layout_width(bool with_pumps) {
+    if (static_cast<int>(with_pumps) == with_pumps_) return;
+    with_pumps_ = with_pumps;
+    // Con las bombas (fase 3) va su tarjeta a la derecha y lo demás mide 704
+    // como el canvas. Sin ellas, lo demás ocupa los 992.
+    lv_obj_set_hidden(phase3_, !with_pumps);
+    const int32_t w = with_pumps ? 704 : 992;
+    lv_obj_set_width(due_card_, w);
+    due_right_ = w - 2 - 16;
+    three_digits_ = -1;  // que layout_due vuelva a medir con el ancho nuevo
+    lv_obj_set_width(done_button_, with_pumps ? 280 : 484);
+    lv_obj_set_x(other_button_, with_pumps ? 308 : 512);
+    lv_obj_set_width(other_button_, with_pumps ? 412 : 496);
+
+    // 5 tarjetas con 12 px entre ellas: 131 o 132 px, o 188 o 189. El
+    // sobrante va de 1 px empezando por la de en medio (así lo hace el canvas)
+    const int32_t each = (w - 4 * 12) / 5;
+    const int32_t extra = (w - 4 * 12) % 5;
+    constexpr int32_t kRank[5] = {3, 1, 0, 2, 4};  // orden en que reciben el px de más
+    int32_t x = 16;
+    for (size_t i = 0; i < tiles_.size(); ++i) {
+        const int32_t tw = each + (kRank[i] < extra ? 1 : 0);
+        lv_obj_set_x(tiles_[i].obj, x);
+        lv_obj_set_width(tiles_[i].obj, tw);
+        lv_obj_set_x(tiles_[i].typed, tw - 36);
+        x += tw + 12;
+    }
+}
+
 void DoseScreen::update(const core::SystemState& s) {
+    layout_width(s.has_pumps);
     const uint32_t ml = core::dose_ml(s);
     char buf[64];
     snprintf(buf, sizeof buf, "%lu", static_cast<unsigned long>(ml));

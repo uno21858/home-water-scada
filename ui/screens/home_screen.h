@@ -28,8 +28,11 @@ private:
     void update_pressure(const core::SystemState& s);
     void update_orp(const core::SystemState& s);
     void update_mixer(const core::SystemState& s);
+    void layout_strip(bool with_drop);  // el renglón de abajo, con o sin caída
 
     FlowPipes pipes_;
+    std::array<lv_obj_t*, 4> pressure_parts_{};  // tomas de P1 y P2 con su raya
+    bool has_pumps_ = false;                     // B abre Inyección o Dosis
 
     // Vasos del 20 µm al sarro: nombre arriba y el cartucho adentro
     struct Housing {
@@ -50,17 +53,21 @@ private:
     lv_obj_t* orp_zones_[3] = {};
     lv_obj_t* orp_marker_ = nullptr;
     lv_obj_t* r_live_ = nullptr;
-    lv_obj_t* r_locked_ = nullptr;
     lv_obj_t* r_state_ = nullptr;
 
     // Cisterna
     lv_obj_t* cistern_word_ = nullptr;
+    lv_obj_t* cistern_ = nullptr;
+    lv_obj_t* mast_ = nullptr;
+    lv_obj_t* probe_ = nullptr;
     lv_obj_t* pump_ring_ = nullptr;
     lv_obj_t* pump_rotor_ = nullptr;
 
     // Franja de abajo
     lv_obj_t* drop_live_ = nullptr;
-    lv_obj_t* drop_locked_ = nullptr;
+    lv_obj_t* today_ = nullptr;
+    lv_obj_t* due_ = nullptr;
+    int with_drop_ = -1;  // -1 = todavía no se acomoda
     lv_obj_t* drop_value_ = nullptr;
     lv_obj_t* drop_word_ = nullptr;
     lv_obj_t* today_value_ = nullptr;

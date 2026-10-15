@@ -154,14 +154,15 @@ void OverviewScreen::create_train(lv_obj_t* page) {
     label(flow, &font_label_26, colors::text_secondary, "L/min");
 
     // "Caída 4 psi · Normal" no cabe (264 px de 232): el estado va con su ícono
-    lv_obj_t* drop = row(c, 6, LV_FLEX_ALIGN_CENTER);
-    drop_ = label(drop, &font_label_26, colors::text_secondary, "");
-    drop_icon_ = icon(drop, &icon_ok_28, colors::ok);
+    drop_row_ = row(c, 6, LV_FLEX_ALIGN_CENTER);
+    drop_ = label(drop_row_, &font_label_26, colors::text_secondary, "");
+    drop_icon_ = icon(drop_row_, &icon_ok_28, colors::ok);
 }
 
 void OverviewScreen::create_cistern(lv_obj_t* page) {
     lv_obj_t* c = frame(page, 232, 328, 480, 112, colors::panel, colors::border_control, 10);
-    link_to(c, Screen::cistern);
+    link_to(c, Screen::cistern);  // solo abre si hay ORP o bomba R (update)
+    cistern_ = c;
     fill(box(c, 0, 8, 476, 2), colors::water);  // nivel del agua
 
     lv_obj_t* name = row(c, 10, LV_FLEX_ALIGN_END);
@@ -176,7 +177,6 @@ void OverviewScreen::create_cistern(lv_obj_t* page) {
     label(orp_row_, &font_label_26, colors::text_secondary, "mV");
     orp_word_ = label(orp_row_, &font_label_26, colors::ok, "");
     lv_obj_set_style_pad_left(orp_word_, 6, 0);
-    orp_locked_ = small_text(c, "ORP · fase 2", 14, 66, colors::text_disabled);
 
     // Encima de la tarjeta: el tubo y la bomba de ½ HP
     fill(box(page, 593, 330, 10, 36), colors::pipe);
@@ -264,13 +264,8 @@ void OverviewScreen::update(const core::SystemState& s) {
         lv_obj_set_style_text_color(flow_, color(flowing ? colors::water : colors::text_disabled), 0);
     }
 
-    // Caída del tren; sin P1 y P2 dice de qué fase es
-    if (static_cast<int>(s.has_pressure) != has_pressure_) {
-        has_pressure_ = s.has_pressure;
-        lv_obj_set_hidden(drop_icon_, !s.has_pressure);
-        lv_obj_set_style_text_color(drop_, color(s.has_pressure ? colors::text_secondary : colors::text_disabled), 0);
-        if (!s.has_pressure) set_text(drop_, "Caída · fase 1.5");
-    }
+    // Caída del tren: solo con P1 y P2
+    lv_obj_set_hidden(drop_row_, !s.has_pressure);
     if (s.has_pressure) {
         const int drop = s.p1_psi - s.p2_psi;
         snprintf(buf, sizeof buf, "Caída %d psi", drop);
@@ -288,7 +283,7 @@ void OverviewScreen::update(const core::SystemState& s) {
     }
 
     lv_obj_set_hidden(orp_row_, !s.has_orp);
-    lv_obj_set_hidden(orp_locked_, s.has_orp);
+    lv_obj_set_clickable(cistern_, s.has_orp || s.has_mixer);  // sin Cisterna en la barra
     if (s.has_orp) {
         fmt::signed_int(buf, sizeof buf, s.orp_mv);
         set_text(orp_value_, buf);

@@ -15,11 +15,6 @@
 namespace ui {
 namespace {
 
-// Cada cuánto se purga o se cambia, en días, para la barra
-constexpr uint16_t kLifeDays[core::kFilterCount] = {7, 75, 135, 135, 180, 365};
-const char* const kEvery[core::kFilterCount] = {"cada 7 días", "2 a 3 meses", "3 a 6 meses",
-                                                "3 a 6 meses", "6 meses",     "1 año"};
-
 // El diálogo de confirmar no pasa datos a su callback: aquí se guarda cuál se preguntó
 core::Filter asked = core::Filter::prefilter;
 
@@ -84,7 +79,7 @@ void FiltersScreen::update(const core::SystemState& s) {
             set_text(r.days, "Fuera");
             set_text(r.liters, "vaso vacío");
             lv_obj_set_width(r.bar, 0);
-            set_text(r.every, s.spares[i] == 0 ? "sin repuesto" : kEvery[i]);
+            set_text(r.every, s.spares[i] == 0 ? "sin repuesto" : fmt::filter_every(static_cast<unsigned>(i)));
             continue;
         }
         const uint32_t days = s.today >= f.since_day ? s.today - f.since_day : 0;
@@ -98,9 +93,9 @@ void FiltersScreen::update(const core::SystemState& s) {
         fmt::thousands(liters, sizeof liters, f.liters);
         snprintf(buf, sizeof buf, "%s L", liters);
         set_text(r.liters, buf);
-        const uint32_t pct = std::min<uint32_t>(100, (days * 100 + kLifeDays[i] / 2) / kLifeDays[i]);
+        const uint32_t pct = std::min<uint32_t>(100, core::filter_wear_pct(s, static_cast<core::Filter>(i)));
         lv_obj_set_width(r.bar, static_cast<int32_t>(140 * pct / 100));
-        set_text(r.every, kEvery[i]);
+        set_text(r.every, fmt::filter_every(static_cast<unsigned>(i)));
     }
     now_ = core::minute_of_day(s);
 }

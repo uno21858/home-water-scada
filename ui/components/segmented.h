@@ -19,6 +19,8 @@ public:
     lv_obj_t* create(lv_obj_t* parent, int32_t x, int32_t y, int32_t w, int32_t h, const char* const* options,
                      int count, Callback on_pick, void* user_data = nullptr);
     void set_selected(int index);
+    // Esconde una opción (Presiones sin P1 y P2); con ancho automático el marco se encoge
+    void set_option_hidden(int index, bool hidden);
 
 private:
     static void handle_click(lv_event_t* e);

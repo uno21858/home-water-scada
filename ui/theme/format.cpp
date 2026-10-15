@@ -60,6 +60,12 @@ const char* alarm_short(unsigned kind) {
     return kind < 3 ? kTitles[kind] : "";
 }
 
+const char* filter_every(unsigned filter) {
+    static const char* const kEvery[6] = {"cada 7 días", "2 a 3 meses", "3 a 6 meses",
+                                          "3 a 6 meses", "6 meses",     "1 año"};
+    return filter < 6 ? kEvery[filter] : "";
+}
+
 const char* filter_name(unsigned filter) {
     static const char* const kNames[6] = {"Prefiltro", "20 µm", "10 µm", "5 µm", "CTO", "Sarro"};
     return filter < 6 ? kNames[filter] : "";

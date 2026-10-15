@@ -346,6 +346,13 @@ bool set_scenario(const char* name) {
         s.has_pressure = s.has_orp = s.has_mixer = false;
         s.devices.ads1115 = s.devices.ezo_orp = false;
         s.has_ldr = false;
+        // Sin P1 y P2 no hay avisos de caída en el registro
+        const auto end = std::remove_if(s.recent_events.begin(), s.recent_events.begin() + s.recent_event_count,
+                                   [](const core::Event& e) {
+                                       return e.kind == core::EventKind::drop_warning ||
+                                              e.kind == core::EventKind::drop_alarm;
+                                   });
+        s.recent_event_count = static_cast<uint8_t>(end - s.recent_events.begin());
     } else if (std::strcmp(name, "fase15") == 0) {
         s.has_orp = s.has_mixer = false;
         s.devices.ezo_orp = false;
