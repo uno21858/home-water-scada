@@ -38,6 +38,7 @@ LV_IMAGE_DECLARE(icon_calendario_32);
 LV_IMAGE_DECLARE(icon_reloj_32);
 LV_IMAGE_DECLARE(icon_bomba_28);        // pulso de prueba (fase 3)
 LV_IMAGE_DECLARE(icon_gota_32);         // Calibrar con tira
+LV_IMAGE_DECLARE(icon_cartucho_32);     // cambio de cartucho en los eventos
 
 // Equipos
 LV_IMAGE_DECLARE(icon_impulsor_56);        // aspas de la bomba R; gira con lv_image_set_rotation

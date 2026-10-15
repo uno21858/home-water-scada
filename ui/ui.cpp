@@ -11,6 +11,7 @@
 #include "screens/cistern_screen.h"
 #include "screens/dose_screen.h"
 #include "screens/flow_screen.h"
+#include "screens/history_screen.h"
 #include "screens/mixer_screen.h"
 #include "screens/home_screen.h"
 #include "screens/summary_screen.h"
@@ -59,6 +60,7 @@ SummaryScreen summary;
 FlowScreen flow;
 CisternScreen cistern;
 MixerScreen mixer;
+HistoryScreen history;
 DoseScreen dose;
 std::array<lv_obj_t*, kScreenCount> pages{};
 
@@ -105,7 +107,7 @@ void init(const core::SystemState& s, const Actions& a) {
     pages[index_of(Screen::flow)] = flow.create(content);
     pages[index_of(Screen::cistern)] = cistern.create(content);
     pages[index_of(Screen::dose)] = dose.create(content);
-    pages[index_of(Screen::history)] = placeholder(content, "Historial");
+    pages[index_of(Screen::history)] = history.create(content);
     pages[index_of(Screen::settings)] = placeholder(content, "Ajustes");
     pages[index_of(Screen::mixer)] = mixer.create(content);
 
@@ -129,6 +131,7 @@ void update(const core::SystemState& s) {
     cistern.update(s);
     mixer.update(s);
     dose.update(s);
+    history.update(s);
 }
 
 void show(Screen screen) {

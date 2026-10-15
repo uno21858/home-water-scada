@@ -6,12 +6,14 @@
 
 namespace ui {
 
-void Segmented::create(lv_obj_t* parent, int32_t x, int32_t y, int32_t w, const char* const* options, int count,
-                       Callback on_pick) {
+lv_obj_t* Segmented::create(lv_obj_t* parent, int32_t x, int32_t y, int32_t w, const char* const* options,
+                            int count, Callback on_pick, void* user_data) {
     count_ = count < 4 ? count : 4;
     on_pick_ = on_pick;
+    user_data_ = user_data;
 
-    lv_obj_t* frame = box(parent, x, y, w, 64);
+    lv_obj_t* frame = box(parent, x, y, w > 0 ? w : LV_SIZE_CONTENT, 64);
+    lv_obj_set_flex_flow(frame, LV_FLEX_FLOW_ROW);
     fill(frame, colors::panel);
     lv_obj_set_style_border_width(frame, 2, 0);
     lv_obj_set_style_border_color(frame, color(colors::border_control), 0);
@@ -20,10 +22,14 @@ void Segmented::create(lv_obj_t* parent, int32_t x, int32_t y, int32_t w, const 
 
     // Adentro del borde quedan w - 4 px; el sobrante va en las primeras
     const int32_t inner = w - 4;
-    int32_t left = 0;
     for (int i = 0; i < count_; ++i) {
-        const int32_t width = inner / count_ + (i < inner % count_ ? 1 : 0);
-        lv_obj_t* b = box(frame, left, 0, width, 60);
+        lv_obj_t* b = box(frame);
+        if (w > 0) {
+            lv_obj_set_size(b, inner / count_ + (i < inner % count_ ? 1 : 0), 60);
+        } else {
+            lv_obj_set_size(b, LV_SIZE_CONTENT, 60);
+            lv_obj_set_style_pad_hor(b, 18, 0);
+        }
         lv_obj_set_clickable(b, true);
         lv_obj_set_style_bg_opa(b, LV_OPA_COVER, 0);
         lv_obj_set_style_bg_color(b, color(colors::panel), 0);
@@ -33,13 +39,14 @@ void Segmented::create(lv_obj_t* parent, int32_t x, int32_t y, int32_t w, const 
             lv_obj_set_style_border_width(b, 2, 0);
             lv_obj_set_style_border_color(b, color(colors::border_control), 0);
         }
+        lv_obj_set_flex_flow(b, LV_FLEX_FLOW_ROW);  // el texto al centro, mida lo que mida el botón
+        lv_obj_set_flex_align(b, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
         texts_[i] = label(b, &font_body_32, colors::text_secondary, options[i]);
-        lv_obj_center(texts_[i]);
         lv_obj_set_user_data(b, reinterpret_cast<void*>(static_cast<intptr_t>(i)));
         lv_obj_add_event_cb(b, handle_click, LV_EVENT_CLICKED, this);
         buttons_[i] = b;
-        left += width;
     }
+    return frame;
 }
 
 void Segmented::set_selected(int index) {
@@ -57,7 +64,7 @@ void Segmented::handle_click(lv_event_t* e) {
     lv_obj_t* button = lv_event_get_current_target_obj(e);
     const int index = static_cast<int>(reinterpret_cast<intptr_t>(lv_obj_get_user_data(button)));
     self->set_selected(index);  // se ve al instante; el estado lo confirma en el siguiente update
-    if (self->on_pick_ != nullptr) self->on_pick_(index);
+    if (self->on_pick_ != nullptr) self->on_pick_(index, self->user_data_);
 }
 
 }  // namespace ui

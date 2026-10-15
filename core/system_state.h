@@ -19,7 +19,51 @@ inline constexpr int kFlowSamples2h = 121;
 // La última muestra es la de ahorita.
 inline constexpr int kOrpSamples7d = 168;
 
+// Historial: los últimos 30 días, hoy al final con lo que va
+inline constexpr int kHistoryDays = 30;
+
 enum class Level : uint8_t { ok, warning, alarm };
+
+// Lo que se guarda de un día o de una hora del historial
+struct Totals {
+    uint16_t liters = 0;
+    uint16_t dose_ml = 0;
+    uint8_t p1_psi = 0;  // promedio
+    uint8_t p2_psi = 0;
+    int16_t orp_mv = 0;  // promedio
+};
+
+inline bool operator==(const Totals& a, const Totals& b) {
+    return a.liters == b.liters && a.dose_ml == b.dose_ml && a.p1_psi == b.p1_psi && a.p2_psi == b.p2_psi &&
+           a.orp_mv == b.orp_mv;
+}
+inline bool operator!=(const Totals& a, const Totals& b) { return !(a == b); }
+
+// Fecha sin año, como se muestra: "Vie 2 oct"
+struct Date {
+    uint8_t weekday = 0;  // 0 domingo ... 6 sábado
+    uint8_t day = 1;
+    uint8_t month = 1;
+};
+
+// Cartuchos del tren, en el orden del agua
+enum class Cartridge : uint8_t { pp20, pp10, pp5, carbon, scale };
+
+enum class EventKind : uint8_t {
+    dose,          // "Ya le puse"
+    dose_typed,    // "Registrar otra cantidad"
+    cartridge,     // cambio de cartucho
+    drop_warning,  // caída del tren en Revisar
+    drop_alarm,    // caída del tren en Tapados
+};
+
+// Algo que pasó, para la lista de Eventos
+struct Event {
+    uint32_t day = 0;   // mismo conteo que SystemState::today
+    uint16_t at = 0;    // minuto del día
+    EventKind kind = EventKind::dose;
+    uint16_t value = 0; // mL de la dosis, psi de la caída o el Cartridge que se cambió
+};
 
 enum class MixerMode : uint8_t { off, on, automatic };
 
@@ -60,6 +104,7 @@ struct SystemState {
     uint8_t weekday = 0;  // 0 domingo ... 6 sábado
     uint8_t day = 1;      // día del mes
     uint8_t month = 1;    // 1 enero ... 12 diciembre
+    uint16_t year = 2026;
     uint8_t hour = 0;
     uint8_t minute = 0;
     bool wifi_ok = false;
@@ -86,6 +131,12 @@ struct SystemState {
     std::array<int16_t, kOrpSamples7d> orp_7d{};
     float chlorine_mgl = 0.0f;  // cloro libre estimado con el ORP y la última tira
     StripCheck last_strip{};
+
+    // Historial y eventos
+    std::array<Totals, kHistoryDays> days{};  // el último es hoy
+    std::array<Totals, 24> hours{};           // las horas de hoy; valen de 0 a la de ahorita
+    std::array<Event, 5> recent_events{};     // el más nuevo primero
+    uint8_t recent_event_count = 0;
 
     // Bomba R de la cisterna
     MixerMode mixer_mode = MixerMode::automatic;
@@ -136,6 +187,28 @@ inline Level overall_level(const SystemState& s) {
 
 inline uint16_t minute_of_day(const SystemState& s) {
     return static_cast<uint16_t>(s.hour * 60 + s.minute);
+}
+
+inline uint8_t days_in_month(uint8_t month, uint16_t year) {
+    constexpr uint8_t kDays[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+    const bool leap = (year % 4 == 0 && year % 100 != 0) || year % 400 == 0;
+    return month == 2 && leap ? 29 : kDays[(month + 11) % 12];
+}
+
+inline Date today(const SystemState& s) { return {s.weekday, s.day, s.month}; }
+
+// La fecha de hace n días: 3 oct y 29 días -> 4 sep. year es el de `from`.
+inline Date date_days_ago(Date from, uint16_t year, uint32_t n) {
+    Date d = from;
+    d.weekday = static_cast<uint8_t>((from.weekday + 7 - n % 7) % 7);
+    while (n >= d.day) {  // retrocede mes por mes hasta que quepa
+        n -= d.day;
+        if (d.month == 1) --year;
+        d.month = static_cast<uint8_t>(d.month == 1 ? 12 : d.month - 1);
+        d.day = days_in_month(d.month, year);
+    }
+    d.day = static_cast<uint8_t>(d.day - n);
+    return d;
 }
 
 }  // namespace core

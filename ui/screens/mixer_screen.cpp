@@ -29,7 +29,7 @@ const char* reason_word(core::MixerReason reason) {
     return "programa";
 }
 
-void on_mode(int index) {
+void on_mode(int index, void*) {
     if (actions().mixer_mode_set != nullptr) actions().mixer_mode_set(static_cast<core::MixerMode>(index));
 }
 

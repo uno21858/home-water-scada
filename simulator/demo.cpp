@@ -74,6 +74,48 @@ core::SystemState make() {
 
     s.p1_psi = 42;
     s.p2_psi = 38;
+
+    // Historial: las cifras del canvas de Historial. 30 días con la última
+    // semana fija y hoy hasta las 18:00, hora por hora (suman 1,860 L).
+    const uint16_t week_liters[7] = {1920, 2140, 1780, 1900, 1800, 1990, 1860};
+    const uint16_t week_dose[7] = {41, 38, 43, 36, 45, 36, 40};
+    const uint8_t week_p1[7] = {43, 42, 43, 41, 42, 42, 42};
+    const uint8_t week_p2[7] = {39, 38, 38, 35, 38, 38, 38};
+    for (int i = 0; i < core::kHistoryDays; ++i) {
+        core::Totals& d = s.days[static_cast<size_t>(i)];
+        d.liters = static_cast<uint16_t>(std::lround(1900 + 220 * std::sin(i * 0.9) + 90 * std::sin(i * 2.3)));
+        d.dose_ml = static_cast<uint16_t>(std::lround(40 + 4 * std::sin(i * 1.3)));
+        d.p1_psi = static_cast<uint8_t>(std::lround(41 + 2 * std::sin(i * 0.7)));
+        d.p2_psi = static_cast<uint8_t>(d.p1_psi - (i < 27 ? 3 + std::lround(i * 0.08) : 4));
+        d.orp_mv = static_cast<int16_t>(std::lround(655 + 12 * std::sin(i * 0.8) - (i == 25 ? 45 : 0)));
+        if (i >= 23) {
+            d.liters = week_liters[i - 23];
+            d.dose_ml = week_dose[i - 23];
+            d.p1_psi = week_p1[i - 23];
+            d.p2_psi = week_p2[i - 23];
+        }
+    }
+    const uint16_t hour_liters[19] = {10, 5, 3, 3, 5, 25, 99, 156, 140, 99, 78, 70, 86, 95, 78, 70, 82, 245, 511};
+    const uint8_t hour_p1[19] = {48, 49, 50, 50, 49, 46, 30, 24, 22, 23, 24, 25, 23, 24, 26, 27, 30, 36, 42};
+    for (int h = 0; h < 19; ++h) {
+        core::Totals& t = s.hours[static_cast<size_t>(h)];
+        t.liters = hour_liters[h];
+        t.dose_ml = h == 6 ? 40 : 0;
+        t.p1_psi = hour_p1[h];
+        // P2 baja con el caudal: 4 psi de caída a 12.4 L/min
+        const float flow = static_cast<float>(hour_liters[h]) / (h == 18 ? 42.0f : 60.0f);
+        t.p2_psi = static_cast<uint8_t>(std::lround(hour_p1[h] - 4 * std::min(1.0f, flow / 12.4f)));
+    }
+
+    // Eventos, el más nuevo primero
+    s.recent_events = {{
+        {1000, 6 * 60 + 10, core::EventKind::dose, 40},
+        {999, 6 * 60 + 25, core::EventKind::dose, 36},
+        {998, 16 * 60 + 40, core::EventKind::cartridge, static_cast<uint16_t>(core::Cartridge::pp5)},
+        {998, 7 * 60 + 2, core::EventKind::dose_typed, 45},
+        {997, 22 * 60 + 14, core::EventKind::drop_warning, 6},
+    }};
+    s.recent_event_count = 5;
     s.orp_mv = 650;
 
     // ORP de los últimos 7 días, una muestra por hora: la curva del canvas de
@@ -87,6 +129,8 @@ core::SystemState make() {
         s.orp_7d[i] = static_cast<int16_t>(std::lround(v));
     }
     s.orp_7d.back() = static_cast<int16_t>(s.orp_mv);
+    for (int h = 0; h < 19; ++h) s.hours[static_cast<size_t>(h)].orp_mv = s.orp_7d[static_cast<size_t>(149 + h)];
+    s.days.back().orp_mv = s.orp_mv;
     s.chlorine_mgl = 0.5f;
     s.last_strip = {6, 26, 9, 5, 641};  // sábado 26 de septiembre: 0.5 mg/L con 641 mV
 
@@ -130,11 +174,20 @@ void start_mixer(core::MixerReason reason, uint8_t minutes) {
     mixer_by_hand = reason == core::MixerReason::manual;
 }
 
+void add_event(core::EventKind kind, uint16_t value) {
+    std::rotate(s.recent_events.rbegin(), s.recent_events.rbegin() + 1, s.recent_events.rend());
+    s.recent_events[0] = {s.today, core::minute_of_day(s), kind, value};
+    s.recent_event_count = static_cast<uint8_t>(std::min<int>(s.recent_event_count + 1, 5));
+}
+
 void add_dose(uint32_t ml, bool typed) {
     std::rotate(s.recent_doses.rbegin(), s.recent_doses.rbegin() + 1, s.recent_doses.rend());
     s.recent_doses[0] = {s.today, core::minute_of_day(s), static_cast<uint16_t>(ml), typed};
     s.recent_dose_count = static_cast<uint8_t>(std::min<int>(s.recent_dose_count + 1, 5));
     s.liters_since_dose = 0;
+    s.hours[s.hour].dose_ml = static_cast<uint16_t>(s.hours[s.hour].dose_ml + ml);
+    s.days.back().dose_ml = static_cast<uint16_t>(s.days.back().dose_ml + ml);
+    add_event(typed ? core::EventKind::dose_typed : core::EventKind::dose, static_cast<uint16_t>(ml));
 }
 
 void next_minute() {
@@ -147,6 +200,9 @@ void next_minute() {
         s.liters_today = 0;
         s.mixer_today_minutes = 0;
         s.mixer_today_runs = 0;
+        std::rotate(s.days.begin(), s.days.begin() + 1, s.days.end());
+        s.days.back() = {};
+        s.hours = {};
     }
 
     // Bomba R: cuenta hacia atrás la vuelta de ahorita. A mano, al terminar
@@ -166,8 +222,11 @@ void next_minute() {
         s.mixer_next_at = static_cast<uint16_t>((s.mixer_next_at + 4 * 60) % 1440);
     }
 
-    // Cada hora entra una muestra nueva a la gráfica de ORP de 7 días
+    // Cada hora entra una muestra nueva a la gráfica de ORP de 7 días y la
+    // hora nueva del historial arranca con las presiones y el ORP de ahorita
     if (s.minute == 0) {
+        s.hours[s.hour] = {0, 0, static_cast<uint8_t>(s.p1_psi), static_cast<uint8_t>(s.p2_psi),
+                           static_cast<int16_t>(s.orp_mv)};
         std::rotate(s.orp_7d.begin(), s.orp_7d.begin() + 1, s.orp_7d.end());
         s.orp_7d.back() = static_cast<int16_t>(s.orp_mv);
     }
@@ -198,6 +257,8 @@ void tick_1s() {
         liters_fraction -= 1.0f;
         ++s.liters_today;
         ++s.liters_since_dose;
+        ++s.hours[s.hour].liters;
+        ++s.days.back().liters;
     }
 
     if (seconds % 60 == 0) next_minute();
