@@ -28,6 +28,9 @@ int main()
     actions.dose_confirmed = demo::on_dose_confirmed;
     actions.dose_typed = demo::on_dose_typed;
     actions.strip_checked = demo::on_strip_checked;
+    actions.mixer_mode_set = demo::on_mixer_mode;
+    actions.mixer_after_dose_set = demo::on_mixer_after_dose;
+    actions.mixer_every_4h_set = demo::on_mixer_every_4h;
     ui::init(demo::state(), actions);
 
     // Cada segundo cambian los datos, como lo haría el firmware

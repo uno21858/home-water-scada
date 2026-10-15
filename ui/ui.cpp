@@ -11,6 +11,7 @@
 #include "screens/cistern_screen.h"
 #include "screens/dose_screen.h"
 #include "screens/flow_screen.h"
+#include "screens/mixer_screen.h"
 #include "screens/home_screen.h"
 #include "screens/summary_screen.h"
 #include "theme/colors.h"
@@ -40,13 +41,14 @@ const std::array<Page, kScreenCount> kPages = {{
     {{"Tren de filtros", {}, nullptr, nullptr, {}}, Screen::home},
     {{"Resumen", {}, nullptr, nullptr, {}}, Screen::summary},
     {{"Flujo", {}, nullptr, nullptr, {}}, Screen::flow},
-    {{"Cisterna", {}, "Fase 2", nullptr, {}}, Screen::cistern},
+    {{"Cisterna", {}, "Fase 2", "Bomba R", Screen::mixer}, Screen::cistern},
     {{"Dosis de cloro", {}, nullptr, nullptr, {}}, Screen::dose},
     {{"Historial", {}, nullptr, nullptr, {}}, Screen::history},
     {{"Ajustes", {}, nullptr, nullptr, {}}, Screen::settings},
+    {{"Mezcla de la cisterna", Screen::cistern, "Fase 2", nullptr, {}}, Screen::cistern},
 }};
 
-Actions actions;
+Actions app_actions;
 core::SystemState state;  // la última copia que llegó en update()
 Header header;
 NavBar nav;
@@ -56,6 +58,7 @@ HomeScreen home;
 SummaryScreen summary;
 FlowScreen flow;
 CisternScreen cistern;
+MixerScreen mixer;
 DoseScreen dose;
 std::array<lv_obj_t*, kScreenCount> pages{};
 
@@ -71,22 +74,22 @@ lv_obj_t* placeholder(lv_obj_t* parent, const char* name) {
 }
 
 void on_dose_confirmed() {
-    if (actions.dose_confirmed != nullptr) actions.dose_confirmed(core::dose_ml(state));
+    if (app_actions.dose_confirmed != nullptr) app_actions.dose_confirmed(core::dose_ml(state));
 }
 
 void on_dose_typed(uint32_t ml) {
-    if (actions.dose_typed != nullptr) actions.dose_typed(ml);
+    if (app_actions.dose_typed != nullptr) app_actions.dose_typed(ml);
 }
 
 void on_strip_checked(uint32_t tenths_mgl) {
-    if (actions.strip_checked != nullptr) actions.strip_checked(tenths_mgl);
+    if (app_actions.strip_checked != nullptr) app_actions.strip_checked(tenths_mgl);
 }
 
 }  // namespace
 
 void init(const core::SystemState& s, const Actions& a) {
     state = s;
-    actions = a;
+    app_actions = a;
 
     // Sin tema de LVGL: todo el look sale de theme/
     lv_display_set_theme(lv_display_get_default(), nullptr);
@@ -104,6 +107,7 @@ void init(const core::SystemState& s, const Actions& a) {
     pages[index_of(Screen::dose)] = dose.create(content);
     pages[index_of(Screen::history)] = placeholder(content, "Historial");
     pages[index_of(Screen::settings)] = placeholder(content, "Ajustes");
+    pages[index_of(Screen::mixer)] = mixer.create(content);
 
     header.create(screen);
     nav.create(screen);
@@ -123,6 +127,7 @@ void update(const core::SystemState& s) {
     summary.update(s);
     flow.update(s);
     cistern.update(s);
+    mixer.update(s);
     dose.update(s);
 }
 
@@ -166,5 +171,9 @@ void open_strip_keypad() {
     fmt::clock(time, sizeof time, core::minute_of_day(state));
     keypad.open({"Calibrar con tira", "Cloro libre de la tira", "mg/L", 1, 2, hint, date, time}, on_strip_checked);
 }
+
+void open_keypad(const KeypadSpec& spec, void (*on_save)(uint32_t value)) { keypad.open(spec, on_save); }
+
+const Actions& actions() { return app_actions; }
 
 }  // namespace ui

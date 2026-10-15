@@ -26,13 +26,16 @@ Mientras llega el hardware, se desarrolla en el simulador con SDL (Mac y Fedora)
   - `components/`: `primitives` (box, label, icon, card, link_to, botones),
     `header` (atrás, título, chip y enlace según la pantalla), `nav_bar`,
     `confirm_dialog`, `keypad_dialog` (unidad y decimales con `KeypadSpec`),
-    `pipe` (puntos de flujo), `sensor_tag`.
+    `segmented` (selector de 2 a 4 opciones), `mixer` (impulsor que gira y el
+    renglón de estado de la bomba R), `pipe` (puntos de flujo), `sensor_tag`.
   - Pantallas de detalle: van en el enum `Screen` después de las 7 pestañas.
     `kPages` en `ui.cpp` dice el encabezado de cada una y qué pestaña marca la
     barra.
   - `screens/`: `home_screen` (Tren), `summary_screen` (Resumen), `flow_screen`
-    (Flujo), `cistern_screen` (Cisterna), `dose_screen` (Dosis). Las demás
-    pestañas son placeholders en `ui.cpp`.
+    (Flujo), `cistern_screen` (Cisterna), `mixer_screen` (Mezcla),
+    `dose_screen` (Dosis). Las demás pestañas son placeholders en `ui.cpp`.
+  - Lo que la pantalla le pide a la app sale por `actions()`; un campo nuevo
+    se captura con `open_keypad(KeypadSpec, callback)`.
 - `simulator/`: ventana SDL. `demo.cpp` llena el estado con los datos de ejemplo
   del DS y lo mueve cada segundo.
 - `firmware/hmi` (la 7B) y `firmware/nodo` (ESP32-S3 en la caja del pilar con el
@@ -106,22 +109,22 @@ En Mac, SDL2 viene de Homebrew (`brew install sdl2`). Si CMake no lo encuentra:
 
 ## Estado (octubre 2026)
 
-Hecho: Tren (inicio), Resumen, Flujo, Cisterna, Dosis, el diálogo de Ya le
-puse y el teclado (Registrar otra cantidad y Calibrar con tira).
+Hecho: Tren (inicio), Resumen, Flujo, Cisterna, Mezcla, Dosis, el diálogo de
+Ya le puse y el teclado (Registrar otra cantidad, Calibrar con tira y los
+minutos de la bomba R).
 
 Pendiente, en este orden:
 
-1. Mezcla (bomba R), el detalle de Cisterna.
-2. Historial.
-3. Ajustes.
-4. Pasillo (reposo a los 2 min sin tocar). El `header` ya tiene atrás, chip y
+1. Historial.
+2. Ajustes.
+3. Pasillo (reposo a los 2 min sin tocar). El `header` ya tiene atrás, chip y
    enlace; le faltan el "?" de ayuda (Leyenda) y el chip de sin red. Cada enlace
    se prende en `kPages` cuando exista su pantalla: Casa → Panorama, Sensor F,
    Inyección, Alarmas, Diagnóstico.
-5. Detalles: DetalleF, DetalleP, DetalleCaida, Cartuchos, Inyeccion.
-6. Estados globales: alarma a pantalla completa (EstadoAlarma) y sin red.
-7. Servicio: Alarmas, Diagnóstico, Prueba de cubeta, Leyenda, Panorama.
-8. Firmware de la 7B y del nodo.
+4. Detalles: DetalleF, DetalleP, DetalleCaida, Cartuchos, Inyeccion.
+5. Estados globales: alarma a pantalla completa (EstadoAlarma) y sin red.
+6. Servicio: Alarmas, Diagnóstico, Prueba de cubeta, Leyenda, Panorama.
+7. Firmware de la 7B y del nodo.
 
 ## Diferencias a propósito con el canvas
 
@@ -143,3 +146,6 @@ Pendiente, en este orden:
   el ORP de ese momento (`Actions::strip_checked`). El canvas no tiene esa vista.
 - En Cisterna, "mV" y el estado se recorren a la derecha si el ORP negativo no
   cabe antes de x 318.
+- En Mezcla, los renglones del programa Auto abren el teclado en minutos (de 1
+  a 99) y sin bomba R la pantalla se ve bloqueada. El selector marca la opción
+  al tocarla y el estado la confirma en el siguiente `update()`.

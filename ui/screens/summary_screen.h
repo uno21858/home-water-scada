@@ -5,6 +5,7 @@
 #include <array>
 #include <cstdint>
 
+#include "components/mixer.h"
 #include "lvgl.h"
 #include "system_state.h"
 
@@ -25,7 +26,6 @@ private:
     void update_time_marks(const core::SystemState& s);
     void update_filters(const core::SystemState& s);
     void update_mixer(const core::SystemState& s);
-    void spin(bool on);
 
     // Caudal
     lv_obj_t* flow_title_ = nullptr;
@@ -62,13 +62,12 @@ private:
     // Bomba R
     lv_obj_t* mixer_live_ = nullptr;
     lv_obj_t* mixer_locked_ = nullptr;
-    lv_obj_t* impeller_ = nullptr;
+    Impeller impeller_;
     lv_obj_t* mixer_state_ = nullptr;
     lv_obj_t* mixer_left_ = nullptr;
     lv_obj_t* mixer_minutes_ = nullptr;
     lv_obj_t* mixer_bar_ = nullptr;
     lv_obj_t* mixer_sub_ = nullptr;
-    int spinning_ = -1;
 };
 
 }  // namespace ui

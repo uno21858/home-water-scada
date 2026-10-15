@@ -96,12 +96,39 @@ core::SystemState make() {
     s.mixer_progress_pct = 80;
     s.mixer_started_at = 18 * 60 + 30;
     s.mixer_next_at = 22 * 60 + 30;
+
+    // Hoy: 02:30, 06:10 (después de la dosis), 10:30, 14:30 y la de ahorita.
+    // 15 + 30 + 15 + 15 + 12 que lleva = 87 min.
+    s.mixer_today_minutes = 87;
+    s.mixer_today_runs = 5;
+    s.mixer_runs = {{
+        {18 * 60 + 30, 12, core::MixerReason::schedule},
+        {14 * 60 + 30, 15, core::MixerReason::schedule},
+        {10 * 60 + 30, 15, core::MixerReason::schedule},
+        {6 * 60 + 10, 30, core::MixerReason::dose},
+    }};
+    s.mixer_run_count = 4;
     return s;
 }
 
 core::SystemState s = make();
 uint32_t seconds = 0;
 float liters_fraction = 0.0f;
+uint8_t mixer_run_total = 15;  // minutos de la vuelta de ahorita: 15 en Auto, 60 a mano
+bool mixer_by_hand = false;    // la vuelta de ahorita se prendió a mano
+
+void start_mixer(core::MixerReason reason, uint8_t minutes) {
+    std::rotate(s.mixer_runs.rbegin(), s.mixer_runs.rbegin() + 1, s.mixer_runs.rend());
+    s.mixer_runs[0] = {core::minute_of_day(s), 0, reason};
+    s.mixer_run_count = static_cast<uint8_t>(std::min<int>(s.mixer_run_count + 1, 4));
+    ++s.mixer_today_runs;
+    s.mixer_on = true;
+    s.mixer_started_at = core::minute_of_day(s);
+    s.mixer_minutes_left = minutes;
+    s.mixer_progress_pct = 0;
+    mixer_run_total = minutes;
+    mixer_by_hand = reason == core::MixerReason::manual;
+}
 
 void add_dose(uint32_t ml, bool typed) {
     std::rotate(s.recent_doses.rbegin(), s.recent_doses.rbegin() + 1, s.recent_doses.rend());
@@ -118,13 +145,25 @@ void next_minute() {
         s.weekday = static_cast<uint8_t>((s.weekday + 1) % 7);
         ++s.day;
         s.liters_today = 0;
+        s.mixer_today_minutes = 0;
+        s.mixer_today_runs = 0;
     }
 
-    // Bomba R: corre 15 min con el programa de las 18:30
+    // Bomba R: cuenta hacia atrás la vuelta de ahorita. A mano, al terminar
+    // queda Apagada; en Auto espera la siguiente del programa.
     if (s.mixer_on && s.mixer_minutes_left > 0) {
         --s.mixer_minutes_left;
-        s.mixer_progress_pct = static_cast<uint8_t>((15 - s.mixer_minutes_left) * 100 / 15);
-        if (s.mixer_minutes_left == 0) s.mixer_on = false;
+        ++s.mixer_today_minutes;
+        ++s.mixer_runs[0].minutes;
+        s.mixer_progress_pct = static_cast<uint8_t>((mixer_run_total - s.mixer_minutes_left) * 100 / mixer_run_total);
+        if (s.mixer_minutes_left == 0) {
+            s.mixer_on = false;
+            if (s.mixer_mode == core::MixerMode::on) s.mixer_mode = core::MixerMode::off;
+        }
+    }
+    if (s.mixer_mode == core::MixerMode::automatic && !s.mixer_on && core::minute_of_day(s) == s.mixer_next_at) {
+        start_mixer(core::MixerReason::schedule, s.mixer_every_4h_min);
+        s.mixer_next_at = static_cast<uint16_t>((s.mixer_next_at + 4 * 60) % 1440);
     }
 
     // Cada hora entra una muestra nueva a la gráfica de ORP de 7 días
@@ -167,6 +206,20 @@ void tick_1s() {
 void on_dose_confirmed(uint32_t ml) { add_dose(ml, false); }
 
 void on_dose_typed(uint32_t ml) { add_dose(ml, true); }
+
+void on_mixer_mode(core::MixerMode mode) {
+    if (mode == s.mixer_mode) return;
+    s.mixer_mode = mode;
+    if (mode == core::MixerMode::on) {
+        start_mixer(core::MixerReason::manual, s.mixer_manual_max_min);
+    } else if (mode == core::MixerMode::off || mixer_by_hand) {
+        s.mixer_on = false;  // apagarla, o pasar de a mano a Auto: espera la siguiente
+    }
+}
+
+void on_mixer_after_dose(uint32_t minutes) { s.mixer_after_dose_min = static_cast<uint8_t>(minutes); }
+
+void on_mixer_every_4h(uint32_t minutes) { s.mixer_every_4h_min = static_cast<uint8_t>(minutes); }
 
 void on_strip_checked(uint32_t tenths_mgl) {
     s.last_strip = {s.weekday, s.day, s.month, static_cast<uint8_t>(tenths_mgl), static_cast<int16_t>(s.orp_mv)};

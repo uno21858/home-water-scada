@@ -224,7 +224,7 @@ void HomeScreen::create_tags(lv_obj_t* page) {
 
     // R: la bomba que revuelve la cisterna
     r_live_ = frame(page, 822, 302, 176, 56, colors::panel_raised, colors::border, 6);
-    link_to(r_live_, Screen::cistern, &styles::button_secondary_pressed);
+    link_to(r_live_, Screen::mixer, &styles::button_secondary_pressed);
     lv_obj_t* r_row = row(r_live_, 8, LV_FLEX_ALIGN_CENTER);
     lv_obj_align(r_row, LV_ALIGN_LEFT_MID, 10, 0);
     label(r_row, &font_label_26, colors::text_secondary, "R");

@@ -23,6 +23,16 @@ enum class Level : uint8_t { ok, warning, alarm };
 
 enum class MixerMode : uint8_t { off, on, automatic };
 
+// Por qué se prendió la bomba R
+enum class MixerReason : uint8_t { schedule, dose, manual };
+
+// Una vez que se prendió la bomba R
+struct MixerRun {
+    uint16_t at = 0;      // minuto del día en que arrancó
+    uint8_t minutes = 0;  // cuánto corrió
+    MixerReason reason = MixerReason::schedule;
+};
+
 struct DoseRecord {
     uint32_t day = 0;    // mismo conteo que SystemState::today
     uint16_t at = 0;     // minuto del día
@@ -84,6 +94,15 @@ struct SystemState {
     uint8_t mixer_progress_pct = 0;
     uint16_t mixer_started_at = 0;  // minuto del día en que arrancó
     uint16_t mixer_next_at = 0;     // minuto del día de la siguiente vuelta en Auto
+    uint16_t mixer_today_minutes = 0;      // cuánto lleva prendida hoy
+    uint8_t mixer_today_runs = 0;          // cuántas veces se prendió hoy
+    std::array<MixerRun, 4> mixer_runs{};  // las últimas, la más nueva primero;
+    uint8_t mixer_run_count = 0;           // si está prendida, la primera es la de ahorita
+
+    // Programa del modo Auto y el tope a mano, en minutos
+    uint8_t mixer_after_dose_min = 30;  // corre después de cada dosis
+    uint8_t mixer_every_4h_min = 15;    // corre cada 4 horas
+    uint8_t mixer_manual_max_min = 60;  // a mano se apaga sola
 };
 
 // mL de Cloralex que tocan: litros desde la última dosis por la relación

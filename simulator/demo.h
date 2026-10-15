@@ -22,4 +22,9 @@ void on_dose_typed(uint32_t ml);      // "Registrar otra cantidad"
 // La tira de "Calibrar con tira": se guarda con el ORP de ahorita
 void on_strip_checked(uint32_t tenths_mgl);
 
+// Bomba R: modo elegido en Mezcla y los minutos del programa Auto
+void on_mixer_mode(core::MixerMode mode);
+void on_mixer_after_dose(uint32_t minutes);
+void on_mixer_every_4h(uint32_t minutes);
+
 }  // namespace demo

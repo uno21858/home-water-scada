@@ -4,6 +4,7 @@
 #include <cmath>
 #include <cstdio>
 
+#include "components/mixer.h"
 #include "components/primitives.h"
 #include "theme/colors.h"
 #include "theme/fonts.h"
@@ -34,24 +35,6 @@ int32_t plot_y(int32_t deci) { return kPlotY + kPlotH - deci * kPlotH / kPlotMax
 // Barra de rango de P1 y P2: de 0 a 80 psi, banda normal de 20 a 50
 constexpr int32_t kRangeW = 212;
 int32_t range_x(int psi) { return (std::clamp(psi, 0, 80) * kRangeW + 40) / 80; }
-
-void rotate(void* obj, int32_t angle) { lv_image_set_rotation(static_cast<lv_obj_t*>(obj), angle); }
-
-void mixer_text(char* out, size_t size, const core::SystemState& s) {
-    char at[8];
-    if (s.mixer_on && s.mixer_mode == core::MixerMode::automatic) {
-        fmt::clock(at, sizeof at, s.mixer_started_at);
-        snprintf(out, size, "Auto · programa de las %s", at);
-    } else if (s.mixer_on) {
-        fmt::clock(at, sizeof at, core::minute_of_day(s) + s.mixer_minutes_left);
-        snprintf(out, size, "A mano · se apaga sola a las %s", at);
-    } else if (s.mixer_mode == core::MixerMode::automatic) {
-        fmt::clock(at, sizeof at, s.mixer_next_at);
-        snprintf(out, size, "Auto · la siguiente a las %s", at);
-    } else {
-        snprintf(out, size, "A mano · el programa no la prende");
-    }
-}
 
 }  // namespace
 
@@ -202,20 +185,14 @@ void SummaryScreen::create_filters_card(lv_obj_t* page) {
 
 void SummaryScreen::create_mixer_card(lv_obj_t* page) {
     mixer_live_ = card(page, 518, 260, 490, 184);
-    link_to(mixer_live_, Screen::cistern);
+    link_to(mixer_live_, Screen::mixer);
 
     lv_obj_t* title = label(mixer_live_, &font_label_26, colors::text_secondary, "Bomba R · mezcla");
     lv_obj_set_pos(title, 16, 6);
     chevron(mixer_live_);
 
     // Bomba: aro fijo y aspas que giran cuando está prendida
-    lv_obj_t* housing = box(mixer_live_, 18, 46, 52, 52);
-    lv_obj_set_style_radius(housing, LV_RADIUS_CIRCLE, 0);
-    fill(housing, colors::background);
-    lv_obj_set_style_border_width(housing, 2, 0);
-    lv_obj_set_style_border_color(housing, color(colors::text_secondary), 0);
-    impeller_ = icon(mixer_live_, &icon_impulsor_56, colors::pipe);
-    lv_obj_set_pos(impeller_, 16, 44);
+    impeller_.create(mixer_live_, 16, 44);
 
     mixer_state_ = label(mixer_live_, &font_title_xl_48, colors::text, "");
     lv_obj_set_pos(mixer_state_, 88, 43);
@@ -362,7 +339,7 @@ void SummaryScreen::update_mixer(const core::SystemState& s) {
     lv_obj_set_hidden(mixer_live_, !s.has_mixer);
     lv_obj_set_hidden(mixer_locked_, s.has_mixer);
     if (!s.has_mixer) {
-        spin(false);
+        impeller_.set_spinning(false);
         return;
     }
 
@@ -376,29 +353,9 @@ void SummaryScreen::update_mixer(const core::SystemState& s) {
     if (lv_bar_get_value(mixer_bar_) != s.mixer_progress_pct) {
         lv_bar_set_value(mixer_bar_, s.mixer_progress_pct, LV_ANIM_OFF);
     }
-    mixer_text(buf, sizeof buf, s);
+    mixer_status(buf, sizeof buf, s);
     set_text(mixer_sub_, buf);
-    spin(s.mixer_on);
-}
-
-void SummaryScreen::spin(bool on) {
-    if (static_cast<int>(on) == spinning_) return;
-    spinning_ = on;
-    set_icon_color(impeller_, on ? colors::water : colors::pipe);
-    if (on) {
-        // Una vuelta cada 2 s. El ángulo de LVGL va en décimas de grado.
-        lv_anim_t a;
-        lv_anim_init(&a);
-        lv_anim_set_var(&a, impeller_);
-        lv_anim_set_exec_cb(&a, rotate);
-        lv_anim_set_values(&a, 0, 3600);
-        lv_anim_set_duration(&a, 2000);
-        lv_anim_set_repeat_count(&a, LV_ANIM_REPEAT_INFINITE);
-        lv_anim_start(&a);
-    } else {
-        lv_anim_delete(impeller_, rotate);
-        lv_image_set_rotation(impeller_, 0);
-    }
+    impeller_.set_spinning(s.mixer_on);
 }
 
 }  // namespace ui
