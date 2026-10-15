@@ -155,9 +155,11 @@ void HomeScreen::create_return(lv_obj_t* page) {
     pressure_parts_[3] = box(page, 699, 183, 2, 13);
     fill(pressure_parts_[3], colors::pipe);
 
-    // Bajada final: V5, boca B con V3, descarga V4 y V2 antes de la cisterna
+    // Bajada final: V2, boca B con V3, descarga V4 y V5 antes de la cisterna.
+    // Al revés que el canvas, como está en la casa: V2 se cierra para abrir V3
+    // y echar el cloro; V5 se cierra para purgar por V4
     symbol(page, &pid_valvula_v, 238, 190);
-    tag_text(page, "V5", 262, 186, 40, LV_TEXT_ALIGN_LEFT);
+    tag_text(page, "V2", 262, 186, 40, LV_TEXT_ALIGN_LEFT);
     symbol(page, &pid_embudo, 338, 218);
     symbol(page, &pid_valvula_h, 300, 236);
     tag_text(page, "V3", 293, 256, 40);  // en el canvas mide 34, pero "V3" mide 35 y LVGL lo partiría
@@ -165,7 +167,7 @@ void HomeScreen::create_return(lv_obj_t* page) {
     symbol(page, &pid_espiga, 296, 290);
     tag_text(page, "V4", 318, 282, 40, LV_TEXT_ALIGN_LEFT);
     symbol(page, &pid_valvula_v, 238, 322);
-    tag_text(page, "V2", 262, 318, 40, LV_TEXT_ALIGN_LEFT);
+    tag_text(page, "V5", 262, 318, 40, LV_TEXT_ALIGN_LEFT);
 }
 
 void HomeScreen::create_cistern(lv_obj_t* page) {

@@ -20,15 +20,15 @@ constexpr int32_t kValueY = 44 + 10;  // cifra de 136 bajada como en Cisterna
 constexpr float kBucketLiters = 10.0f;
 
 // Un factor que se aleja más de 30 % del de fábrica es una prueba mal hecha
-// (la cubeta no llegó a la marca, V2 abierta, se tocó Ya llegué sin agua):
+// (la cubeta no llegó a la marca, V5 abierta, se tocó Ya llegué sin agua):
 // no se deja guardar
 constexpr uint16_t kFactorMin = core::kFactoryPulsesPerLiter * 7 / 10;
 constexpr uint16_t kFactorMax = core::kFactoryPulsesPerLiter * 13 / 10;
 
 // V4 se cierra en la marca antes de tocar Ya llegué: así lo que contó F es justo
 // lo que hay en la cubeta y no importa qué tan rápido se toque el botón
-const char* const kSteps[4] = {"Cierra V2, la salida a la cisterna", "Pon la cubeta de 10 L bajo V4",
-                               "Abre V4 y ciérrala en la marca", "Vuelve a abrir V2"};
+const char* const kSteps[4] = {"Cierra V5, la salida a la cisterna", "Pon la cubeta de 10 L bajo V4",
+                               "Abre V4 y ciérrala en la marca", "Vuelve a abrir V5"};
 
 // F dejó de contar (V4 cerrada) si los pulsos no cambian en este tiempo
 constexpr uint32_t kStoppedMs = 1500;
@@ -92,7 +92,7 @@ void BucketScreen::create_prepare(lv_obj_t* page) {
             self->set_phase(Phase::place_bucket);
             return;
         }
-        // Ya con V2 cerrada y la cubeta puesta: el conteo empieza en 0
+        // Ya con V5 cerrada y la cubeta puesta: el conteo empieza en 0
         self->pulses_ = 0;
         self->set_phase(Phase::counting);
         if (actions().bucket_test_started != nullptr) actions().bucket_test_started();
@@ -209,7 +209,7 @@ void BucketScreen::set_phase(Phase phase) {
     fmt::thousands(pulses, sizeof pulses, pulses_);
     if (phase == Phase::close_v2) {
         set_text(prepare_step_, "Paso 1 de 4");
-        set_text(prepare_title_, "Cierra V2");
+        set_text(prepare_title_, "Cierra V5");
         set_text(prepare_note_, "Es la salida a la cisterna. Cerrada, todo lo que cuente F cae en la cubeta.");
         set_text(prepare_button_, "Ya la cerré");
     } else if (phase == Phase::place_bucket) {
@@ -228,7 +228,7 @@ void BucketScreen::set_phase(Phase phase) {
                      static_cast<unsigned>(factor_), change >= 0 ? "+" : "\xE2\x88\x92",
                      static_cast<double>(std::fabs(change)));
         } else {
-            snprintf(buf, sizeof buf, "%s pulsos en 10 L: muy lejos de %u. Revisa V2 y la marca, y repite.", pulses,
+            snprintf(buf, sizeof buf, "%s pulsos en 10 L: muy lejos de %u. Revisa V5 y la marca, y repite.", pulses,
                      static_cast<unsigned>(core::kFactoryPulsesPerLiter));
         }
         set_text(explain_, buf);
@@ -236,7 +236,7 @@ void BucketScreen::set_phase(Phase phase) {
         snprintf(buf, sizeof buf, "Guardar %u", static_cast<unsigned>(new_factor_));
         set_text(save_text_, buf);
     } else if (phase == Phase::saved) {
-        snprintf(buf, sizeof buf, "F ahora cuenta %u pulsos por litro. Vuelve a abrir V2.",
+        snprintf(buf, sizeof buf, "F ahora cuenta %u pulsos por litro. Vuelve a abrir V5.",
                  static_cast<unsigned>(new_factor_));
         set_text(saved_text_, buf);
     }

@@ -3,7 +3,7 @@
 // por V4 mientras F cuenta pulsos; el factor nuevo es pulsos / 10.
 // A la izquierda los 4 pasos; a la derecha lo del paso de ahorita. Los pasos
 // 1 y 2 se confirman con su botón y el conteo empieza en 0 hasta el 3: si
-// V2 sigue abierta, F contaría agua que no cae en la cubeta.
+// V5 sigue abierta, F contaría agua que no cae en la cubeta.
 
 #include <array>
 #include <cstdint>
@@ -45,7 +45,7 @@ private:
     std::array<Step, 4> steps_{};
     lv_obj_t* prepare_ = nullptr;
     lv_obj_t* prepare_step_ = nullptr;    // "Paso 1 de 4"
-    lv_obj_t* prepare_title_ = nullptr;   // "Cierra V2"
+    lv_obj_t* prepare_title_ = nullptr;   // "Cierra V5"
     lv_obj_t* prepare_note_ = nullptr;
     lv_obj_t* prepare_button_ = nullptr;  // el texto de "Ya la cerré"
     lv_obj_t* counting_ = nullptr;

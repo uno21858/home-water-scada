@@ -153,6 +153,10 @@ Pendiente, en este orden:
 ## Diferencias a propósito con el canvas
 
 - El label "V3" mide 40 px en lugar de 34.
+- V2 y V5 van al revés que en el canvas, como está en la casa: V2 arriba en la
+  bajada (se cierra para abrir V3 y echar el cloro en B) y V5 abajo, la salida
+  a la cisterna (se cierra para purgar por V4). Por eso Prueba de cubeta dice
+  "Cierra V5" y "Vuelve a abrir V5" y no V2 como el canvas.
 - Los chips de fecha y hora del teclado solo muestran; no hay selector diseñado.
 - "P1 0.0 P2 0.0" en Ajustes y en DetalleP es el corrimiento del cero que se
   guardó con Hacer cero (`p1_zero_psi`), no la lectura en vivo.
@@ -224,9 +228,9 @@ Pendiente, en este orden:
   se para en 3,872 (la marca), para que proponga 387 como el canvas.
 - Prueba de cubeta: el canvas da los pasos 1 y 2 por hechos y cuenta desde
   que se entra. Aquí cada uno tiene su botón ("Ya la cerré", "Ya está") y el
-  conteo empieza en 0 en el paso 3: con V2 abierta F contaría agua que no cae
+  conteo empieza en 0 en el paso 3: con V5 abierta F contaría agua que no cae
   en la cubeta. V4 se cierra en la marca antes de "Ya llegué" (paso 3 "Abre V4
-  y ciérrala en la marca", paso 4 "Vuelve a abrir V2"): así lo contado es lo
+  y ciérrala en la marca", paso 4 "Vuelve a abrir V5"): así lo contado es lo
   que hay en la cubeta y no cuenta qué tan rápido se toca. "Ya llegué" se
   prende cuando F lleva 1.5 s sin contar, y "Guardar" solo se deja si el
   factor queda a 30 % del de fábrica (277 a 514); si no, dice que se repita.

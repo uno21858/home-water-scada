@@ -1,7 +1,7 @@
 #pragma once
 // Pantalla Tren (inicio): el P&ID del tren de filtros. Agua del SIAPA,
-// medidor, prefiltro, V1, los 5 vasos, F, P2, la bajada con V5, B, V3, V4
-// y V2, y la cisterna con la sonda ORP y la bomba R. Abajo la franja con
+// medidor, prefiltro, V1, los 5 vasos, F, P2, la bajada con V2, B, V3, V4
+// y V5, y la cisterna con la sonda ORP y la bomba R. Abajo la franja con
 // caída, litros de hoy y lo que toca echar.
 
 #include "components/pipe.h"
