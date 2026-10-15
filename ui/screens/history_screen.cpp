@@ -53,8 +53,8 @@ lv_obj_t* HistoryScreen::create(lv_obj_t* parent) {
 
     static const char* const kRanges[3] = {"Día", "Semana", "Mes"};
     static const char* const kSignals[3] = {"Litros y dosis", "Presiones", "ORP"};
-    range_picker_.create(page, 16, 12, 0, kRanges, 3, on_range, this);
-    lv_obj_t* signals = signal_picker_.create(page, 0, 12, 0, kSignals, 3, on_signal, this);
+    range_picker_.create(page, 16, 12, 0, 64, kRanges, 3, on_range, this);
+    lv_obj_t* signals = signal_picker_.create(page, 0, 12, 0, 64, kSignals, 3, on_signal, this);
     lv_obj_align(signals, LV_ALIGN_TOP_RIGHT, -16, 12);
     range_picker_.set_selected(static_cast<int>(range_));
     signal_picker_.set_selected(static_cast<int>(signal_));

@@ -39,6 +39,12 @@ LV_IMAGE_DECLARE(icon_reloj_32);
 LV_IMAGE_DECLARE(icon_bomba_28);        // pulso de prueba (fase 3)
 LV_IMAGE_DECLARE(icon_gota_32);         // Calibrar con tira
 LV_IMAGE_DECLARE(icon_cartucho_32);     // cambio de cartucho en los eventos
+LV_IMAGE_DECLARE(icon_editar_32);       // escribir un valor con el teclado
+LV_IMAGE_DECLARE(icon_cubeta_32);       // Prueba de cubeta
+
+// Categorías de Ajustes (dosis, conexión y cartuchos usan gota, wifi y cartucho)
+LV_IMAGE_DECLARE(icon_medidor_32);      // sensores
+LV_IMAGE_DECLARE(icon_sol_32);          // pantalla
 
 // Equipos
 LV_IMAGE_DECLARE(icon_impulsor_56);        // aspas de la bomba R; gira con lv_image_set_rotation

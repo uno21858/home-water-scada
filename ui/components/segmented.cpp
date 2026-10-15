@@ -6,13 +6,13 @@
 
 namespace ui {
 
-lv_obj_t* Segmented::create(lv_obj_t* parent, int32_t x, int32_t y, int32_t w, const char* const* options,
-                            int count, Callback on_pick, void* user_data) {
+lv_obj_t* Segmented::create(lv_obj_t* parent, int32_t x, int32_t y, int32_t w, int32_t h,
+                            const char* const* options, int count, Callback on_pick, void* user_data) {
     count_ = count < 4 ? count : 4;
     on_pick_ = on_pick;
     user_data_ = user_data;
 
-    lv_obj_t* frame = box(parent, x, y, w > 0 ? w : LV_SIZE_CONTENT, 64);
+    lv_obj_t* frame = box(parent, x, y, w > 0 ? w : LV_SIZE_CONTENT, h);
     lv_obj_set_flex_flow(frame, LV_FLEX_FLOW_ROW);
     fill(frame, colors::panel);
     lv_obj_set_style_border_width(frame, 2, 0);
@@ -25,9 +25,9 @@ lv_obj_t* Segmented::create(lv_obj_t* parent, int32_t x, int32_t y, int32_t w, c
     for (int i = 0; i < count_; ++i) {
         lv_obj_t* b = box(frame);
         if (w > 0) {
-            lv_obj_set_size(b, inner / count_ + (i < inner % count_ ? 1 : 0), 60);
+            lv_obj_set_size(b, inner / count_ + (i < inner % count_ ? 1 : 0), h - 4);
         } else {
-            lv_obj_set_size(b, LV_SIZE_CONTENT, 60);
+            lv_obj_set_size(b, LV_SIZE_CONTENT, h - 4);
             lv_obj_set_style_pad_hor(b, 18, 0);
         }
         lv_obj_set_clickable(b, true);

@@ -12,11 +12,10 @@
 #include "screens/dose_screen.h"
 #include "screens/flow_screen.h"
 #include "screens/history_screen.h"
-#include "screens/mixer_screen.h"
 #include "screens/home_screen.h"
+#include "screens/mixer_screen.h"
+#include "screens/settings_screen.h"
 #include "screens/summary_screen.h"
-#include "theme/colors.h"
-#include "theme/fonts.h"
 #include "theme/format.h"
 #include "theme/styles.h"
 
@@ -61,19 +60,11 @@ FlowScreen flow;
 CisternScreen cistern;
 MixerScreen mixer;
 HistoryScreen history;
+SettingsScreen settings;
 DoseScreen dose;
 std::array<lv_obj_t*, kScreenCount> pages{};
 
 size_t index_of(Screen screen) { return static_cast<size_t>(screen); }
-
-// Pantalla que todavía no está hecha
-lv_obj_t* placeholder(lv_obj_t* parent, const char* name) {
-    lv_obj_t* page = box(parent, 0, 0, 1024, kContentHeight);
-    lv_obj_t* text = label(page, &font_body_32, colors::text_disabled, "");
-    lv_label_set_text_fmt(text, "%s: próximamente", name);
-    lv_obj_center(text);
-    return page;
-}
 
 void on_dose_confirmed() {
     if (app_actions.dose_confirmed != nullptr) app_actions.dose_confirmed(core::dose_ml(state));
@@ -108,7 +99,7 @@ void init(const core::SystemState& s, const Actions& a) {
     pages[index_of(Screen::cistern)] = cistern.create(content);
     pages[index_of(Screen::dose)] = dose.create(content);
     pages[index_of(Screen::history)] = history.create(content);
-    pages[index_of(Screen::settings)] = placeholder(content, "Ajustes");
+    pages[index_of(Screen::settings)] = settings.create(content);
     pages[index_of(Screen::mixer)] = mixer.create(content);
 
     header.create(screen);
@@ -132,6 +123,7 @@ void update(const core::SystemState& s) {
     mixer.update(s);
     dose.update(s);
     history.update(s);
+    settings.update(s);
 }
 
 void show(Screen screen) {
@@ -176,6 +168,10 @@ void open_strip_keypad() {
 }
 
 void open_keypad(const KeypadSpec& spec, void (*on_save)(uint32_t value)) { keypad.open(spec, on_save); }
+
+void open_confirm(const char* title, const char* body, const char* confirm_text, void (*on_confirm)()) {
+    dialog.open(title, body, confirm_text, on_confirm);
+}
 
 const Actions& actions() { return app_actions; }
 

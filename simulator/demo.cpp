@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdio>
 #include <cstdlib>
 
 namespace demo {
@@ -31,6 +32,9 @@ core::SystemState make() {
     s.hour = 18;
     s.minute = 42;
     s.wifi_ok = true;
+    std::snprintf(s.wifi_ssid, sizeof s.wifi_ssid, "Casa-2.4G");
+    s.wifi_bars = 3;
+    s.last_upload_at = 18 * 60 + 42;
 
     s.flow_lpm = 12.4f;
     s.liters_today = 1860;
@@ -74,6 +78,14 @@ core::SystemState make() {
 
     s.p1_psi = 42;
     s.p2_psi = 38;
+    s.p1_raw_psi = 42.0f;
+    s.p2_raw_psi = 38.0f;
+
+    // Cartuchos: 5 de cada PP, 4 de carbón y ninguno de sarro; el último
+    // cambio fue el de 5 µm el jueves 1 de octubre
+    s.spares = {5, 5, 5, 4, 0};
+    s.last_cartridge = core::Cartridge::pp5;
+    s.last_cartridge_day = 998;
 
     // Historial: las cifras del canvas de Historial. 30 días con la última
     // semana fija y hoy hasta las 18:00, hora por hora (suman 1,860 L).
@@ -193,6 +205,8 @@ void add_dose(uint32_t ml, bool typed) {
 void next_minute() {
     s.minute = static_cast<uint8_t>((s.minute + 1) % 60);
     if (s.minute == 0) s.hour = static_cast<uint8_t>((s.hour + 1) % 24);
+    if (s.wifi_ok) s.last_upload_at = core::minute_of_day(s);  // envía cada minuto
+
     if (s.minute == 0 && s.hour == 0) {  // medianoche (el demo no se fija en el fin de mes)
         ++s.today;
         s.weekday = static_cast<uint8_t>((s.weekday + 1) % 7);
@@ -281,6 +295,22 @@ void on_mixer_mode(core::MixerMode mode) {
 void on_mixer_after_dose(uint32_t minutes) { s.mixer_after_dose_min = static_cast<uint8_t>(minutes); }
 
 void on_mixer_every_4h(uint32_t minutes) { s.mixer_every_4h_min = static_cast<uint8_t>(minutes); }
+
+void on_flow_factor(uint32_t pulses_per_liter) { s.flow_pulses_per_liter = static_cast<uint16_t>(pulses_per_liter); }
+
+void on_pressure_zeroed() {
+    // En la casa se hace con V1 cerrada; el demo nomás deja la lectura en 0
+    s.p1_raw_psi = 0.0f;
+    s.p2_raw_psi = 0.0f;
+}
+
+void on_dose_ratio(uint32_t thousandths) { s.ml_per_liter = static_cast<float>(thousandths) / 1000.0f; }
+
+void on_daily_cap(uint32_t ml) { s.daily_cap_ml = static_cast<uint16_t>(ml); }
+
+void on_night_off(bool on) { s.night_off = on; }
+
+void on_idle_minutes(uint32_t minutes) { s.idle_minutes = static_cast<uint8_t>(minutes); }
 
 void on_strip_checked(uint32_t tenths_mgl) {
     s.last_strip = {s.weekday, s.day, s.month, static_cast<uint8_t>(tenths_mgl), static_cast<int16_t>(s.orp_mv)};

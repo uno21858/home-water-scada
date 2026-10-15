@@ -22,6 +22,9 @@ inline constexpr int kOrpSamples7d = 168;
 // Historial: los últimos 30 días, hoy al final con lo que va
 inline constexpr int kHistoryDays = 30;
 
+// Pulsos por litro del YF-B6 según su hoja de datos (F = 6.6 x Q)
+inline constexpr uint16_t kFactoryPulsesPerLiter = 396;
+
 enum class Level : uint8_t { ok, warning, alarm };
 
 // Lo que se guarda de un día o de una hora del historial
@@ -108,8 +111,13 @@ struct SystemState {
     uint8_t hour = 0;
     uint8_t minute = 0;
     bool wifi_ok = false;
+    char wifi_ssid[33] = "";      // nombre de la red, hasta 32 letras
+    uint8_t wifi_bars = 0;        // señal de 0 a 3
+    uint16_t last_upload_at = 0;  // minuto del día del último envío de datos
+    uint16_t pending_uploads = 0; // lecturas guardadas que faltan por enviar
 
     // Flujo
+    uint16_t flow_pulses_per_liter = kFactoryPulsesPerLiter;  // factor del sensor F
     float flow_lpm = 0.0f;
     uint32_t liters_today = 0;
     uint32_t liters_since_dose = 0;
@@ -125,6 +133,19 @@ struct SystemState {
     // Presión antes (P1) y después (P2) de los filtros
     int p1_psi = 0;
     int p2_psi = 0;
+    float p1_raw_psi = 0.0f;  // con un decimal, para hacer cero con el tren sin presión
+    float p2_raw_psi = 0.0f;
+
+    // Cartuchos
+    std::array<uint8_t, 5> spares{};       // repuestos en casa, por Cartridge
+    Cartridge last_cartridge = Cartridge::pp20;
+    uint32_t last_cartridge_day = 0;       // mismo conteo que today; 0 = no hay registro
+
+    // Pantalla
+    bool night_off = true;                 // apagar la luz de noche
+    uint16_t night_from = 23 * 60;         // minuto del día
+    uint16_t night_to = 6 * 60 + 30;
+    uint8_t idle_minutes = 2;              // modo pasillo si nadie toca en 1, 2 o 5 min
 
     // ORP de la cisterna
     int orp_mv = 0;

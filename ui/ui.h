@@ -27,6 +27,12 @@ struct Actions {
     void (*mixer_mode_set)(core::MixerMode mode) = nullptr;   // eligió Apagada, Prendida o Auto
     void (*mixer_after_dose_set)(uint32_t minutes) = nullptr; // programa: después de cada dosis
     void (*mixer_every_4h_set)(uint32_t minutes) = nullptr;   // programa: cada 4 horas
+    void (*flow_factor_set)(uint32_t pulses_per_liter) = nullptr;
+    void (*pressure_zeroed)() = nullptr;                      // confirmó Hacer cero
+    void (*dose_ratio_set)(uint32_t thousandths) = nullptr;   // mL por litro x 1000: 20 = 0.020
+    void (*daily_cap_set)(uint32_t ml) = nullptr;
+    void (*night_off_set)(bool on) = nullptr;                 // Apagar la luz de noche: Sí o No
+    void (*idle_minutes_set)(uint32_t minutes) = nullptr;     // modo pasillo: 1, 2 o 5
 };
 
 struct KeypadSpec;  // components/keypad_dialog.h
@@ -46,6 +52,9 @@ void open_strip_keypad();
 
 // Abre el teclado con lo que diga spec; al guardar llama on_save con el valor
 void open_keypad(const KeypadSpec& spec, void (*on_save)(uint32_t value));
+
+// Abre el diálogo de confirmación; on_confirm se llama si dice que sí
+void open_confirm(const char* title, const char* body, const char* confirm_text, void (*on_confirm)());
 
 // Lo que la app pidió que le avisaran (las pantallas llaman de aquí)
 const Actions& actions();

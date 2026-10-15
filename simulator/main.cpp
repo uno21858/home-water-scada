@@ -31,6 +31,12 @@ int main()
     actions.mixer_mode_set = demo::on_mixer_mode;
     actions.mixer_after_dose_set = demo::on_mixer_after_dose;
     actions.mixer_every_4h_set = demo::on_mixer_every_4h;
+    actions.flow_factor_set = demo::on_flow_factor;
+    actions.pressure_zeroed = demo::on_pressure_zeroed;
+    actions.dose_ratio_set = demo::on_dose_ratio;
+    actions.daily_cap_set = demo::on_daily_cap;
+    actions.night_off_set = demo::on_night_off;
+    actions.idle_minutes_set = demo::on_idle_minutes;
     ui::init(demo::state(), actions);
 
     // Cada segundo cambian los datos, como lo haría el firmware

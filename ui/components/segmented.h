@@ -1,5 +1,5 @@
 #pragma once
-// Selector segmentado de 64 px de alto: de 2 a 4 opciones y una elegida.
+// Selector segmentado de 64 px de alto (o el que se pida): de 2 a 4 opciones y una elegida.
 // La elegida va en accion (relleno claro, texto oscuro); las demás en texto-2.
 // Con ancho fijo las opciones se reparten parejo; con w = 0 cada una mide su
 // texto más 18 px por lado.
@@ -16,8 +16,8 @@ public:
     using Callback = void (*)(int index, void* user_data);
 
     // Regresa el marco, por si hay que alinearlo (a la derecha, por ejemplo)
-    lv_obj_t* create(lv_obj_t* parent, int32_t x, int32_t y, int32_t w, const char* const* options, int count,
-                     Callback on_pick, void* user_data = nullptr);
+    lv_obj_t* create(lv_obj_t* parent, int32_t x, int32_t y, int32_t w, int32_t h, const char* const* options,
+                     int count, Callback on_pick, void* user_data = nullptr);
     void set_selected(int index);
 
 private:

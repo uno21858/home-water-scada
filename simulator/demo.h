@@ -27,4 +27,12 @@ void on_mixer_mode(core::MixerMode mode);
 void on_mixer_after_dose(uint32_t minutes);
 void on_mixer_every_4h(uint32_t minutes);
 
+// Ajustes
+void on_flow_factor(uint32_t pulses_per_liter);
+void on_pressure_zeroed();
+void on_dose_ratio(uint32_t thousandths);
+void on_daily_cap(uint32_t ml);
+void on_night_off(bool on);
+void on_idle_minutes(uint32_t minutes);
+
 }  // namespace demo

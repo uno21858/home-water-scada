@@ -33,8 +33,8 @@ Mientras llega el hardware, se desarrolla en el simulador con SDL (Mac y Fedora)
     barra.
   - `screens/`: `home_screen` (Tren), `summary_screen` (Resumen), `flow_screen`
     (Flujo), `cistern_screen` (Cisterna), `mixer_screen` (Mezcla),
-    `dose_screen` (Dosis), `history_screen` (Historial). Ajustes todavía es un
-    placeholder en `ui.cpp`.
+    `dose_screen` (Dosis), `history_screen` (Historial), `settings_screen`
+    (Ajustes).
   - Lo que la pantalla le pide a la app sale por `actions()`; un campo nuevo
     se captura con `open_keypad(KeypadSpec, callback)`.
 - `simulator/`: ventana SDL. `demo.cpp` llena el estado con los datos de ejemplo
@@ -115,21 +115,20 @@ En Mac, SDL2 viene de Homebrew (`brew install sdl2`). Si CMake no lo encuentra:
 
 ## Estado (octubre 2026)
 
-Hecho: Tren (inicio), Resumen, Flujo, Cisterna, Mezcla, Dosis, Historial, el
-diálogo de Ya le puse y el teclado (Registrar otra cantidad, Calibrar con tira y los
+Hecho: las 7 pestañas (Tren, Resumen, Flujo, Cisterna, Dosis, Historial,
+Ajustes), Mezcla, el diálogo de confirmar y el teclado (Registrar otra cantidad, Calibrar con tira y los
 minutos de la bomba R).
 
 Pendiente, en este orden:
 
-1. Ajustes.
-2. Pasillo (reposo a los 2 min sin tocar). El `header` ya tiene atrás, chip y
+1. Pasillo (reposo a los 2 min sin tocar). El `header` ya tiene atrás, chip y
    enlace; le faltan el "?" de ayuda (Leyenda) y el chip de sin red. Cada enlace
    se prende en `kPages` cuando exista su pantalla: Casa → Panorama, Sensor F,
    Inyección, Alarmas, Diagnóstico.
-3. Detalles: DetalleF, DetalleP, DetalleCaida, Cartuchos, Inyeccion.
-4. Estados globales: alarma a pantalla completa (EstadoAlarma) y sin red.
-5. Servicio: Alarmas, Diagnóstico, Prueba de cubeta, Leyenda, Panorama.
-6. Firmware de la 7B y del nodo.
+2. Detalles: DetalleF, DetalleP, DetalleCaida, Cartuchos, Inyeccion.
+3. Estados globales: alarma a pantalla completa (EstadoAlarma) y sin red.
+4. Servicio: Alarmas, Diagnóstico, Prueba de cubeta, Leyenda, Panorama.
+5. Firmware de la 7B y del nodo.
 
 ## Diferencias a propósito con el canvas
 
@@ -155,6 +154,12 @@ Pendiente, en este orden:
   fase 1.5" o "fase 2" en lugar de la gráfica. Las marcas de abajo miden 100 px
   y no 80 para que "14 sep" no se parta. "18:00" y "24:00" se tocan igual que en
   el canvas.
+- En Ajustes, los botones que llevan a una pantalla que todavía no existe
+  (Prueba de cubeta, Diagnóstico, Ver cartuchos, Verlo) salen deshabilitados;
+  se prenden con `link_to` cuando exista su pantalla. "Cambiar red" y "Cambiar
+  horario" también, porque el canvas no tiene la vista que abren. "Hacer cero"
+  pide confirmación (el DS lo pide para lo que reinicia algo) y el envío de
+  datos dice "Por enviar" en ámbar si hay pendientes.
 - En Mezcla, los renglones del programa Auto abren el teclado en minutos (de 1
   a 99) y sin bomba R la pantalla se ve bloqueada. El selector marca la opción
   al tocarla y el estado la confirma en el siguiente `update()`.

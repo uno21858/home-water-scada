@@ -59,7 +59,7 @@ lv_obj_t* MixerScreen::create(lv_obj_t* parent) {
     lv_obj_t* page = box(parent, 0, 0, 1024, 456);
     live_ = box(page, 0, 0, 1024, 456);
     create_status(live_);
-    mode_.create(live_, 16, 184, 600, kModes, 3, on_mode);
+    mode_.create(live_, 16, 184, 600, 64, kModes, 3, on_mode);
     create_program(live_);
     create_today(live_);
     create_runs(live_);
