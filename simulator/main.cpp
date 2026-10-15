@@ -45,6 +45,7 @@ int main()
     actions.night_off_set = demo::on_night_off;
     actions.idle_minutes_set = demo::on_idle_minutes;
     actions.filter_serviced = demo::on_filter_serviced;
+    actions.spares_set = demo::on_spares_set;
     actions.alarm_acknowledged = demo::on_alarm_acknowledged;
     actions.alarm_test = demo::on_alarm_test;
     actions.restart_requested = demo::on_restart;

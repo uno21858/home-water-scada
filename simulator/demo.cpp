@@ -495,6 +495,10 @@ void on_filter_serviced(core::Filter filter) {
               static_cast<uint16_t>(filter));
 }
 
+void on_spares_set(core::Filter filter, uint32_t count) {
+    s.spares[static_cast<size_t>(filter)] = static_cast<uint8_t>(count);
+}
+
 void on_strip_checked(uint32_t tenths_mgl) {
     s.last_strip = {s.weekday, s.day, s.month, static_cast<uint8_t>(tenths_mgl), static_cast<int16_t>(s.orp_mv)};
     s.chlorine_mgl = static_cast<float>(tenths_mgl) / 10.0f;  // el demo no estima: copia la tira

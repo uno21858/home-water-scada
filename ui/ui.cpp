@@ -27,6 +27,7 @@
 #include "screens/overview_screen.h"
 #include "screens/pressure_screen.h"
 #include "screens/settings_screen.h"
+#include "screens/spares_screen.h"
 #include "screens/summary_screen.h"
 #include "theme/format.h"
 #include "theme/styles.h"
@@ -68,6 +69,7 @@ const std::array<Page, kScreenCount> kPages = {{
     {{"Prueba de cubeta", Screen::settings, nullptr, nullptr, {}, {}}, Screen::settings},
     {{"Símbolos del diagrama", Screen::home, nullptr, nullptr, {}, {}}, Screen::home},
     {{"Panorama de la casa", Screen::home, nullptr, nullptr, {}, {}}, Screen::home},
+    {{"Repuestos en casa", Screen::settings, nullptr, nullptr, {}, {}}, Screen::settings},
 }};
 
 Actions app_actions;
@@ -96,6 +98,7 @@ DiagnosticsScreen diagnostics;
 BucketScreen bucket;
 LegendScreen legend;
 OverviewScreen overview;
+SparesScreen spares;
 std::array<lv_obj_t*, kScreenCount> pages{};
 
 size_t index_of(Screen screen) { return static_cast<size_t>(screen); }
@@ -163,6 +166,7 @@ void init(const core::SystemState& s, const Actions& a) {
     pages[index_of(Screen::bucket_test)] = bucket.create(content);
     pages[index_of(Screen::legend)] = legend.create(content);
     pages[index_of(Screen::overview)] = overview.create(content);
+    pages[index_of(Screen::spares)] = spares.create(content);
 
     header.create(screen);
     nav.create(screen);
@@ -198,6 +202,7 @@ void update(const core::SystemState& s) {
     diagnostics.update(s);
     bucket.update(s);
     overview.update(s);
+    spares.update(s);
     idle.update(s);
     alarm.update(s);
 

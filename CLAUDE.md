@@ -42,8 +42,9 @@ Mientras llega el hardware, se desarrolla en el simulador con SDL (Mac y Fedora)
     eventos, desde Historial), `diagnostics_screen` (Diagnóstico, desde
     Ajustes) y `bucket_screen` (Prueba de cubeta, desde Ajustes y DetalleF;
     `show()` le llama `enter()` para que cada vez cuente desde 0),
-    `legend_screen` (Símbolos del diagrama, el "?" del Tren) y
-    `overview_screen` (Panorama de la casa, Casa en el Tren).
+    `legend_screen` (Símbolos del diagrama, el "?" del Tren),
+    `overview_screen` (Panorama de la casa, Casa en el Tren) y
+    `spares_screen` (Repuestos en casa, Cambiar en Ajustes > Cartuchos).
     `alarm_screen` es la alarma a pantalla completa: va en `lv_layer_top()`
     encima de todo, Pasillo incluido.
   - Lo que la pantalla le pide a la app sale por `actions()`; un campo nuevo
@@ -254,3 +255,8 @@ Pendiente, en este orden:
   mide 992; Inyección no se abre (el enlace del encabezado se quita) y la B
   del Tren lleva a Dosis. En el Tren, sin P1 y P2, Hoy y Toca echar se
   reparten el renglón de abajo.
+- Repuestos en casa no está en el canvas: Ajustes > Cartuchos lleva
+  "Cambiar" junto a "Ver cartuchos" y abre un renglón por cartucho (del 20 µm
+  al sarro; el prefiltro no lleva) con − y + de 0 a 99. Cada toque se ve al
+  instante y avisa por `Actions::spares_set`; siguen bajando solos con "Lo
+  cambié".

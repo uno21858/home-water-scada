@@ -51,6 +51,9 @@ void on_idle_minutes(uint32_t minutes);
 // Cartuchos: purgó el prefiltro o cambió (o puso) un cartucho
 void on_filter_serviced(core::Filter filter);
 
+// Repuestos en casa: lo que se puso con − y +
+void on_spares_set(core::Filter filter, uint32_t count);
+
 // Alarma: tocó Entendido
 void on_alarm_acknowledged(core::AlarmKind kind);
 

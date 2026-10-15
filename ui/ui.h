@@ -25,9 +25,10 @@ enum class Screen : uint8_t {
     bucket_test,    // Prueba de cubeta, desde Ajustes y Sensor F
     legend,         // Símbolos del diagrama, desde el "?" del Tren
     overview,       // Panorama de la casa, desde Casa en el Tren
+    spares,         // Repuestos en casa, desde Ajustes > Cartuchos
 };
 inline constexpr int kTabCount = 7;
-inline constexpr int kScreenCount = 18;
+inline constexpr int kScreenCount = 19;
 
 // Lo que la interfaz le pide a la app. Cualquiera puede quedar en nullptr.
 struct Actions {
@@ -44,6 +45,7 @@ struct Actions {
     void (*night_off_set)(bool on) = nullptr;                 // Apagar la luz de noche: Sí o No
     void (*idle_minutes_set)(uint32_t minutes) = nullptr;     // modo pasillo: 1, 2 o 5
     void (*filter_serviced)(core::Filter filter) = nullptr;   // purgó el prefiltro o cambió un cartucho
+    void (*spares_set)(core::Filter filter, uint32_t count) = nullptr;  // repuestos en casa, con − y +
     void (*alarm_acknowledged)(core::AlarmKind kind) = nullptr;  // tocó Entendido en la alarma
     void (*alarm_test)() = nullptr;            // Diagnóstico: Probar alarma
     void (*restart_requested)() = nullptr;     // Diagnóstico: Reiniciar, ya confirmado

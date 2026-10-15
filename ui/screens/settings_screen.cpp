@@ -224,7 +224,10 @@ lv_obj_t* SettingsScreen::create_cartridges(lv_obj_t* page) {
     lv_obj_set_pos(spares_pp_, 20, 54);
     spares_rest_ = label(s, &font_body_32, colors::text, "");
     lv_obj_set_pos(spares_rest_, 20, 92);
-    link_to(small_button(s, 20, 136, 300, "Ver cartuchos", nullptr, true, nullptr, nullptr), Screen::filters,
+    // Cambiar abre los − y + de cada uno (no está en el canvas)
+    link_to(small_button(s, 20, 136, 240, "Cambiar", &icon_editar_32, false, nullptr, nullptr), Screen::spares,
+            &styles::button_secondary_pressed);
+    link_to(small_button(s, 272, 136, 300, "Ver cartuchos", nullptr, true, nullptr, nullptr), Screen::filters,
             &styles::button_secondary_pressed);
     return group;
 }
