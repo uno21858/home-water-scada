@@ -74,10 +74,6 @@ lv_obj_t* pending(lv_obj_t* button) {
     return button;
 }
 
-void on_night(int index, void*) {
-    if (actions().night_off_set != nullptr) actions().night_off_set(index == 0);
-}
-
 void on_idle(int index, void*) {
     const uint32_t minutes[3] = {1, 2, 5};
     if (actions().idle_minutes_set != nullptr) actions().idle_minutes_set(minutes[index % 3]);
@@ -112,7 +108,7 @@ void SettingsScreen::create_categories(lv_obj_t* page) {
         {"Dosis", &icon_gota_32, ""},
         {"Conexión", &icon_wifi_32, ""},
         {"Cartuchos", &icon_cartucho_32, ""},
-        {"Pantalla", &icon_sol_32, "Noche y modo pasillo"},
+        {"Pantalla", &icon_sol_32, "Modo pasillo"},
     };
     for (size_t i = 0; i < tabs_.size(); ++i) {
         Tab& t = tabs_[i];
@@ -235,15 +231,9 @@ lv_obj_t* SettingsScreen::create_cartridges(lv_obj_t* page) {
 lv_obj_t* SettingsScreen::create_display(lv_obj_t* page) {
     lv_obj_t* group = box(page, 0, 0, 1024, 456);
 
-    lv_obj_t* n = settings_card(group, kTopY, "Apagar la luz de noche");
-    night_hours_ = label(n, &font_title_36, colors::text, "");
-    lv_obj_set_pos(night_hours_, 20, 58);
-    static const char* const kYesNo[2] = {"Sí", "No"};
-    night_.create(n, 412, 52, 188, 56, kYesNo, 2, on_night);
-    pending(small_button(n, 20, 130, 300, "Cambiar horario", nullptr, false, nullptr, nullptr));
-    note(n, 336, 134, 264, "Un toque la vuelve a prender.");
-
-    lv_obj_t* p = settings_card(group, kBottomY, "Modo pasillo");
+    // Sin la tarjeta "Apagar la luz de noche" del canvas: el brillo lo lleva
+    // el LDR y el Pasillo ya se traga el primer toque
+    lv_obj_t* p = settings_card(group, kTopY, "Modo pasillo");
     lv_obj_set_pos(label(p, &font_body_32, colors::text, "Cifras grandes si nadie toca en"), 20, 52);
     static const char* const kMinutes[3] = {"1 min", "2 min", "5 min"};
     idle_.create(p, 20, 130, 360, 64, kMinutes, 3, on_idle);
@@ -338,11 +328,6 @@ void SettingsScreen::update(const core::SystemState& s) {
     }
 
     // Pantalla
-    fmt::clock(a, sizeof a, s.night_from);
-    fmt::clock(b, sizeof b, s.night_to);
-    snprintf(buf, sizeof buf, "%s a %s", a, b);
-    set_text(night_hours_, buf);
-    night_.set_selected(s.night_off ? 0 : 1);
     idle_.set_selected(s.idle_minutes <= 1 ? 0 : s.idle_minutes <= 2 ? 1 : 2);
 }
 

@@ -69,8 +69,6 @@ private:
     lv_obj_t* spares_rest_ = nullptr;
 
     // Pantalla
-    lv_obj_t* night_hours_ = nullptr;
-    Segmented night_;
     Segmented idle_;
 
     // Lo de ahorita, para la pista del teclado

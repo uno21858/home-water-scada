@@ -19,7 +19,6 @@ class AlarmScreen {
 public:
     void create(lv_obj_t* layer);
     void update(const core::SystemState& s);
-    bool is_open() const { return shown_ >= 0; }  // hay una alarma sin reconocer en pantalla
 
 private:
     static void handle_ok(lv_event_t* e);

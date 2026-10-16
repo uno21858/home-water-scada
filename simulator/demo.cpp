@@ -361,9 +361,6 @@ bool set_scenario(const char* name) {
     } else if (std::strcmp(name, "fase15") == 0) {
         s.has_orp = s.has_mixer = false;
         s.devices.ezo_orp = false;
-    } else if (std::strcmp(name, "noche") == 0) {
-        s.hour = 23;
-        s.minute = 30;
     } else if (std::strcmp(name, "ro-cocina") == 0) {
         s.ro_kitchen_planned = true;
     } else if (std::strcmp(name, "revisar") == 0) {
@@ -479,9 +476,7 @@ void on_dose_ratio(uint32_t thousandths) { s.ml_per_liter = static_cast<float>(t
 
 void on_daily_cap(uint32_t ml) { s.daily_cap_ml = static_cast<uint16_t>(ml); }
 
-void on_night_off(bool on) { s.night_off = on; }
 
-void on_backlight(bool on) { std::fprintf(stderr, "luz de la pantalla: %s\n", on ? "prendida" : "apagada"); }
 
 void on_idle_minutes(uint32_t minutes) { s.idle_minutes = static_cast<uint8_t>(minutes); }
 

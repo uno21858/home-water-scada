@@ -45,9 +45,8 @@ Mientras llega el hardware, se desarrolla en el simulador con SDL (Mac y Fedora)
     `legend_screen` (Símbolos del diagrama, el "?" del Tren),
     `overview_screen` (Panorama de la casa, Casa en el Tren) y
     `spares_screen` (Repuestos en casa, Cambiar en Ajustes > Cartuchos).
-    `night_screen` es la pantalla apagada de noche: capa negra en
-    `lv_layer_top()` encima del Pasillo; `alarm_screen` es la alarma a
-    pantalla completa, encima de todo.
+    `alarm_screen` es la alarma a pantalla completa: va en `lv_layer_top()`
+    encima de todo, Pasillo incluido.
   - Lo que la pantalla le pide a la app sale por `actions()`; un campo nuevo
     se captura con `open_keypad(KeypadSpec, callback)`.
 - `simulator/`: ventana SDL. `demo.cpp` llena el estado con los datos de ejemplo
@@ -71,7 +70,7 @@ cmake --build build -j
 
 Para ver un estado del canvas sin tocar código: `HMI_DEMO=alarma ./build/simulator`.
 Escenarios: `sin-flujo`, `sin-red`, `alarma`, `sensor`, `tope`, `fase1`, `fase15`,
-`revisar`, `tapados`, `ro-cocina`, `noche` y `completo` (`demo::set_scenario` en
+`revisar`, `tapados`, `ro-cocina` y `completo` (`demo::set_scenario` en
 `simulator/demo.h`).
 El demo arranca como la casa de Erick: todo menos la sonda ORP y las bombas A
 y B. `HMI_DEMO=completo` prende la sonda para comparar con el canvas.
@@ -205,8 +204,10 @@ Pendiente, en este orden:
 - En Pasillo, con 100 mL o más la cifra de Toca echar baja a 72 px (a 136 no
   cabe antes de la orilla). Al entrar se cierran el diálogo y el teclado: el
   toque para salir regresa al Tren.
-- En Ajustes, "Cambiar red" y "Cambiar horario" salen deshabilitados: el
-  canvas no tiene la vista que abren. "Hacer cero"
+- En Ajustes, "Cambiar red" sale deshabilitado: el canvas no tiene la vista
+  que abre. Pantalla no lleva la tarjeta "Apagar la luz de noche" del canvas:
+  el brillo lo lleva el LDR del firmware (de noche baja solo) y el Pasillo ya
+  se traga el primer toque, así que no hace falta apagarla. "Hacer cero"
   pide confirmación (el DS lo pide para lo que reinicia algo) y el envío de
   datos dice "Por enviar" en ámbar si hay pendientes.
 - En Mezcla, los renglones del programa Auto abren el teclado en minutos (de 1
@@ -262,9 +263,3 @@ Pendiente, en este orden:
   al sarro; el prefiltro no lleva) con − y + de 0 a 99. Cada toque se ve al
   instante y avisa por `Actions::spares_set`; siguen bajando solos con "Lo
   cambié".
-- Pantalla apagada de noche (no está en el canvas): en el horario de Ajustes >
-  Pantalla, a los minutos del Pasillo se apaga la luz (`Actions::
-  backlight_set(false)`) y una capa negra tapa todo. El primer toque solo
-  prende y regresa al Tren: a oscuras no se puede tocar "Ya le puse" sin
-  querer. Una alarma la prende, y al salir del horario prende sola en
-  Pasillo. `core::is_night()` dice si es de noche (cruza la medianoche).

@@ -220,9 +220,6 @@ struct SystemState {
     uint32_t bucket_pulses = 0;   // pulsos de F desde que empezó la prueba de cubeta
 
     // Pantalla
-    bool night_off = true;                 // apagar la luz de noche
-    uint16_t night_from = 23 * 60;         // minuto del día
-    uint16_t night_to = 6 * 60 + 30;
     uint8_t idle_minutes = 2;              // modo pasillo si nadie toca en 1, 2 o 5 min
 
     // ORP de la cisterna
@@ -294,14 +291,6 @@ inline uint32_t filter_wear_pct(const SystemState& s, Filter filter) {
     if (!f.installed) return 0;
     const uint32_t days = s.today >= f.since_day ? s.today - f.since_day : 0;
     return (days * 100 + kFilterLifeDays[i] / 2) / kFilterLifeDays[i];
-}
-
-// Horario de apagar la luz (Ajustes > Pantalla), que puede cruzar la medianoche
-inline bool is_night(const SystemState& s) {
-    if (!s.night_off) return false;
-    const uint16_t now = static_cast<uint16_t>(s.hour * 60 + s.minute);
-    if (s.night_from <= s.night_to) return now >= s.night_from && now < s.night_to;
-    return now >= s.night_from || now < s.night_to;
 }
 
 inline uint16_t minute_of_day(const SystemState& s) {

@@ -42,9 +42,7 @@ int main()
     actions.pressure_zeroed = demo::on_pressure_zeroed;
     actions.dose_ratio_set = demo::on_dose_ratio;
     actions.daily_cap_set = demo::on_daily_cap;
-    actions.night_off_set = demo::on_night_off;
     actions.idle_minutes_set = demo::on_idle_minutes;
-    actions.backlight_set = demo::on_backlight;
     actions.filter_serviced = demo::on_filter_serviced;
     actions.spares_set = demo::on_spares_set;
     actions.alarm_acknowledged = demo::on_alarm_acknowledged;
