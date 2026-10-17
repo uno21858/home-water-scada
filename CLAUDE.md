@@ -256,7 +256,13 @@ de la fase 3 y el cambio de día.
   sigue en Alarma hasta que la alarma deje de estar activa.
 - En Pasillo, con 100 mL o más la cifra de Toca echar baja a 72 px (a 136 no
   cabe antes de la orilla). Al entrar se cierran el diálogo y el teclado: el
-  toque para salir regresa al Tren.
+  toque para salir regresa al Tren. Con sensor de nivel el fondo es el agua
+  de la cisterna (agua-tubo al 20 %, de y 600 en 0 % a y 110 en 100 %) con
+  una olita en la superficie: el agua quieta solo se redibuja al cambiar el %
+  y la olita es una franja de 24 px que un `lv_timer` de 80 ms invalida
+  mientras el Pasillo está abierto (`kWave` en `idle_screen.cpp` la apaga si
+  en la 7B pesa). "Cisterna 73 %" va abajo a la derecha, junto a la pista:
+  en el renglón de Hoy, Caída y ORP no caben los cuatro. No está en el canvas.
 - En Ajustes, "Cambiar red" sale deshabilitado: el canvas no tiene la vista
   que abre. Pantalla no lleva la tarjeta "Apagar la luz de noche" del canvas:
   el brillo lo lleva el LDR del firmware (de noche baja solo) y el Pasillo ya

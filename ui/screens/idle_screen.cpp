@@ -1,5 +1,6 @@
 #include "screens/idle_screen.h"
 
+#include <cmath>
 #include <cstdio>
 
 #include "components/primitives.h"
@@ -8,6 +9,7 @@
 #include "theme/fonts.h"
 #include "theme/format.h"
 #include "theme/icons.h"
+#include "level.h"
 
 // Medidas tomadas del artboard Pasillo del canvas. Aquí no se resta 64:
 // la pantalla es completa, de 1024 x 600.
@@ -21,6 +23,22 @@ constexpr int32_t kDoseY = 222 + 10;
 // Con 3 cifras los mL no caben a 136 px antes de la orilla: van a 72 px con
 // la misma línea base (98 px abajo del top a 136 y 52 a 72)
 constexpr int32_t kDoseY72 = kDoseY + 98 - 52;
+
+// Agua de fondo: 100 % llega a y 110, abajo del reloj y la pastilla; 0 % es
+// el borde de abajo. Oscura y casi transparente para que el caudal (en azul
+// agua) se siga leyendo de lejos.
+constexpr int32_t kWaterTopY = 110;
+constexpr lv_opa_t kWaterOpa = LV_OPA_20;
+// Olita: franja de 24 px, 5 px de alto de ola, una ola cada 256 px y una
+// vuelta cada ~3 s a 12.5 cuadros por segundo. Si en la 7B se ve pesada,
+// kWave = false y queda el agua quieta.
+constexpr bool kWave = true;
+constexpr int32_t kWaveH = 24;
+constexpr float kWaveAmp = 5.0f;
+constexpr float kWaveLength = 256.0f;
+constexpr uint32_t kWavePeriodMs = 80;
+constexpr float kWaveStep = 6.2832f / 40.0f;
+constexpr int32_t kWaveColumn = 8;  // la ola se rellena en columnas de 8 px
 
 // "Hoy 1,860 L": nombre, cifra de 44 y unidad en la misma línea base
 lv_obj_t* reading(lv_obj_t* parent, const char* name, const char* unit, lv_obj_t** value) {
@@ -40,6 +58,17 @@ void IdleScreen::create(lv_obj_t* layer, Callback on_wake) {
     fill(root_, colors::background);
     lv_obj_set_clickable(root_, true);  // un toque en cualquier lado lo cierra
     lv_obj_add_event_cb(root_, handle_touch, LV_EVENT_CLICKED, this);
+
+    // El agua va primero para quedar atrás de todo
+    water_ = box(root_, 0, 600, 1024, 0);
+    fill(water_, colors::water_pipe);
+    lv_obj_set_style_bg_opa(water_, kWaterOpa, 0);
+    wave_ = box(root_, 0, 600, 1024, kWaveH);
+    lv_obj_add_event_cb(wave_, draw_wave, LV_EVENT_DRAW_MAIN_END, this);
+    if (kWave) {
+        wave_timer_ = lv_timer_create(tick_wave, kWavePeriodMs, this);
+        lv_timer_pause(wave_timer_);  // corre solo con el Pasillo abierto
+    }
 
     clock_ = label(root_, &font_title_xl_48, colors::text, "");
     lv_obj_set_pos(clock_, 32, 28);
@@ -82,6 +111,11 @@ void IdleScreen::create(lv_obj_t* layer, Callback on_wake) {
 
     lv_obj_t* hint = label(root_, &font_label_26, colors::text_disabled, "Toca la pantalla para volver al tren");
     lv_obj_set_pos(hint, 32, 540);
+
+    // Cisterna abajo a la derecha, junto a la pista: en el renglón de Hoy,
+    // Caída y ORP ya no cabe cuando están los cuatro
+    cistern_ = reading(root_, "Cisterna", "%", &cistern_value_);
+    lv_obj_align(cistern_, LV_ALIGN_BOTTOM_RIGHT, -32, -24);
 
     lv_obj_set_hidden(root_, true);
 }
@@ -147,6 +181,72 @@ void IdleScreen::update(const core::SystemState& s) {
         fmt::signed_int(buf, sizeof buf, s.orp_mv);
         set_text(orp_value_, buf);
     }
+
+    // Cisterna: el número abajo y el agua de fondo. Sin marcar llena no hay %.
+    const int pct = s.has_level ? core::level_pct(s) : -1;
+    lv_obj_set_hidden(cistern_, pct < 0);
+    if (pct >= 0) {
+        snprintf(buf, sizeof buf, "%d", pct);
+        set_text(cistern_value_, buf);
+    }
+    place_water(pct);
+}
+
+void IdleScreen::place_water(int pct) {
+    if (pct == water_pct_) return;  // solo se redibuja cuando cambia
+    water_pct_ = pct;
+    const bool shown = pct > 0;
+    lv_obj_set_hidden(water_, !shown);
+    lv_obj_set_hidden(wave_, !shown);
+    if (!shown) return;
+    const int32_t surface = 600 - (600 - kWaterTopY) * pct / 100;
+    lv_obj_set_y(wave_, surface - kWaveH / 2);
+    lv_obj_set_pos(water_, 0, surface + kWaveH / 2);
+    lv_obj_set_height(water_, 600 - (surface + kWaveH / 2));
+}
+
+void IdleScreen::tick_wave(lv_timer_t* timer) {
+    auto* self = static_cast<IdleScreen*>(lv_timer_get_user_data(timer));
+    if (lv_obj_is_hidden(self->wave_)) return;
+    self->wave_phase_ = std::fmod(self->wave_phase_ + kWaveStep, 6.2832f);
+    lv_obj_invalidate(self->wave_);  // solo la franja
+}
+
+void IdleScreen::draw_wave(lv_event_t* e) {
+    auto* self = static_cast<IdleScreen*>(lv_event_get_user_data(e));
+    lv_layer_t* layer = lv_event_get_layer(e);
+    lv_area_t area;
+    lv_obj_get_coords(self->wave_, &area);
+    const float mid = static_cast<float>(area.y1 + kWaveH / 2);
+    auto crest_y = [self, mid](int32_t x) {
+        return mid + kWaveAmp * std::sin(static_cast<float>(x) / kWaveLength * 6.2832f + self->wave_phase_);
+    };
+
+    // Relleno: una columna de 8 px de la ola hasta abajo de la franja, del
+    // mismo color que el agua quieta para que no se vea la unión
+    lv_draw_rect_dsc_t rect;
+    lv_draw_rect_dsc_init(&rect);
+    rect.bg_color = color(colors::water_pipe);
+    rect.bg_opa = kWaterOpa;
+    for (int32_t x = 0; x < 1024; x += kWaveColumn) {
+        const auto top = static_cast<int32_t>(std::lround(crest_y(x + kWaveColumn / 2)));
+        const lv_area_t column = {area.x1 + x, top, area.x1 + x + kWaveColumn - 1, area.y2};
+        lv_draw_rect(layer, &rect, &column);
+    }
+
+    // La raya de la superficie, un poco más clara
+    for (size_t i = 0; i < self->crest_.size(); ++i) {
+        const auto x = static_cast<int32_t>(i) * kWaveColumn;
+        self->crest_[i] = {static_cast<lv_value_precise_t>(area.x1 + x), static_cast<lv_value_precise_t>(crest_y(x))};
+    }
+    lv_draw_line_dsc_t line;
+    lv_draw_line_dsc_init(&line);
+    line.color = color(colors::water);
+    line.opa = LV_OPA_40;
+    line.width = 2;
+    line.points = self->crest_.data();
+    line.point_cnt = static_cast<uint32_t>(self->crest_.size());
+    lv_draw_line(layer, &line);
 }
 
 void IdleScreen::layout_dose(bool three_digits) {
@@ -158,9 +258,15 @@ void IdleScreen::layout_dose(bool three_digits) {
     lv_obj_set_pos(dose_unit_, three_digits ? 900 : 940, three_digits ? kDoseY72 + 16 : 228);
 }
 
-void IdleScreen::open() { lv_obj_set_hidden(root_, false); }
+void IdleScreen::open() {
+    lv_obj_set_hidden(root_, false);
+    if (wave_timer_ != nullptr) lv_timer_resume(wave_timer_);
+}
 
-void IdleScreen::close() { lv_obj_set_hidden(root_, true); }
+void IdleScreen::close() {
+    lv_obj_set_hidden(root_, true);
+    if (wave_timer_ != nullptr) lv_timer_pause(wave_timer_);
+}
 
 bool IdleScreen::is_open() const { return !lv_obj_is_hidden(root_); }
 
