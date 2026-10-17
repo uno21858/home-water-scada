@@ -46,6 +46,11 @@ int main()
     actions.filter_serviced = demo::on_filter_serviced;
     actions.spares_set = demo::on_spares_set;
     actions.service_set = demo::on_service;
+    actions.level_range_set = demo::on_level_range;
+    actions.level_zeroed = demo::on_level_zeroed;
+    actions.level_sensor_set = demo::on_level_sensor;
+    actions.level_intake_set = demo::on_level_intake;
+    actions.level_full_marked = demo::on_level_full;
     actions.alarm_acknowledged = demo::on_alarm_acknowledged;
     actions.alarm_test = demo::on_alarm_test;
     actions.restart_requested = demo::on_restart;

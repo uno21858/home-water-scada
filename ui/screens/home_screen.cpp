@@ -1,9 +1,11 @@
 #include "screens/home_screen.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdio>
 
 #include "components/mixer.h"
+#include "level.h"
 #include "components/primitives.h"
 #include "theme/colors.h"
 #include "theme/fonts.h"
@@ -19,6 +21,11 @@
 
 namespace ui {
 namespace {
+
+// Agua de la cisterna en el diagrama: llena en la raya de siempre y vacía
+// en el borde de abajo de la tarjeta
+constexpr int32_t kWaterTop = 294;
+constexpr int32_t kWaterBottom = 374;
 
 using Dir = FlowPipes::Dir;
 
@@ -179,12 +186,18 @@ void HomeScreen::create_return(lv_obj_t* page) {
 }
 
 void HomeScreen::create_cistern(lv_obj_t* page) {
-    // Abre Cisterna solo si hay qué ver ahí (la sonda ORP): update() lo prende
+    // Abre Cisterna solo si hay qué ver ahí (sonda ORP o nivel): update() lo prende
     cistern_ = frame(page, 384, 284, 624, 92, colors::panel, colors::border_control, 10);
     link_to(cistern_, Screen::cistern);
-    fill(box(page, 386, 294, 620, 2), colors::water);  // nivel del agua
+    // El agua: con sensor de nivel sube y baja; sin él, la raya de siempre
+    water_ = box(page, 386, kWaterTop, 620, kWaterBottom - kWaterTop);
+    fill(water_, colors::water);
+    lv_obj_set_style_bg_opa(water_, LV_OPA_20, 0);
+    lv_obj_set_hidden(water_, true);
+    water_line_ = box(page, 386, kWaterTop, 620, 2);
+    fill(water_line_, colors::water);
 
-    tag_text(page, "Cisterna", 396, 304);
+    cistern_name_ = tag_text(page, "Cisterna", 396, 304);
     cistern_word_ = tag_text(page, "", 396, 332);
 
     // Mástil con la sonda ORP (fase 2) y la bomba R abajo (fase 1)
@@ -323,6 +336,7 @@ void HomeScreen::update(const core::SystemState& s) {
     has_pumps_ = s.has_pumps;
     update_pressure(s);
     update_orp(s);
+    update_level(s);
     update_mixer(s);
 
     // Vasos: cartucho relleno o solo el contorno si está vacío. Los vasos
@@ -385,14 +399,45 @@ void HomeScreen::update_pressure(const core::SystemState& s) {
     lv_obj_set_style_text_color(drop_word_, color(fg), 0);
 }
 
+void HomeScreen::update_level(const core::SystemState& s) {
+    // Llena queda en la raya de siempre (y 294) y el fondo abajo de la tarjeta
+    const int pct = s.has_level ? core::level_pct(s) : -1;
+    const bool shown = pct >= 0;
+    int32_t y = kWaterTop;
+    if (shown) {
+        const float ratio = std::clamp(core::level_cm(s) / static_cast<float>(s.level_full_cm), 0.0f, 1.0f);
+        y = kWaterBottom - static_cast<int32_t>(std::lround(ratio * static_cast<float>(kWaterBottom - kWaterTop)));
+    }
+    lv_obj_set_hidden(water_, !shown);
+    lv_obj_set_y(water_line_, y);
+    lv_obj_set_y(water_, y);
+    lv_obj_set_height(water_, kWaterBottom - y);
+
+    char buf[24];
+    if (shown) {
+        snprintf(buf, sizeof buf, s.has_orp ? "Cisterna · %d %%" : "Cisterna", pct);
+    } else {
+        snprintf(buf, sizeof buf, "Cisterna");
+    }
+    set_text(cistern_name_, buf);
+}
+
 void HomeScreen::update_orp(const core::SystemState& s) {
     orp_.set_installed(s.has_orp);
     lv_obj_set_hidden(probe_, !s.has_orp);
     lv_obj_set_hidden(mast_, !s.has_orp && !s.has_mixer);
-    lv_obj_set_clickable(cistern_, s.has_orp);  // sin sonda no hay pestaña Cisterna
+    lv_obj_set_clickable(cistern_, s.has_orp || s.has_level);  // sin ninguno no hay pestaña Cisterna
     if (!s.has_orp) {
-        set_text(cistern_word_, "10 m³");
-        lv_obj_set_style_text_color(cistern_word_, color(colors::text_disabled), 0);
+        // Sin sonda la palabra es el nivel; sin nada, el tamaño
+        char buf[24];
+        const int pct = s.has_level ? core::level_pct(s) : -1;
+        if (pct >= 0) {
+            snprintf(buf, sizeof buf, "%d %% útil", pct);
+        } else {
+            snprintf(buf, sizeof buf, s.has_level ? "Sin calibrar" : "10 m³");
+        }
+        set_text(cistern_word_, buf);
+        set_text_color(cistern_word_, s.has_level ? colors::text : colors::text_disabled);
         orp_level_ = -1;
         return;
     }

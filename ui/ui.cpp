@@ -27,6 +27,8 @@
 #include "screens/overview_screen.h"
 #include "screens/pressure_screen.h"
 #include "screens/settings_screen.h"
+#include "screens/level_calibration_screen.h"
+#include "screens/level_screen.h"
 #include "screens/service_screen.h"
 #include "screens/spares_screen.h"
 #include "screens/summary_screen.h"
@@ -72,6 +74,8 @@ const std::array<Page, kScreenCount> kPages = {{
     {{"Panorama de la casa", Screen::home, nullptr, {}, {}}, Screen::home},
     {{"Repuestos en casa", Screen::settings, nullptr, {}, {}}, Screen::settings},
     {{"Cambio de cartuchos", Screen::filters, nullptr, {}, {}}, Screen::home},
+    {{"Nivel de la cisterna", Screen::cistern, "Bomba R", Screen::mixer, {}}, Screen::cistern},
+    {{"Calibrar nivel", Screen::level, nullptr, {}, {}}, Screen::cistern},
 }};
 
 Actions app_actions;
@@ -102,6 +106,8 @@ LegendScreen legend;
 OverviewScreen overview;
 SparesScreen spares;
 ServiceScreen service;
+LevelScreen level;
+LevelCalibrationScreen level_calibration;
 std::array<lv_obj_t*, kScreenCount> pages{};
 
 size_t index_of(Screen screen) { return static_cast<size_t>(screen); }
@@ -110,8 +116,11 @@ size_t index_of(Screen screen) { return static_cast<size_t>(screen); }
 // enlaces del encabezado que llevan a ello
 bool available(Screen screen) {
     switch (screen) {
-        case Screen::cistern:  // sin la sonda solo quedaría el candado del ORP
-            return state.has_orp;
+        case Screen::cistern:  // con la sonda ORP o con el sensor de nivel
+            return state.has_orp || state.has_level;
+        case Screen::level:
+        case Screen::level_calibration:
+            return state.has_level;
         case Screen::mixer:
             return state.has_mixer;
         case Screen::pressure:
@@ -171,6 +180,8 @@ void init(const core::SystemState& s, const Actions& a) {
     pages[index_of(Screen::overview)] = overview.create(content);
     pages[index_of(Screen::spares)] = spares.create(content);
     pages[index_of(Screen::service)] = service.create(content);
+    pages[index_of(Screen::level)] = level.create(content);
+    pages[index_of(Screen::level_calibration)] = level_calibration.create(content);
 
     header.create(screen);
     nav.create(screen);
@@ -208,6 +219,8 @@ void update(const core::SystemState& s) {
     overview.update(s);
     spares.update(s);
     service.update(s);
+    level.update(s);
+    level_calibration.update(s);
     idle.update(s);
     alarm.update(s);
 
@@ -218,6 +231,8 @@ void update(const core::SystemState& s) {
 
 void show(Screen screen) {
     if (screen == Screen::bucket_test) bucket.enter();  // cada vez empieza a contar desde 0
+    // Sin sonda ORP la pestaña Cisterna es el Nivel
+    if (screen == Screen::cistern && !state.has_orp && state.has_level) screen = Screen::level;
     for (size_t i = 0; i < pages.size(); ++i) lv_obj_set_hidden(pages[i], i != index_of(screen));
     const Page& page = kPages[index_of(screen)];
     HeaderSpec spec = page.header;
@@ -228,6 +243,15 @@ void show(Screen screen) {
     // Mezcla sin Cisterna (bomba R sin sonda): atrás y la pestaña van al Tren,
     // que es de donde se llega (la R)
     if (spec.back && !available(*spec.back)) spec.back = Screen::home;
+    if (screen == Screen::level && !state.has_orp) {
+        // Es la pestaña: "Cisterna", sin atrás
+        spec.title = "Cisterna";
+        spec.back = {};
+    } else if (screen == Screen::cistern && state.has_level) {
+        // Con sonda y nivel, Cisterna lleva al Nivel; la bomba R sigue ahí
+        spec.link_text = "Nivel";
+        spec.link = Screen::level;
+    }
     header.set_page(spec);
     nav.set_active(available(page.tab) ? page.tab : Screen::home);
 }

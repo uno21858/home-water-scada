@@ -180,6 +180,7 @@ struct SystemState {
     bool has_orp = false;       // fase 2: sonda ORP en la cisterna
     bool has_mixer = false;     // fase 1: bomba R de mezcla (MOSFET en GPIO44)
     bool has_ldr = false;       // LDR en A3 para el brillo de la pantalla
+    bool has_level = false;     // sensor de nivel 4-20 mA en A2 (core/level.h)
     bool has_pumps = false;     // fase 3: bombas A y B de cloro
     bool ro_kitchen_planned = false;  // Panorama: el RO de la cocina, por instalar
 
@@ -221,6 +222,7 @@ struct SystemState {
     float p1_volts = 0.0f;     // salida de P1 y P2: el ADS1115 lee la mitad por el divisor 10k/10k
     float p2_volts = 0.0f;
     float ldr_volts = 0.0f;    // A3: la luz que le llega a la pantalla
+    float level_volts = 0.0f;  // A2: el lazo 4-20 mA del nivel sobre la de 33 Ω
     float mixer_volts = 0.0f;  // INA219 en la rama de la bomba R: 0 V es apagón o fusible
     float mixer_amps = 0.0f;   // ~1.6 A sumergida; menos es en seco, más es atorada
     MixerFault mixer_fault = MixerFault::none;
@@ -279,6 +281,13 @@ struct SystemState {
     uint8_t mixer_after_dose_min = 45;    // corre después de cada dosis (el documento: ~45)
     uint8_t mixer_every_liters_min = 15;  // corre cada kMixEveryLiters de agua nueva
     uint8_t mixer_manual_max_min = 60;    // a mano se apaga sola
+
+    // Calibración del sensor de nivel (Cisterna > Calibrar nivel), en cm
+    float level_zero_volts = 0.132f;  // lo que marca en el aire; de fábrica 4 mA x 33 Ω
+    uint16_t level_range_cm = 200;    // rango de la etiqueta: 0 a 2 m es 200
+    uint8_t level_sensor_cm = 3;      // a cuánto del fondo quedó el sensor
+    uint8_t level_intake_cm = 45;     // la rejilla de la bomba de pozo (documento: ~45)
+    uint16_t level_full_cm = 0;       // nivel con la cisterna llena; 0 = sin marcar
 
     // Cambio de cartuchos: con V1 cerrada P1 baja a 0 igual que si se fuera el
     // SIAPA, así que mientras dura no se avisa ni la caída ni el sin agua.

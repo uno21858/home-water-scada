@@ -27,6 +27,9 @@ Mientras llega el hardware, se desarrolla en el simulador con SDL (Mac y Fedora)
   - `monitor`: `tick_minute` (cada minuto) y el modo de cambio de cartuchos
     (`service_start`, `service_end`).
   - `events`: el registro que leen Alarmas e Historial.
+  - `level`: el sensor de nivel 4-20 mA del A2 (`level_cm` desde el fondo y
+    `level_pct`, lo útil de la rejilla de la bomba de pozo a llena) y su
+    calibración (`level_zero` en el aire, `level_mark_full`).
   - `test/core_test.cpp`: pruebas en la compu (`ctest --test-dir build`).
 - `ui/`: la interfaz. No sabe nada de SDL ni del ESP32.
   - `ui.h/.cpp`: `init()`, `update()`, `show()` y las `Actions` que regresan a la
@@ -57,8 +60,10 @@ Mientras llega el hardware, se desarrolla en el simulador con SDL (Mac y Fedora)
     `show()` le llama `enter()` para que cada vez cuente desde 0),
     `legend_screen` (Símbolos del diagrama, el "?" del Tren),
     `overview_screen` (Panorama de la casa, Casa en el Tren),
-    `spares_screen` (Repuestos en casa, Cambiar en Ajustes > Cartuchos) y
-    `service_screen` (Cambio de cartuchos, el enlace Cambio de Cartuchos).
+    `spares_screen` (Repuestos en casa, Cambiar en Ajustes > Cartuchos),
+    `service_screen` (Cambio de cartuchos, el enlace Cambio de Cartuchos),
+    `level_screen` (Nivel: la pestaña Cisterna sin sonda ORP, o el enlace
+    Nivel de Cisterna con ella) y `level_calibration_screen` (Calibrar nivel).
     `alarm_screen` es la alarma a pantalla completa: va en `lv_layer_top()`
     encima de todo, Pasillo incluido.
   - Lo que la pantalla le pide a la app sale por `actions()`; un campo nuevo
@@ -72,6 +77,8 @@ Mientras llega el hardware, se desarrolla en el simulador con SDL (Mac y Fedora)
   A2 libre para un sensor de nivel, A3 el LDR). P1 y P2 entran por un divisor
   10k/10k (Erick lo dejó así, octubre 2026; el documento lo trae como opción):
   el firmware multiplica por 2 y `p1_volts` es la salida del sensor. El
+  nivel es un transmisor hidrostático 4-20 mA en A2 por una de 33 Ω
+  (0.132 a 0.660 V; documento pág. 30): `level_volts` es lo que lee el A2. El
   INA219 apaga la bomba R y deja `mixer_fault` (sin 12 V, nivel bajo,
   atorada); el firmware lo quita cuando se arregla. El RS485 de la 7B es solo para
   el EZO-ORP de la fase 2, y las bombas A y B (fase 3) van por un PCF8574
@@ -127,10 +134,11 @@ En Mac, SDL2 viene de Homebrew (`brew install sdl2`). Si CMake no lo encuentra:
 - Lo de una fase que no está instalada no se muestra (el DS decía candado y
   "Próximamente"; Erick prefirió esconderlo, octubre 2026). Lo dicen
   `has_mixer` (fase 1), `has_pressure` (fase 1.5), `has_orp` (fase 2) y
-  `has_pumps` (fase 3). Sin la sonda ORP no hay pestaña Cisterna (`NavBar::
-  set_tab_visible`): todo lo de ahí sale del ORP. `available()` en `ui.cpp`
-  quita del encabezado los enlaces a lo que no está, y Mezcla sin Cisterna
-  regresa al Tren. Las pantallas que lo esconden dejan su lugar a lo
+  `has_pumps` (fase 3). La pestaña Cisterna sale con la sonda ORP o con el
+  sensor de nivel (`has_level`, `NavBar::set_tab_visible`); sin sonda,
+  `show()` manda la pestaña a Nivel y con las dos Cisterna lleva el enlace
+  "Nivel". `available()` en `ui.cpp` quita del encabezado los enlaces a lo
+  que no está, y Mezcla sin Cisterna regresa al Tren. Las pantallas que lo esconden dejan su lugar a lo
   demás: no quedan huecos. Diagnóstico sí lo lista, como mapa de pines.
 - Fuentes, íconos y símbolos se regeneran con el `generate.sh` de su carpeta; no
   se editan los `.c` a mano.
@@ -326,6 +334,17 @@ de la fase 3 y el cambio de día.
   del Tren lleva a Dosis. Ajustes no lleva "Tope diario" (es de cada bomba) y
   el resumen de Dosis dice "0.100 mL por litro". En el Tren, sin P1 y P2, Hoy y Toca echar se
   reparten el renglón de abajo.
+- Nivel y Calibrar nivel no están en el canvas. Nivel copia el acomodo de
+  Cisterna: a la izquierda el tanque (útil en azul arriba de la rejilla de la
+  bomba de pozo, gris abajo; Llena y Toma con sus cm), a la derecha el %
+  útil en la cifra de 136 y los cm. Sin marcar "Está llena" dice "Sin
+  calibrar". Calibrar nivel son 5 renglones como Cartuchos, en el orden en
+  que se instala: rango de la etiqueta, cero en el aire, altura del sensor
+  (2 o 3 cm del fondo para que no lo tape el lodo), la rejilla y Está llena.
+  En el Tren el agua de la cisterna sube y baja con el nivel y dice "76 %
+  útil" (con sonda ORP, "Cisterna · 76 %"). Diagnóstico muestra el A2 en V.
+  El demo trae un sensor de 0 a 2 m, lleno a 183 cm y con 150 cm (76 %);
+  `sin-agua` lo baja a 70 cm.
 - Repuestos en casa no está en el canvas: Ajustes > Cartuchos lleva
   "Cambiar" junto a "Ver cartuchos" y abre un renglón por cartucho (del 20 µm
   al sarro; el prefiltro no lleva) con − y + de 0 a 99. Cada toque se ve al

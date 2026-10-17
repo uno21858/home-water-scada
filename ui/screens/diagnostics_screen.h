@@ -20,6 +20,7 @@ private:
     lv_obj_t* a1_ = nullptr;
     lv_obj_t* a3_name_ = nullptr;  // "A3" o "A3 · luz (LDR)"
     lv_obj_t* a3_ = nullptr;
+    lv_obj_t* a2_ = nullptr;  // sensor de nivel, o libre
     lv_obj_t* ads_ = nullptr;
     lv_obj_t* gt911_ = nullptr;
     lv_obj_t* expander_ = nullptr;

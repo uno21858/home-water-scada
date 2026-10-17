@@ -63,7 +63,7 @@ lv_obj_t* DiagnosticsScreen::create(lv_obj_t* parent) {
     a1_ = entry(in, "A1 · presión P2", "");
     a3_ = entry(in, "", "");
     a3_name_ = lv_obj_get_child(lv_obj_get_parent(a3_), 0);
-    entry(in, "A2 · nivel", "libre", colors::text_disabled);  // reservado al sensor de nivel opcional
+    a2_ = entry(in, "A2 · nivel", "");  // el sensor de nivel 4-20 mA, o libre
 
     lv_obj_t* bus = table_card(page, 16, 240, 184, "Bus I2C");
     gt911_ = entry(bus, "0x5D · táctil GT911", "");
@@ -119,8 +119,8 @@ void DiagnosticsScreen::update(const core::SystemState& s) {
         future(a0_, "fase 1.5");
         future(a1_, "fase 1.5");
     }
-    // El ADS1115 llega con P1 y P2, o antes si ya está el LDR
-    if (s.has_pressure || s.has_ldr) {
+    // El ADS1115 llega con P1 y P2, o antes si ya está el LDR o el nivel
+    if (s.has_pressure || s.has_ldr || s.has_level) {
         device(ads_, s.devices.ads1115);
     } else {
         future(ads_, "fase 1.5");
@@ -132,6 +132,13 @@ void DiagnosticsScreen::update(const core::SystemState& s) {
         set_text_color(a3_, colors::text);
     } else {
         future(a3_, "libre");
+    }
+    if (s.has_level) {
+        snprintf(buf, sizeof buf, "%.3f V", static_cast<double>(s.level_volts));
+        set_text(a2_, buf);
+        set_text_color(a2_, colors::text);
+    } else {
+        future(a2_, "libre");
     }
     device(gt911_, s.devices.gt911);
     device(expander_, s.devices.expander);

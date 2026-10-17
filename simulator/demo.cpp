@@ -7,6 +7,7 @@
 #include <cstring>
 
 #include "events.h"
+#include "level.h"
 #include "mixer.h"
 #include "monitor.h"
 #include "water.h"
@@ -26,6 +27,11 @@ constexpr Block kBlocks[] = {
     {863, 893, 10.5f},   {1108, 1128, 11.0f},  {1348, 1373, 6.6f},  {1390, 1440, 12.2f},
 };
 
+// Lo que leería el A2 con el agua a esa altura del fondo
+float level_volts_at(float cm, const core::SystemState& s) {
+    return s.level_zero_volts + (cm - s.level_sensor_cm) / static_cast<float>(s.level_range_cm) * core::kLevelSpanVolts;
+}
+
 core::SystemState make() {
     core::SystemState s;
     // Lo que hay en la casa (octubre 2026): todo menos la sonda ORP y las
@@ -44,6 +50,16 @@ core::SystemState make() {
     s.devices.ezo_orp = false;
     s.has_ldr = true;
     s.ldr_volts = 0.88f;  // lo que dio el LDR con luz de cuarto en la prueba del 11 oct
+
+    // Sensor de nivel de 0 a 2 m, a 3 cm del fondo, con cero en el aire de
+    // 0.134 V y marcado lleno a 183 cm. Ahorita: 150 cm, 76 % útil.
+    s.has_level = true;
+    s.level_range_cm = 200;
+    s.level_sensor_cm = 3;
+    s.level_intake_cm = 45;
+    s.level_zero_volts = 0.134f;
+    s.level_full_cm = 183;
+    s.level_volts = level_volts_at(150.0f, s);
     s.mixer_volts = 12.1f;
     s.mixer_amps = 1.58f;  // arranca prendida
     s.wifi_bars = 3;
@@ -320,7 +336,7 @@ bool set_scenario(const char* name) {
         // Fase 1 del documento: F y la bomba R; sin ADS1115 no hay P1, P2 ni LDR
         s.has_pressure = s.has_orp = false;
         s.devices.ads1115 = s.devices.ezo_orp = false;
-        s.has_ldr = false;
+        s.has_ldr = s.has_level = false;
         // Sin P1 y P2 no hay avisos de caída en el registro
         const auto end = std::remove_if(s.recent_events.begin(), s.recent_events.begin() + s.recent_event_count,
                                    [](const core::Event& e) {
@@ -343,6 +359,7 @@ bool set_scenario(const char* name) {
         s.p1_psi = s.p2_psi = 0;
         s.p1_volts = s.p2_volts = 0.5f;
         s.p1_24h.back() = s.p2_24h.back() = 0;
+        s.level_volts = level_volts_at(70.0f, s);  // la casa se ha ido comiendo la cisterna
         core::check_supply(s);  // lo anota ya, sin esperar al siguiente minuto
     } else if (std::strcmp(name, "sin-12v") == 0) {
         mixer_fault(core::MixerFault::no_power);
@@ -435,6 +452,18 @@ void on_mixer_mode(core::MixerMode mode) { core::mixer_set_mode(s, mode); }
 void on_mixer_after_dose(uint32_t minutes) { s.mixer_after_dose_min = static_cast<uint8_t>(minutes); }
 
 void on_mixer_every_liters(uint32_t minutes) { s.mixer_every_liters_min = static_cast<uint8_t>(minutes); }
+
+void on_level_range(uint32_t cm) {
+    if (cm > 0) s.level_range_cm = static_cast<uint16_t>(cm);
+}
+
+void on_level_zeroed() { core::level_zero(s); }
+
+void on_level_sensor(uint32_t cm) { s.level_sensor_cm = static_cast<uint8_t>(cm); }
+
+void on_level_intake(uint32_t cm) { s.level_intake_cm = static_cast<uint8_t>(cm); }
+
+void on_level_full() { core::level_mark_full(s); }
 
 void on_service(bool on) {
     if (on) {

@@ -2,9 +2,11 @@
 //   ctest --test-dir build      (o ./build/core_test)
 // Cada CHECK que falle dice el renglón; al final, cuántas fallaron.
 
+#include <cmath>
 #include <cstdio>
 
 #include "events.h"
+#include "level.h"
 #include "mixer.h"
 #include "monitor.h"
 #include "system_state.h"
@@ -161,6 +163,27 @@ void drop_against_baseline() {
     CHECK(core::drop_level(s) == core::Level::alarm);  // subió 10
 }
 
+void level_from_the_bottom() {
+    core::SystemState s = house();
+    s.has_level = true;
+    s.level_range_cm = 200;
+    s.level_sensor_cm = 3;
+    s.level_intake_cm = 45;
+    s.level_volts = 0.140f;
+    core::level_zero(s);  // en el aire marca 0.140 V y no los 0.132 de fábrica
+    CHECK(std::fabs(core::level_cm(s) - 3.0f) < 0.01f);  // en el aire: solo la altura del sensor
+    CHECK(core::level_pct(s) == -1);                      // falta marcar llena
+    s.level_volts = 0.140f + core::kLevelSpanVolts * 0.9f;  // 180 cm encima
+    CHECK(std::fabs(core::level_cm(s) - 183.0f) < 0.01f);
+    core::level_mark_full(s);
+    CHECK(s.level_full_cm == 183);
+    CHECK(core::level_pct(s) == 100);
+    s.level_volts = 0.140f + core::kLevelSpanVolts * (114.0f - 3.0f) / 200.0f;  // a 114 cm: a la mitad útil
+    CHECK(core::level_pct(s) == 50);
+    s.level_volts = 0.140f;  // abajo de la rejilla: 0 %, no negativo
+    CHECK(core::level_pct(s) == 0);
+}
+
 }  // namespace
 
 int main() {
@@ -172,6 +195,7 @@ int main() {
     stuck_needs_a_person();
     supply_and_service();
     drop_against_baseline();
+    level_from_the_bottom();
     if (failures == 0) std::printf("core: todo bien\n");
     return failures == 0 ? 0 : 1;
 }

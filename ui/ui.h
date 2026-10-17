@@ -27,9 +27,11 @@ enum class Screen : uint8_t {
     overview,       // Panorama de la casa, desde Casa en el Tren
     spares,         // Repuestos en casa, desde Ajustes > Cartuchos
     service,        // Cambio de cartuchos, desde Cartuchos
+    level,          // Nivel de la cisterna: la pestaña Cisterna sin sonda ORP
+    level_calibration,  // Calibrar nivel, desde Nivel
 };
 inline constexpr int kTabCount = 7;
-inline constexpr int kScreenCount = 20;
+inline constexpr int kScreenCount = 22;
 
 // Lo que la interfaz le pide a la app. Cualquiera puede quedar en nullptr.
 struct Actions {
@@ -51,6 +53,12 @@ struct Actions {
     void (*restart_requested)() = nullptr;     // Diagnóstico: Reiniciar, ya confirmado
     void (*bucket_test_started)() = nullptr;   // entró a la prueba de cubeta: bucket_pulses a 0
     void (*service_set)(bool on) = nullptr;    // Empezar o Ya terminé el cambio de cartuchos
+    // Calibrar nivel
+    void (*level_range_set)(uint32_t cm) = nullptr;   // rango de la etiqueta del sensor
+    void (*level_zeroed)() = nullptr;                 // Hacer cero, con el sensor en el aire
+    void (*level_sensor_set)(uint32_t cm) = nullptr;  // a cuánto del fondo quedó
+    void (*level_intake_set)(uint32_t cm) = nullptr;  // la rejilla de la bomba de pozo
+    void (*level_full_marked)() = nullptr;            // Está llena
 };
 
 struct KeypadSpec;  // components/keypad_dialog.h

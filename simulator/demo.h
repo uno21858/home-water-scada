@@ -44,6 +44,13 @@ void on_mixer_after_dose(uint32_t minutes);
 void on_mixer_every_liters(uint32_t minutes);
 void on_service(bool on);  // empezó o terminó el cambio de cartuchos
 
+// Calibrar nivel
+void on_level_range(uint32_t cm);
+void on_level_zeroed();
+void on_level_sensor(uint32_t cm);
+void on_level_intake(uint32_t cm);
+void on_level_full();
+
 // Ajustes
 void on_flow_factor(uint32_t pulses_per_liter);
 void on_pressure_zeroed();

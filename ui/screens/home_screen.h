@@ -27,6 +27,7 @@ private:
 
     void update_pressure(const core::SystemState& s);
     void update_orp(const core::SystemState& s);
+    void update_level(const core::SystemState& s);  // el agua de la cisterna y su %
     void update_mixer(const core::SystemState& s);
     void layout_strip(bool with_drop);  // el renglón de abajo, con o sin caída
 
@@ -56,7 +57,10 @@ private:
     lv_obj_t* r_state_ = nullptr;
 
     // Cisterna
-    lv_obj_t* cistern_word_ = nullptr;
+    lv_obj_t* cistern_name_ = nullptr;  // "Cisterna", o "Cisterna · 78 %" con la sonda
+    lv_obj_t* cistern_word_ = nullptr;  // estado del ORP, o el nivel sin sonda
+    lv_obj_t* water_ = nullptr;         // agua de la cisterna, con sensor de nivel
+    lv_obj_t* water_line_ = nullptr;
     lv_obj_t* cistern_ = nullptr;
     lv_obj_t* mast_ = nullptr;
     lv_obj_t* probe_ = nullptr;
