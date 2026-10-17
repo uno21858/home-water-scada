@@ -52,26 +52,27 @@ void future(lv_obj_t* value, const char* text) {
 lv_obj_t* DiagnosticsScreen::create(lv_obj_t* parent) {
     lv_obj_t* page = box(parent, 0, 0, 1024, 456);
 
+    // El canvas es de la 5B (DI, DO y el EZO en el I2C); esto es la 7B del
+    // documento de proyecto: F en el GPIO6, la bomba R en el GPIO44 y la
+    // sonda ORP por RS485
     lv_obj_t* in = table_card(page, 16, 12, 216, "Entradas");
-    di0_ = entry(in, "DI0 · flujo F", "");
+    flow_ = entry(in, "GPIO6 · flujo F", "");
     a0_ = entry(in, "A0 · presión P1", "");
     a1_ = entry(in, "A1 · presión P2", "");
     a3_ = entry(in, "", "");
     a3_name_ = lv_obj_get_child(lv_obj_get_parent(a3_), 0);
-    // Los libres juntos al final, para que la tarjeta siga de 5 renglones
-    entry(in, "DI1 y A2", "libres", colors::text_disabled);
+    entry(in, "A2 · nivel", "libre", colors::text_disabled);  // reservado al sensor de nivel opcional
 
     lv_obj_t* bus = table_card(page, 16, 240, 184, "Bus I2C");
-    ads_ = entry(bus, "0x48 · ADS1115", "");
     gt911_ = entry(bus, "0x5D · táctil GT911", "");
-    // El canvas dice CH422G (el de la 5B); la 7B trae un CH32V003
-    expander_ = entry(bus, "CH32V003 · expansor", "");
-    ezo_ = entry(bus, "0x62 · EZO-ORP", "");
+    expander_ = entry(bus, "0x24 · CH32V003", "");
+    ads_ = entry(bus, "0x48 · ADS1115", "");
+    ina_ = entry(bus, "0x40 · INA219", "");
 
-    lv_obj_t* out = table_card(page, 518, 12, 152, "Salidas");
-    entry(out, "DO0 · bomba A", "apagada · fase 3", colors::text_disabled);
-    entry(out, "DO1 · bomba B", "apagada · fase 3", colors::text_disabled);
-    do2_ = entry(out, "DO2 · bomba R", "");
+    lv_obj_t* out = table_card(page, 518, 12, 152, "Salidas y RS485");
+    mixer_ = entry(out, "GPIO44 · bomba R", "");
+    pumps_ = entry(out, "0x20 · bombas A y B", "");
+    orp_ = entry(out, "RS485 · sonda ORP", "");
 
     lv_obj_t* net = table_card(page, 518, 176, 152, "Red y datos");
     wifi_ = entry(net, "", "");
@@ -103,7 +104,7 @@ void DiagnosticsScreen::update(const core::SystemState& s) {
     char buf[64];
     const float hz = (s.flow_lpm >= 0.05f ? s.flow_lpm : 0.0f) * static_cast<float>(s.flow_pulses_per_liter) / 60.0f;
     snprintf(buf, sizeof buf, "%.1f Hz", static_cast<double>(hz));
-    set_text(di0_, buf);
+    set_text(flow_, buf);
     // P1 y P2 entran por el ADS1115, que llega en la fase 1.5
     if (s.has_pressure) {
         snprintf(buf, sizeof buf, "%.3f V", static_cast<double>(s.p1_volts));
@@ -132,17 +133,34 @@ void DiagnosticsScreen::update(const core::SystemState& s) {
     }
     device(gt911_, s.devices.gt911);
     device(expander_, s.devices.expander);
-    if (s.has_orp) {
-        device(ezo_, s.devices.ezo_orp);
-    } else {
-        future(ezo_, "fase 2");
-    }
+    device(ina_, s.devices.ina219);
 
-    if (s.has_mixer) {
-        set_text(do2_, s.mixer_on ? "prendida" : "apagada");
-        lv_obj_set_style_text_color(do2_, color(colors::text), 0);
+    // Bomba R con lo que lee el INA219: la corriente si anda (que pase
+    // corriente es que está prendida) y 0 V es que no le llegan los 12 V:
+    // apagón o fusible. "prendida · 1.58 A" no cabe junto al nombre.
+    if (!s.has_mixer) {
+        future(mixer_, "sin bomba");
+    } else if (s.mixer_volts < 1.0f) {
+        set_text(mixer_, "sin 12 V");
+        lv_obj_set_style_text_color(mixer_, color(colors::warning), 0);
     } else {
-        future(do2_, "apagada · fase 2");
+        if (s.mixer_on) {
+            snprintf(buf, sizeof buf, "%.2f A", static_cast<double>(s.mixer_amps));
+        } else {
+            snprintf(buf, sizeof buf, "apagada");
+        }
+        set_text(mixer_, buf);
+        lv_obj_set_style_text_color(mixer_, color(colors::text), 0);
+    }
+    if (s.has_pumps) {
+        device(pumps_, s.devices.pcf8574);
+    } else {
+        future(pumps_, "fase 3");
+    }
+    if (s.has_orp) {
+        device(orp_, s.devices.ezo_orp);
+    } else {
+        future(orp_, "fase 2");
     }
 
     snprintf(buf, sizeof buf, "WiFi %s", s.wifi_ssid[0] != '\0' ? s.wifi_ssid : "sin configurar");

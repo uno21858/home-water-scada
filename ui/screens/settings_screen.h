@@ -55,7 +55,7 @@ private:
     lv_obj_t* ratio_ = nullptr;
     lv_obj_t* ratio_note_ = nullptr;
     lv_obj_t* cap_ = nullptr;
-    lv_obj_t* cap_note_ = nullptr;
+    lv_obj_t* cap_card_ = nullptr;
 
     // Conexión
     lv_obj_t* ssid_ = nullptr;

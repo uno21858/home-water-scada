@@ -15,7 +15,7 @@ public:
     void update(const core::SystemState& s);
 
 private:
-    lv_obj_t* di0_ = nullptr;
+    lv_obj_t* flow_ = nullptr;
     lv_obj_t* a0_ = nullptr;
     lv_obj_t* a1_ = nullptr;
     lv_obj_t* a3_name_ = nullptr;  // "A3" o "A3 · luz (LDR)"
@@ -23,8 +23,10 @@ private:
     lv_obj_t* ads_ = nullptr;
     lv_obj_t* gt911_ = nullptr;
     lv_obj_t* expander_ = nullptr;
-    lv_obj_t* ezo_ = nullptr;
-    lv_obj_t* do2_ = nullptr;
+    lv_obj_t* ina_ = nullptr;
+    lv_obj_t* mixer_ = nullptr;
+    lv_obj_t* pumps_ = nullptr;
+    lv_obj_t* orp_ = nullptr;
     lv_obj_t* wifi_name_ = nullptr;
     lv_obj_t* wifi_ = nullptr;
     lv_obj_t* server_ = nullptr;

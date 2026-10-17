@@ -63,7 +63,7 @@ lv_obj_t* MixerScreen::create(lv_obj_t* parent) {
     create_program(live_);
     create_today(live_);
     create_runs(live_);
-    locked_ = locked_card(page, 16, 12, 992, 432, "Bomba R · mezcla", "Próximamente · fase 2",
+    locked_ = locked_card(page, 16, 12, 992, 432, "Bomba R · mezcla", "Sin instalar",
                           "Revuelve el agua de la cisterna");
     return page;
 }

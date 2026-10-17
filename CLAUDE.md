@@ -24,7 +24,7 @@ Mientras llega el hardware, se desarrolla en el simulador con SDL (Mac y Fedora)
     generados), `pid/` (símbolos del P&ID en ARGB8888, generados), `styles`,
     `format` (números al formato de México).
   - `components/`: `primitives` (box, label, icon, card, link_to, botones),
-    `header` (atrás, título, chip, enlace y "?" según la pantalla), `nav_bar`,
+    `header` (atrás, título, enlace y "?" según la pantalla), `nav_bar`,
     `confirm_dialog`, `keypad_dialog` (unidad y decimales con `KeypadSpec`),
     `segmented` (selector de 2 a 4 opciones), `mixer` (impulsor que gira y el
     renglón de estado de la bomba R), `pipe` (puntos de flujo), `sensor_tag`.
@@ -51,9 +51,15 @@ Mientras llega el hardware, se desarrolla en el simulador con SDL (Mac y Fedora)
     se captura con `open_keypad(KeypadSpec, callback)`.
 - `simulator/`: ventana SDL. `demo.cpp` llena el estado con los datos de ejemplo
   del DS y lo mueve cada segundo.
-- `firmware/hmi` (la 7B) y `firmware/nodo` (ESP32-S3 en la caja del pilar con el
-  YF-B6, ADS1115, EZO-ORP y bombas, enlazado por RS485): vacíos todavía.
-- `hardware/nodo`: proyecto de KiCad del nodo.
+- `firmware/hmi` (la 7B): vacío todavía. Según el documento de proyecto (15 oct
+  2026) hay un solo micro, la 7B. F entra al GPIO6 (PCNT) y la bomba R sale
+  por un MOSFET en el GPIO44, vigilada por un INA219 (0x40). En la caja
+  Hammond, junto a la pantalla y por I2C, va el ADS1115 (0x48: A0 P1, A1 P2,
+  A2 libre para un sensor de nivel, A3 el LDR). El RS485 de la 7B es solo para
+  el EZO-ORP de la fase 2, y las bombas A y B (fase 3) van por un PCF8574
+  (0x20).
+- `firmware/nodo` y `hardware/nodo`: del plan viejo con un segundo ESP32 por
+  RS485, que el documento ya no lleva. Vacíos.
 - `docs/diseno/`: la especificación de diseño. Leer `docs/diseno/LEEME.md`.
 
 El firmware hará lo mismo que `simulator/main.cpp`: llenar `core::SystemState`,
@@ -69,11 +75,14 @@ cmake --build build -j
 ```
 
 Para ver un estado del canvas sin tocar código: `HMI_DEMO=alarma ./build/simulator`.
-Escenarios: `sin-flujo`, `sin-red`, `alarma`, `sensor`, `tope`, `fase1`, `fase15`,
+Escenarios: `sin-flujo`, `sin-red`, `alarma`, `sensor`, `tope`, `fase1`,
 `revisar`, `tapados`, `ro-cocina` y `completo` (`demo::set_scenario` en
 `simulator/demo.h`).
-El demo arranca como la casa de Erick: todo menos la sonda ORP y las bombas A
-y B. `HMI_DEMO=completo` prende la sonda para comparar con el canvas.
+El demo arranca como la casa de Erick, en la fase 1.5: todo menos la sonda ORP
+y las bombas A y B. `HMI_DEMO=completo` prende la sonda para comparar con el
+canvas. Dosis con 0.1 mL por litro (la prueba de jarras del documento: el
+canvas usa 0.02, así que sus mL salen 5 veces más chicos) y 45 min de mezcla
+después de cada dosis; registrar una dosis prende la bomba R.
 
 En Mac, SDL2 viene de Homebrew (`brew install sdl2`). Si CMake no lo encuentra:
 `-DCMAKE_PREFIX_PATH=/opt/homebrew`.
@@ -92,8 +101,8 @@ En Mac, SDL2 viene de Homebrew (`brew install sdl2`). Si CMake no lo encuentra:
   vista. Detalle en `docs/diseno/ds/README.md`.
 - Lo de una fase que no está instalada no se muestra (el DS decía candado y
   "Próximamente"; Erick prefirió esconderlo, octubre 2026). Lo dicen
-  `has_pressure` (fase 1.5), `has_orp` y `has_mixer` (fase 2) y `has_pumps`
-  (fase 3). Sin la sonda ORP no hay pestaña Cisterna (`NavBar::
+  `has_mixer` (fase 1), `has_pressure` (fase 1.5), `has_orp` (fase 2) y
+  `has_pumps` (fase 3). Sin la sonda ORP no hay pestaña Cisterna (`NavBar::
   set_tab_visible`): todo lo de ahí sale del ORP. `available()` en `ui.cpp`
   quita del encabezado los enlaces a lo que no está, y Mezcla sin Cisterna
   regresa al Tren. Las pantallas que lo esconden dejan su lugar a lo
@@ -150,7 +159,7 @@ minutos de la bomba R).
 
 Pendiente, en este orden:
 
-1. Firmware de la 7B y del nodo.
+1. Firmware de la 7B.
 
 ## Diferencias a propósito con el canvas
 
@@ -219,15 +228,18 @@ Pendiente, en este orden:
   las alarmas activas (reconocidas o no) con "Desde 18:42"; el canvas solo
   dibuja el caso sin ninguna. Historial no muestra los "Sin red".
 - En Diagnóstico, "Probar alarma" va sin ícono: con él no cabe en 239 px (en el
-  canvas se sale del botón). Lo que es de una fase que no está instalada dice
-  "fase 1.5" o "fase 2" en texto-3 según `has_pressure`, `has_orp` y
-  `has_mixer`; el canvas dibuja la fase 1.5 (`HMI_DEMO=fase15`). En el demo,
-  Probar alarma prende la de sin flujo y se quita al tocar Entendido. El
-  expansor dice CH32V003 y no CH422G: el canvas es de la 5B y la 7B trae un
-  CH32V003, que también lleva el PWM del backlight
+  canvas se sale del botón). El canvas es de la 5B con un nodo; aquí es el
+  mapa de pines de la 7B del documento: Entradas (GPIO6, A0, A1, A3 y A2
+  libre), Bus I2C (GT911, CH32V003, ADS1115, INA219) y "Salidas y RS485"
+  (GPIO44 bomba R, 0x20 bombas A y B, RS485 sonda ORP). Lo de una fase que no
+  está instalada dice "fase 1.5", "fase 2" o "fase 3" en texto-3. La bomba R
+  dice su corriente del INA219 si anda ("1.58 A": "prendida · 1.58 A" no
+  cabe), "apagada" si no y "sin 12 V" en ámbar si no le llega voltaje. En el
+  demo, Probar alarma prende la de sin flujo y se quita al tocar Entendido. El
+  expansor dice CH32V003 y no CH422G: la 7B trae un CH32V003, que también
+  lleva el PWM del backlight
   (https://github.com/esphome/feature-requests/issues/3202). A3 es el LDR del
-  brillo (`has_ldr`, `ldr_volts`); DI1 y A2 van juntos como libres para que la
-  tarjeta siga de 5 renglones.
+  brillo (`has_ldr`, `ldr_volts`).
 - En Prueba de cubeta el demo cuenta como si F diera 387.2 pulsos por litro y
   se para en 3,872 (la marca), para que proponga 387 como el canvas.
 - Prueba de cubeta: el canvas da los pasos 1 y 2 por hechos y cuenta desde
@@ -250,13 +262,14 @@ Pendiente, en este orden:
   no sale la R. El RO de la cocina sale con `ro_kitchen_planned`
   (`HMI_DEMO=ro-cocina`); su borde punteado se dibuja a mano.
 - Leyenda no lleva la tarjeta "Fase futura": ya no hay candados que explicar.
-- Resumen: donde no van Filtros (fase 1.5) o Bomba R (fase 2) sale "Cartuchos
+- Resumen: donde no van Filtros (fase 1.5) o Bomba R (fase 1) sale "Cartuchos
   · el que sigue" (el de más vida gastada, `core::filter_wear_pct`), a lo
   ancho si faltan los dos. No está en el canvas; copia el acomodo de la de la
   bomba R. "Ya toca" va en ámbar con la palabra.
 - Sin bombas A y B (`has_pumps`, fase 3) Dosis no lleva su tarjeta y lo demás
   mide 992; Inyección no se abre (el enlace del encabezado se quita) y la B
-  del Tren lleva a Dosis. En el Tren, sin P1 y P2, Hoy y Toca echar se
+  del Tren lleva a Dosis. Ajustes no lleva "Tope diario" (es de cada bomba) y
+  el resumen de Dosis dice "0.100 mL por litro". En el Tren, sin P1 y P2, Hoy y Toca echar se
   reparten el renglón de abajo.
 - Repuestos en casa no está en el canvas: Ajustes > Cartuchos lleva
   "Cambiar" junto a "Ver cartuchos" y abre un renglón por cartucho (del 20 µm

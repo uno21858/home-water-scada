@@ -116,11 +116,15 @@ struct Event {
 };
 
 // Lo que hay en el bus I2C de la 7B y del nodo
+// Lo que responde. En el I2C de la 7B (GPIO8/9): táctil, expansor, ADS1115,
+// INA219 y, en fase 3, el PCF8574. La sonda ORP va aparte, por RS485.
 struct Devices {
-    bool ads1115 = true;   // 0x48, presiones
-    bool gt911 = true;     // 0x5D, táctil
-    bool expander = true;  // CH32V003 de la 7B: backlight y salidas
-    bool ezo_orp = false;  // 0x62, fase 2
+    bool ads1115 = true;   // 0x48: P1, P2 y el LDR
+    bool gt911 = true;     // 0x5D: táctil
+    bool expander = true;  // 0x24: CH32V003 de la 7B, PWM del backlight
+    bool ina219 = true;    // 0x40: voltaje y corriente de la bomba R
+    bool pcf8574 = false;  // 0x20: pulsos a las bombas A y B (fase 3)
+    bool ezo_orp = false;  // EZO-ORP por RS485 (fase 2)
 };
 
 enum class MixerMode : uint8_t { off, on, automatic };
@@ -155,7 +159,7 @@ struct SystemState {
     // Qué está instalado
     bool has_pressure = false;  // fase 1.5: sensores P1 y P2
     bool has_orp = false;       // fase 2: sonda ORP en la cisterna
-    bool has_mixer = false;     // fase 2: bomba R
+    bool has_mixer = false;     // fase 1: bomba R de mezcla (MOSFET en GPIO44)
     bool has_ldr = false;       // LDR en A3 para el brillo de la pantalla
     bool has_pumps = false;     // fase 3: bombas A y B de cloro
     bool ro_kitchen_planned = false;  // Panorama: el RO de la cocina, por instalar
@@ -185,8 +189,8 @@ struct SystemState {
     std::array<float, kFlowSamples2h> flow_2h{};
 
     // Dosis a mano
-    float ml_per_liter = 0.020f;               // mL de Cloralex por litro
-    uint16_t daily_cap_ml = 120;               // tope al día (lo usa la fase 3)
+    float ml_per_liter = 0.100f;               // mL de Cloralex por litro (prueba de jarras: 100 por 1,000 L)
+    uint16_t daily_cap_ml = 120;               // tope al día de cada bomba (fase 3)
     std::array<DoseRecord, 5> recent_doses{};  // la más nueva primero
     uint8_t recent_dose_count = 0;
 
@@ -198,6 +202,8 @@ struct SystemState {
     float p1_volts = 0.0f;     // lo que lee el ADS1115 en A0 y A1
     float p2_volts = 0.0f;
     float ldr_volts = 0.0f;    // A3: la luz que le llega a la pantalla
+    float mixer_volts = 0.0f;  // INA219 en la rama de la bomba R: 0 V es apagón o fusible
+    float mixer_amps = 0.0f;   // ~1.6 A sumergida; menos es en seco, más es atorada
     std::array<uint8_t, 24> p1_24h{};  // una por hora, la última es la de ahorita
     std::array<uint8_t, 24> p2_24h{};
 
@@ -247,7 +253,7 @@ struct SystemState {
     uint8_t mixer_run_count = 0;           // si está prendida, la primera es la de ahorita
 
     // Programa del modo Auto y el tope a mano, en minutos
-    uint8_t mixer_after_dose_min = 30;  // corre después de cada dosis
+    uint8_t mixer_after_dose_min = 45;  // corre después de cada dosis (el documento: ~45)
     uint8_t mixer_every_4h_min = 15;    // corre cada 4 horas
     uint8_t mixer_manual_max_min = 60;  // a mano se apaga sola
 };

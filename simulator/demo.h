@@ -15,9 +15,10 @@ const core::SystemState& state();
 //   sin-flujo  el caudal en 0 (Flujo, Resumen, Pasillo)
 //   sin-red    WiFi caído con 24 lecturas por enviar (encabezado)
 //   alarma     sin flujo mientras dosifica; sensor y tope, las otras dos
-// Sin escenario arranca como la casa: todo menos la sonda ORP y las bombas A y B.
+// Sin escenario arranca como la casa, en la fase 1.5: todo menos la sonda ORP
+// y las bombas A y B.
 //   completo   con la sonda ORP, como el canvas (Cisterna, ORP en Tren y Resumen)
-//   fase1      sin P1 y P2, sin ORP ni bomba R; fase15, sin ORP ni bomba R
+//   fase1      solo F y la bomba R: sin P1, P2 ni LDR
 //   revisar    caída de 7 psi; tapados, de 12 psi
 //   ro-cocina  el RO de la cocina por instalar (Panorama)
 // Regresa false si el nombre no existe.
@@ -27,7 +28,8 @@ bool set_scenario(const char* name);
 // y cada minuto avanzan la hora y la cuenta de la bomba R.
 void tick_1s();
 
-// Lo que haría el firmware al registrar una dosis: la guarda y el conteo
+// Lo que haría el firmware al registrar una dosis: la guarda, prende la
+// mezcla (si la bomba R no está Apagada) y el conteo
 // de litros desde la última dosis vuelve a 0
 void on_dose_confirmed(uint32_t ml);  // "Sí, ya le puse"
 void on_dose_typed(uint32_t ml);      // "Registrar otra cantidad"

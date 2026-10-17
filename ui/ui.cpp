@@ -44,32 +44,32 @@ constexpr int32_t kHeaderHeight = 64;
 constexpr int32_t kContentHeight = 456;  // de y 64 a y 520
 
 // Cada pantalla: su encabezado y la pestaña que marca la barra.
-// Mismo orden que el enum Screen. En el encabezado van título, atrás, chip,
+// Mismo orden que el enum Screen. En el encabezado van título, atrás,
 // texto del enlace, a dónde lleva y el "?"; {} es "no tiene".
 struct Page {
     HeaderSpec header;
     Screen tab;
 };
 const std::array<Page, kScreenCount> kPages = {{
-    {{"Tren de filtros", {}, nullptr, "Casa", Screen::overview, Screen::legend}, Screen::home},
-    {{"Resumen", {}, nullptr, nullptr, {}, {}}, Screen::summary},
-    {{"Flujo", {}, nullptr, "Sensor F", Screen::flow_sensor, {}}, Screen::flow},
-    {{"Cisterna", {}, "Fase 2", "Bomba R", Screen::mixer, {}}, Screen::cistern},
-    {{"Dosis de cloro", {}, nullptr, "Inyección", Screen::injection, {}}, Screen::dose},
-    {{"Historial", {}, nullptr, "Alarmas", Screen::events, {}}, Screen::history},
-    {{"Ajustes", {}, nullptr, "Diagnóstico", Screen::diagnostics, {}}, Screen::settings},
-    {{"Mezcla de la cisterna", Screen::cistern, "Fase 2", nullptr, {}, {}}, Screen::cistern},
-    {{"Sensor de flujo F", Screen::flow, nullptr, nullptr, {}, {}}, Screen::flow},
-    {{"Presión P1 y P2", Screen::home, nullptr, nullptr, {}, {}}, Screen::home},
-    {{"Caída del tren", Screen::home, nullptr, nullptr, {}, {}}, Screen::home},
-    {{"Cartuchos", Screen::home, nullptr, nullptr, {}, {}}, Screen::home},
-    {{"Inyección A y B", Screen::dose, nullptr, nullptr, {}, {}}, Screen::dose},
-    {{"Alarmas y eventos", Screen::history, nullptr, nullptr, {}, {}}, Screen::history},
-    {{"Diagnóstico", Screen::settings, nullptr, nullptr, {}, {}}, Screen::settings},
-    {{"Prueba de cubeta", Screen::settings, nullptr, nullptr, {}, {}}, Screen::settings},
-    {{"Símbolos del diagrama", Screen::home, nullptr, nullptr, {}, {}}, Screen::home},
-    {{"Panorama de la casa", Screen::home, nullptr, nullptr, {}, {}}, Screen::home},
-    {{"Repuestos en casa", Screen::settings, nullptr, nullptr, {}, {}}, Screen::settings},
+    {{"Tren de filtros", {}, "Casa", Screen::overview, Screen::legend}, Screen::home},
+    {{"Resumen", {}, nullptr, {}, {}}, Screen::summary},
+    {{"Flujo", {}, "Sensor F", Screen::flow_sensor, {}}, Screen::flow},
+    {{"Cisterna", {}, "Bomba R", Screen::mixer, {}}, Screen::cistern},
+    {{"Dosis de cloro", {}, "Inyección", Screen::injection, {}}, Screen::dose},
+    {{"Historial", {}, "Alarmas", Screen::events, {}}, Screen::history},
+    {{"Ajustes", {}, "Diagnóstico", Screen::diagnostics, {}}, Screen::settings},
+    {{"Mezcla de la cisterna", Screen::cistern, nullptr, {}, {}}, Screen::cistern},
+    {{"Sensor de flujo F", Screen::flow, nullptr, {}, {}}, Screen::flow},
+    {{"Presión P1 y P2", Screen::home, nullptr, {}, {}}, Screen::home},
+    {{"Caída del tren", Screen::home, nullptr, {}, {}}, Screen::home},
+    {{"Cartuchos", Screen::home, nullptr, {}, {}}, Screen::home},
+    {{"Inyección A y B", Screen::dose, nullptr, {}, {}}, Screen::dose},
+    {{"Alarmas y eventos", Screen::history, nullptr, {}, {}}, Screen::history},
+    {{"Diagnóstico", Screen::settings, nullptr, {}, {}}, Screen::settings},
+    {{"Prueba de cubeta", Screen::settings, nullptr, {}, {}}, Screen::settings},
+    {{"Símbolos del diagrama", Screen::home, nullptr, {}, {}}, Screen::home},
+    {{"Panorama de la casa", Screen::home, nullptr, {}, {}}, Screen::home},
+    {{"Repuestos en casa", Screen::settings, nullptr, {}, {}}, Screen::settings},
 }};
 
 Actions app_actions;

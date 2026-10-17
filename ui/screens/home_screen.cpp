@@ -179,7 +179,7 @@ void HomeScreen::create_cistern(lv_obj_t* page) {
     tag_text(page, "Cisterna", 396, 304);
     cistern_word_ = tag_text(page, "", 396, 332);
 
-    // Mástil con la sonda ORP (fase 2) y la bomba R abajo (fase 2)
+    // Mástil con la sonda ORP (fase 2) y la bomba R abajo (fase 1)
     mast_ = box(page, 539, 276, 3, 72);
     fill(mast_, colors::text_secondary);
     probe_ = box(page, 535, 308, 11, 20);

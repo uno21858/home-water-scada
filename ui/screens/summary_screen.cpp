@@ -217,7 +217,7 @@ void SummaryScreen::create_mixer_card(lv_obj_t* page) {
     lv_obj_set_pos(mixer_sub_, 16, 134);
 }
 
-// Cartuchos: ocupa el lugar que dejan Filtros (fase 1.5) y Bomba R (fase 2)
+// Cartuchos: ocupa el lugar que dejan Filtros (fase 1.5) y Bomba R (fase 1)
 // mientras no estén. Dice cuál es el que sigue: el que lleva más de su vida.
 // No está en el canvas; copia el acomodo de la tarjeta de la bomba R.
 void SummaryScreen::create_cartridges_card(lv_obj_t* page) {

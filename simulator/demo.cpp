@@ -38,13 +38,15 @@ core::SystemState make() {
     std::snprintf(s.wifi_ssid, sizeof s.wifi_ssid, "Casa-2.4G");
     s.devices.ezo_orp = false;
     s.has_ldr = true;
-    s.ldr_volts = 1.84f;  // de día en el pasillo
+    s.ldr_volts = 0.88f;  // lo que dio el LDR con luz de cuarto en la prueba del 11 oct
+    s.mixer_volts = 12.1f;
+    s.mixer_amps = 1.58f;  // arranca prendida
     s.wifi_bars = 3;
     s.last_upload_at = 18 * 60 + 42;
 
     s.flow_lpm = 12.4f;
     s.liters_today = 1860;
-    s.liters_since_dose = 1850;  // x 0.020 = 37 mL
+    s.liters_since_dose = 1850;  // x 0.100 = 185 mL
     for (int i = 0; i < core::kFlowSamples24h; ++i) {
         const int t = i * 5;
         float v = 0.0f;
@@ -72,13 +74,14 @@ core::SystemState make() {
     }
     s.flow_2h.back() = s.flow_lpm;
 
-    // Últimas dosis, la más nueva primero; la del jueves se capturó a mano
+    // Últimas dosis, la más nueva primero; la del jueves se capturó a mano.
+    // Con 0.1 mL por litro (prueba de jarras): cinco veces las del canvas.
     s.recent_doses = {{
-        {1000, 6 * 60 + 10, 40, false},
-        {999, 6 * 60 + 25, 36, false},
-        {998, 7 * 60 + 2, 45, true},
-        {997, 6 * 60 + 48, 36, false},
-        {996, 6 * 60 + 31, 43, false},
+        {1000, 6 * 60 + 10, 200, false},
+        {999, 6 * 60 + 25, 180, false},
+        {998, 7 * 60 + 2, 225, true},
+        {997, 6 * 60 + 48, 180, false},
+        {996, 6 * 60 + 31, 215, false},
     }};
     s.recent_dose_count = 5;
 
@@ -125,13 +128,13 @@ core::SystemState make() {
     // Historial: las cifras del canvas de Historial. 30 días con la última
     // semana fija y hoy hasta las 18:00, hora por hora (suman 1,860 L).
     const uint16_t week_liters[7] = {1920, 2140, 1780, 1900, 1800, 1990, 1860};
-    const uint16_t week_dose[7] = {41, 38, 43, 36, 45, 36, 40};
+    const uint16_t week_dose[7] = {205, 190, 215, 180, 225, 180, 200};
     const uint8_t week_p1[7] = {43, 42, 43, 41, 42, 42, 42};
     const uint8_t week_p2[7] = {39, 38, 38, 35, 38, 38, 38};
     for (int i = 0; i < core::kHistoryDays; ++i) {
         core::Totals& d = s.days[static_cast<size_t>(i)];
         d.liters = static_cast<uint16_t>(std::lround(1900 + 220 * std::sin(i * 0.9) + 90 * std::sin(i * 2.3)));
-        d.dose_ml = static_cast<uint16_t>(std::lround(40 + 4 * std::sin(i * 1.3)));
+        d.dose_ml = static_cast<uint16_t>(std::lround(200 + 20 * std::sin(i * 1.3)));
         d.p1_psi = static_cast<uint8_t>(std::lround(41 + 2 * std::sin(i * 0.7)));
         d.p2_psi = static_cast<uint8_t>(d.p1_psi - (i < 27 ? 3 + std::lround(i * 0.08) : 4));
         d.orp_mv = static_cast<int16_t>(std::lround(655 + 12 * std::sin(i * 0.8) - (i == 25 ? 45 : 0)));
@@ -147,7 +150,7 @@ core::SystemState make() {
     for (int h = 0; h < 19; ++h) {
         core::Totals& t = s.hours[static_cast<size_t>(h)];
         t.liters = hour_liters[h];
-        t.dose_ml = h == 6 ? 40 : 0;
+        t.dose_ml = h == 6 ? 200 : 0;
         t.p1_psi = hour_p1[h];
         // P2 baja con el caudal: 4 psi de caída a 12.4 L/min
         const float flow = static_cast<float>(hour_liters[h]) / (h == 18 ? 42.0f : 60.0f);
@@ -157,12 +160,12 @@ core::SystemState make() {
     // Eventos, el más nuevo primero
     // (los del canvas de Historial y los de Alarmas, juntos)
     s.recent_events = {{
-        {1000, 6 * 60 + 10, core::EventKind::dose, 40, core::kNoTime, core::kNoTime},
+        {1000, 6 * 60 + 10, core::EventKind::dose, 200, core::kNoTime, core::kNoTime},
         {1000, 3 * 60 + 20, core::EventKind::offline, 12, core::kNoTime, 3 * 60 + 32},
-        {999, 6 * 60 + 25, core::EventKind::dose, 36, core::kNoTime, core::kNoTime},
+        {999, 6 * 60 + 25, core::EventKind::dose, 180, core::kNoTime, core::kNoTime},
         {998, 16 * 60 + 40, core::EventKind::cartridge, static_cast<uint16_t>(core::Filter::pp5), core::kNoTime,
          core::kNoTime},
-        {998, 7 * 60 + 2, core::EventKind::dose_typed, 45, core::kNoTime, core::kNoTime},
+        {998, 7 * 60 + 2, core::EventKind::dose_typed, 225, core::kNoTime, core::kNoTime},
         {997, 22 * 60 + 14, core::EventKind::drop_warning, 6, core::kNoTime, 23 * 60 + 5},
         {996, 13 * 60 + 5, core::EventKind::alarm, static_cast<uint16_t>(core::AlarmKind::sensor), 13 * 60 + 7,
          13 * 60 + 40},
@@ -196,14 +199,14 @@ core::SystemState make() {
     s.mixer_next_at = 22 * 60 + 30;
 
     // Hoy: 02:30, 06:10 (después de la dosis), 10:30, 14:30 y la de ahorita.
-    // 15 + 30 + 15 + 15 + 12 que lleva = 87 min.
-    s.mixer_today_minutes = 87;
+    // 15 + 45 + 15 + 15 + 12 que lleva = 102 min.
+    s.mixer_today_minutes = 102;
     s.mixer_today_runs = 5;
     s.mixer_runs = {{
         {18 * 60 + 30, 12, core::MixerReason::schedule},
         {14 * 60 + 30, 15, core::MixerReason::schedule},
         {10 * 60 + 30, 15, core::MixerReason::schedule},
-        {6 * 60 + 10, 30, core::MixerReason::dose},
+        {6 * 60 + 10, 45, core::MixerReason::dose},
     }};
     s.mixer_run_count = 4;
     return s;
@@ -250,6 +253,8 @@ void add_dose(uint32_t ml, bool typed) {
     s.hours[s.hour].dose_ml = static_cast<uint16_t>(s.hours[s.hour].dose_ml + ml);
     s.days.back().dose_ml = static_cast<uint16_t>(s.days.back().dose_ml + ml);
     add_event(typed ? core::EventKind::dose_typed : core::EventKind::dose, static_cast<uint16_t>(ml));
+    // Registrar la dosis prende la mezcla (documento: unos 45 minutos)
+    if (s.has_mixer && s.mixer_mode != core::MixerMode::off) start_mixer(core::MixerReason::dose, s.mixer_after_dose_min);
 }
 
 void next_minute() {
@@ -345,7 +350,8 @@ bool set_scenario(const char* name) {
     } else if (std::strcmp(name, "tope") == 0) {
         alarm(core::AlarmKind::daily_cap);
     } else if (std::strcmp(name, "fase1") == 0) {
-        s.has_pressure = s.has_orp = s.has_mixer = false;
+        // Fase 1 del documento: F y la bomba R; sin ADS1115 no hay P1, P2 ni LDR
+        s.has_pressure = s.has_orp = false;
         s.devices.ads1115 = s.devices.ezo_orp = false;
         s.has_ldr = false;
         // Sin P1 y P2 no hay avisos de caída en el registro
@@ -358,9 +364,6 @@ bool set_scenario(const char* name) {
     } else if (std::strcmp(name, "completo") == 0) {
         s.has_orp = true;
         s.devices.ezo_orp = true;
-    } else if (std::strcmp(name, "fase15") == 0) {
-        s.has_orp = s.has_mixer = false;
-        s.devices.ezo_orp = false;
     } else if (std::strcmp(name, "ro-cocina") == 0) {
         s.ro_kitchen_planned = true;
     } else if (std::strcmp(name, "revisar") == 0) {
@@ -443,6 +446,9 @@ void tick_1s() {
         }
     }
 
+    // INA219: la bomba R jala ~1.6 A sumergida (documento de proyecto)
+    s.mixer_amps = s.mixer_on ? 1.58f + 0.02f * std::sin(seconds / 5.0f) : 0.0f;
+
     if (seconds % 60 == 0) next_minute();
 }
 
@@ -475,8 +481,6 @@ void on_pressure_zeroed() {
 void on_dose_ratio(uint32_t thousandths) { s.ml_per_liter = static_cast<float>(thousandths) / 1000.0f; }
 
 void on_daily_cap(uint32_t ml) { s.daily_cap_ml = static_cast<uint16_t>(ml); }
-
-
 
 void on_idle_minutes(uint32_t minutes) { s.idle_minutes = static_cast<uint8_t>(minutes); }
 

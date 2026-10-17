@@ -35,14 +35,6 @@ void Header::create(lv_obj_t* parent) {
 
     title_ = label(left_, &font_title_36, colors::text, "");
 
-    chip_ = row(left_, 8, LV_FLEX_ALIGN_CENTER);
-    lv_obj_set_height(chip_, 40);
-    lv_obj_set_style_radius(chip_, LV_RADIUS_CIRCLE, 0);
-    lv_obj_set_style_border_width(chip_, 2, 0);
-    lv_obj_set_style_border_color(chip_, color(colors::border_control), 0);
-    lv_obj_set_style_pad_hor(chip_, 14, 0);
-    chip_text_ = label(chip_, &font_label_26, colors::text_secondary, "");
-
     link_ = row(left_, 4, LV_FLEX_ALIGN_CENTER);
     lv_obj_set_height(link_, 56);
     lv_obj_set_clickable(link_, true);
@@ -98,9 +90,6 @@ void Header::set_page(const HeaderSpec& spec) {
     if (spec.back) back_target_ = *spec.back;
 
     set_text(title_, spec.title);
-
-    lv_obj_set_hidden(chip_, spec.chip == nullptr);
-    if (spec.chip != nullptr) set_text(chip_text_, spec.chip);
 
     const bool has_link = spec.link_text != nullptr && spec.link;
     has_link_ = has_link;

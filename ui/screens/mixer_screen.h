@@ -1,7 +1,7 @@
 #pragma once
-// Pantalla Mezcla (detalle de Cisterna, fase 2): la bomba R que revuelve la
-// cisterna. Estado con lo que falta, selector Apagada · Prendida · Auto, el
-// programa del modo Auto, cuánto lleva hoy y las últimas veces.
+// Pantalla Mezcla (detalle de Cisterna; sin sonda, del Tren): la bomba R que
+// revuelve la cisterna. Estado con lo que falta, selector Apagada · Prendida ·
+// Auto, el programa del modo Auto, cuánto lleva hoy y las últimas veces.
 
 #include <array>
 #include <cstdint>

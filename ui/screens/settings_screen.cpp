@@ -173,10 +173,12 @@ lv_obj_t* SettingsScreen::create_dose(lv_obj_t* page) {
     small_button(r, 20, 130, 240, "Cambiar", &icon_editar_32, false, handle_ratio, this);
     ratio_note_ = note(r, 276, 128, 324, "");
 
-    lv_obj_t* c = settings_card(group, kBottomY, "Tope diario");
+    // Tope diario: candado de las bombas dosificadoras, solo con ellas (fase 3)
+    cap_card_ = settings_card(group, kBottomY, "Tope diario");
+    lv_obj_t* c = cap_card_;
     cap_ = big_value(c, "mL al día");
     small_button(c, 20, 130, 240, "Cambiar", &icon_editar_32, false, handle_cap, this);
-    cap_note_ = note(c, 276, 128, 324, "La bomba B se para al llegar.");  // solo con bombas (fase 3)
+    note(c, 276, 128, 324, "La bomba B se para al llegar.");
     return group;
 }
 
@@ -266,7 +268,7 @@ void SettingsScreen::update(const core::SystemState& s) {
     set_text(factor_, buf);
     lv_obj_set_hidden(pressure_live_, !s.has_pressure);
     set_text(tabs_[0].summary, s.has_pressure ? "Flujo y presión" : "Flujo");
-    lv_obj_set_hidden(cap_note_, !s.has_pumps);
+    lv_obj_set_hidden(cap_card_, !s.has_pumps);
     snprintf(buf, sizeof buf, "%.1f", static_cast<double>(s.p1_zero_psi));
     set_text(p1_raw_, buf);
     snprintf(buf, sizeof buf, "%.1f", static_cast<double>(s.p2_zero_psi));
@@ -283,7 +285,11 @@ void SettingsScreen::update(const core::SystemState& s) {
     set_text(ratio_note_, buf);
     snprintf(buf, sizeof buf, "%u", static_cast<unsigned>(cap_value_));
     set_text(cap_, buf);
-    snprintf(buf, sizeof buf, "%s mL/L · %u mL", a, static_cast<unsigned>(cap_value_));
+    if (s.has_pumps) {
+        snprintf(buf, sizeof buf, "%s mL/L · %u mL", a, static_cast<unsigned>(cap_value_));
+    } else {
+        snprintf(buf, sizeof buf, "%s mL por litro", a);
+    }
     set_text(tabs_[1].summary, buf);
 
     // Conexión
