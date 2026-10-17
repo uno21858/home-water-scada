@@ -95,7 +95,11 @@ cmake --build build -j
 ctest --test-dir build                # pruebas de core
 ```
 
-Para ver un estado del canvas sin tocar código: `HMI_DEMO=alarma ./build/simulator`.
+Para ver un estado del canvas sin tocar código: `HMI_DEMO=alarma ./build/simulator`,
+o el target de ese escenario (`cmake --build build --target demo-alarma`; en
+CLion sale en la lista de configuraciones). La lista de targets está en
+`DEMO_SCENARIOS` de `simulator/CMakeLists.txt`: si se agrega un escenario al
+demo, va también ahí.
 Escenarios: `sin-flujo`, `sin-red`, `alarma`, `sensor`, `tope`, `fase1`,
 `revisar`, `tapados`, `sin-agua`, `sin-12v`, `nivel-bajo`, `atorada`,
 `ro-cocina` y `completo` (`demo::set_scenario` en `simulator/demo.h`).

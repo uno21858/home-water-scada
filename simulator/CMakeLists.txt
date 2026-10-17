@@ -29,3 +29,18 @@ target_link_libraries(core_test PRIVATE core)
 target_compile_options(core_test PRIVATE -Wall -Wextra)
 add_test(NAME core COMMAND core_test)
 add_subdirectory(${PROJECT_SOURCE_DIR}/../ui ${CMAKE_BINARY_DIR}/ui)
+
+# Un target por escenario del demo (los de demo::set_scenario en demo.h):
+# en CLion salen en la lista de configuraciones y en la terminal es
+#   cmake --build build --target demo-sin-agua
+# cmake -E env le pone HMI_DEMO solo a ese comando, igual en Mac y Fedora.
+set(DEMO_SCENARIOS
+    sin-flujo sin-red alarma sensor tope fase1 completo ro-cocina
+    revisar tapados sin-agua sin-12v nivel-bajo atorada)
+foreach(scenario IN LISTS DEMO_SCENARIOS)
+    add_custom_target(demo-${scenario}
+        COMMAND ${CMAKE_COMMAND} -E env HMI_DEMO=${scenario} $<TARGET_FILE:simulator>
+        USES_TERMINAL
+        COMMENT "Simulador con HMI_DEMO=${scenario}")
+    add_dependencies(demo-${scenario} simulator)  # primero compila lo que haga falta
+endforeach()
