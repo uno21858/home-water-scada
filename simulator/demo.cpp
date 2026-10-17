@@ -6,6 +6,11 @@
 #include <cstdlib>
 #include <cstring>
 
+#include "events.h"
+#include "mixer.h"
+#include "monitor.h"
+#include "water.h"
+
 namespace demo {
 namespace {
 
@@ -191,22 +196,25 @@ core::SystemState make() {
     s.chlorine_mgl = 0.5f;
     s.last_strip = {6, 26, 9, 5, 641};  // sábado 26 de septiembre: 0.5 mg/L con 641 mV
 
+    // La bomba R va en la vuelta por agua nueva de las 18:30: lleva 12 de 15
+    // min y desde que arrancó entraron unos 150 L
     s.mixer_mode = core::MixerMode::automatic;
     s.mixer_on = true;
     s.mixer_minutes_left = 3;
+    s.mixer_run_minutes = 15;
     s.mixer_progress_pct = 80;
     s.mixer_started_at = 18 * 60 + 30;
-    s.mixer_next_at = 22 * 60 + 30;
+    s.liters_since_mix = 150;
 
-    // Hoy: 02:30, 06:10 (después de la dosis), 10:30, 14:30 y la de ahorita.
-    // 15 + 45 + 15 + 15 + 12 que lleva = 102 min.
-    s.mixer_today_minutes = 102;
-    s.mixer_today_runs = 5;
+    // Hoy: 06:10 (la dosis), 12:40 (1,000 L después) y la de ahorita.
+    // 45 + 15 + 12 que lleva = 72 min. La de las 22:05 fue ayer.
+    s.mixer_today_minutes = 72;
+    s.mixer_today_runs = 3;
     s.mixer_runs = {{
-        {18 * 60 + 30, 12, core::MixerReason::schedule},
-        {14 * 60 + 30, 15, core::MixerReason::schedule},
-        {10 * 60 + 30, 15, core::MixerReason::schedule},
+        {18 * 60 + 30, 12, core::MixerReason::water},
+        {12 * 60 + 40, 15, core::MixerReason::water},
         {6 * 60 + 10, 45, core::MixerReason::dose},
+        {22 * 60 + 5, 15, core::MixerReason::water},
     }};
     s.mixer_run_count = 4;
     return s;
@@ -216,8 +224,6 @@ core::SystemState s = make();
 uint32_t seconds = 0;
 bool no_flow = false;  // escenario sin-flujo: el caudal se queda en 0
 float liters_fraction = 0.0f;
-uint8_t mixer_run_total = 15;  // minutos de la vuelta de ahorita: 15 en Auto, 60 a mano
-bool mixer_by_hand = false;    // la vuelta de ahorita se prendió a mano
 bool bucket_running = false;   // prueba de cubeta contando
 float bucket_fraction = 0.0f;
 bool test_alarm = false;  // la alarma de ahorita es la de Probar alarma
@@ -225,50 +231,6 @@ bool test_alarm = false;  // la alarma de ahorita es la de Probar alarma
 // la cubeta se llena en 3,872 pulsos y la prueba propone K 387, como el canvas
 constexpr float kBucketPulsesPerLiter = 387.2f;
 constexpr uint32_t kBucketFull = 3872;
-
-void start_mixer(core::MixerReason reason, uint8_t minutes) {
-    std::rotate(s.mixer_runs.rbegin(), s.mixer_runs.rbegin() + 1, s.mixer_runs.rend());
-    s.mixer_runs[0] = {core::minute_of_day(s), 0, reason};
-    s.mixer_run_count = static_cast<uint8_t>(std::min<int>(s.mixer_run_count + 1, 4));
-    ++s.mixer_today_runs;
-    s.mixer_on = true;
-    s.mixer_started_at = core::minute_of_day(s);
-    s.mixer_minutes_left = minutes;
-    s.mixer_progress_pct = 0;
-    mixer_run_total = minutes;
-    mixer_by_hand = reason == core::MixerReason::manual;
-}
-
-void add_event(core::EventKind kind, uint16_t value) {
-    std::rotate(s.recent_events.rbegin(), s.recent_events.rbegin() + 1, s.recent_events.rend());
-    s.recent_events[0] = {s.today, core::minute_of_day(s), kind, value, core::kNoTime, core::kNoTime};
-    s.recent_event_count = static_cast<uint8_t>(std::min<int>(s.recent_event_count + 1, core::kEventCount));
-}
-
-// El aviso más nuevo de ese tipo que sigue sin quitarse ya se quitó
-void resolve_event(core::EventKind kind) {
-    for (int i = 0; i < s.recent_event_count; ++i) {
-        core::Event& e = s.recent_events[static_cast<size_t>(i)];
-        if (e.kind == kind && e.resolved_at == core::kNoTime) {
-            e.resolved_at = core::minute_of_day(s);
-            return;
-        }
-    }
-}
-
-void add_dose(uint32_t ml, bool typed) {
-    std::rotate(s.recent_doses.rbegin(), s.recent_doses.rbegin() + 1, s.recent_doses.rend());
-    s.recent_doses[0] = {s.today, core::minute_of_day(s), static_cast<uint16_t>(ml), typed};
-    s.recent_dose_count = static_cast<uint8_t>(std::min<int>(s.recent_dose_count + 1, 5));
-    s.liters_since_dose = 0;
-    s.hours[s.hour].dose_ml = static_cast<uint16_t>(s.hours[s.hour].dose_ml + ml);
-    s.days.back().dose_ml = static_cast<uint16_t>(s.days.back().dose_ml + ml);
-    add_event(typed ? core::EventKind::dose_typed : core::EventKind::dose, static_cast<uint16_t>(ml));
-    // Registrar la dosis prende la mezcla (documento: unos 45 minutos)
-    if (s.has_mixer && s.mixer_mode != core::MixerMode::off && s.mixer_fault == core::MixerFault::none) {
-        start_mixer(core::MixerReason::dose, s.mixer_after_dose_min);
-    }
-}
 
 void next_minute() {
     s.minute = static_cast<uint8_t>((s.minute + 1) % 60);
@@ -287,23 +249,9 @@ void next_minute() {
         s.hours = {};
     }
 
-    // Bomba R: cuenta hacia atrás la vuelta de ahorita. A mano, al terminar
-    // queda Apagada; en Auto espera la siguiente del programa.
-    if (s.mixer_on && s.mixer_minutes_left > 0) {
-        --s.mixer_minutes_left;
-        ++s.mixer_today_minutes;
-        ++s.mixer_runs[0].minutes;
-        s.mixer_progress_pct = static_cast<uint8_t>((mixer_run_total - s.mixer_minutes_left) * 100 / mixer_run_total);
-        if (s.mixer_minutes_left == 0) {
-            s.mixer_on = false;
-            if (s.mixer_mode == core::MixerMode::on) s.mixer_mode = core::MixerMode::off;
-        }
-    }
-    if (s.mixer_mode == core::MixerMode::automatic && !s.mixer_on && s.mixer_fault == core::MixerFault::none &&
-        core::minute_of_day(s) == s.mixer_next_at) {
-        start_mixer(core::MixerReason::schedule, s.mixer_every_4h_min);
-        s.mixer_next_at = static_cast<uint16_t>((s.mixer_next_at + 4 * 60) % 1440);
-    }
+    // Lo mismo que hará el firmware cada minuto: bomba R, cambio de
+    // cartuchos y el aviso de sin agua
+    core::tick_minute(s);
 
     // Cada hora entra una muestra nueva a la gráfica de ORP de 7 días y la
     // hora nueva del historial arranca con las presiones y el ORP de ahorita
@@ -337,7 +285,7 @@ bool set_scenario(const char* name) {
     auto alarm = [](core::AlarmKind kind) {
         core::Alarm& a = s.alarms[static_cast<size_t>(kind)];
         a = {true, false, core::minute_of_day(s)};
-        add_event(core::EventKind::alarm, static_cast<uint16_t>(kind));
+        core::add_event(s, core::EventKind::alarm, static_cast<uint16_t>(kind));
     };
     auto drop = [](int psi) {
         s.p2_psi = s.p1_psi - psi;
@@ -345,12 +293,8 @@ bool set_scenario(const char* name) {
     };
     // La bomba R se apaga y deja su aviso, como lo haría el firmware con el INA219
     auto mixer_fault = [](core::MixerFault fault) {
-        s.mixer_on = false;
-        s.mixer_minutes_left = 0;
-        s.mixer_amps = 0.0f;
         if (fault == core::MixerFault::no_power) s.mixer_volts = 0.0f;
-        s.mixer_fault = fault;
-        add_event(core::EventKind::mixer_fault, static_cast<uint16_t>(fault));
+        core::mixer_report_fault(s, fault);
     };
     auto stop_flow = [] {
         no_flow = true;
@@ -399,7 +343,7 @@ bool set_scenario(const char* name) {
         s.p1_psi = s.p2_psi = 0;
         s.p1_volts = s.p2_volts = 0.5f;
         s.p1_24h.back() = s.p2_24h.back() = 0;
-        add_event(core::EventKind::no_supply, 0);
+        core::check_supply(s);  // lo anota ya, sin esperar al siguiente minuto
     } else if (std::strcmp(name, "sin-12v") == 0) {
         mixer_fault(core::MixerFault::no_power);
     } else if (std::strcmp(name, "nivel-bajo") == 0) {
@@ -427,7 +371,7 @@ void on_alarm_acknowledged(core::AlarmKind kind) {
 void on_alarm_test() {
     core::Alarm& a = s.alarms[static_cast<size_t>(core::AlarmKind::no_flow)];
     a = {true, false, core::minute_of_day(s)};
-    add_event(core::EventKind::alarm, static_cast<uint16_t>(core::AlarmKind::no_flow));
+    core::add_event(s, core::EventKind::alarm, static_cast<uint16_t>(core::AlarmKind::no_flow));
     test_alarm = true;
 }
 
@@ -447,17 +391,11 @@ void tick_1s() {
     s.flow_24h.back() = s.flow_lpm;
     s.flow_2h.back() = s.flow_lpm;
 
+    // Los litros enteros que contó F en este segundo, como el PCNT del firmware
     liters_fraction += s.flow_lpm / 60.0f;
-    while (liters_fraction >= 1.0f) {
-        liters_fraction -= 1.0f;
-        ++s.liters_today;
-        ++s.liters_since_dose;
-        ++s.hours[s.hour].liters;
-        ++s.days.back().liters;
-        for (core::FilterStatus& f : s.filters) {
-            if (f.installed) ++f.liters;
-        }
-    }
+    const auto whole_liters = static_cast<uint32_t>(liters_fraction);
+    liters_fraction -= static_cast<float>(whole_liters);
+    core::count_liters(s, whole_liters);
 
     // Prueba de cubeta: cuenta hasta que la cubeta llega a la marca
     if (bucket_running) {
@@ -488,29 +426,23 @@ void tick_1s() {
     if (seconds % 60 == 0) next_minute();
 }
 
-void on_dose_confirmed(uint32_t ml) { add_dose(ml, false); }
+void on_dose_confirmed(uint32_t ml) { core::register_dose(s, ml, false); }
 
-void on_dose_typed(uint32_t ml) { add_dose(ml, true); }
+void on_dose_typed(uint32_t ml) { core::register_dose(s, ml, true); }
 
-void on_mixer_mode(core::MixerMode mode) {
-    if (mode == s.mixer_mode) return;
-    s.mixer_mode = mode;
-    // Tocar otro modo vuelve a intentar: el demo hace como que ya quedó.
-    // Sin 12 V no: eso se quita solo cuando regresa la luz.
-    if (s.mixer_fault != core::MixerFault::none && s.mixer_fault != core::MixerFault::no_power) {
-        s.mixer_fault = core::MixerFault::none;
-        resolve_event(core::EventKind::mixer_fault);
-    }
-    if (mode == core::MixerMode::on) {
-        if (s.mixer_fault == core::MixerFault::none) start_mixer(core::MixerReason::manual, s.mixer_manual_max_min);
-    } else if (mode == core::MixerMode::off || mixer_by_hand) {
-        s.mixer_on = false;  // apagarla, o pasar de a mano a Auto: espera la siguiente
-    }
-}
+void on_mixer_mode(core::MixerMode mode) { core::mixer_set_mode(s, mode); }
 
 void on_mixer_after_dose(uint32_t minutes) { s.mixer_after_dose_min = static_cast<uint8_t>(minutes); }
 
-void on_mixer_every_4h(uint32_t minutes) { s.mixer_every_4h_min = static_cast<uint8_t>(minutes); }
+void on_mixer_every_liters(uint32_t minutes) { s.mixer_every_liters_min = static_cast<uint8_t>(minutes); }
+
+void on_service(bool on) {
+    if (on) {
+        core::service_start(s);
+    } else {
+        core::service_end(s);
+    }
+}
 
 void on_flow_factor(uint32_t pulses_per_liter) { s.flow_pulses_per_liter = static_cast<uint16_t>(pulses_per_liter); }
 
@@ -526,20 +458,7 @@ void on_daily_cap(uint32_t ml) { s.daily_cap_ml = static_cast<uint16_t>(ml); }
 
 void on_idle_minutes(uint32_t minutes) { s.idle_minutes = static_cast<uint8_t>(minutes); }
 
-void on_filter_serviced(core::Filter filter) {
-    const auto i = static_cast<size_t>(filter);
-    const bool was_empty = !s.filters[i].installed;
-    s.filters[i] = {s.today, 0, true};
-    if (filter == core::Filter::prefilter) {
-        add_event(core::EventKind::purge, 0);
-        return;
-    }
-    if (s.spares[i] > 0) --s.spares[i];
-    s.last_cartridge = filter;
-    s.last_cartridge_day = s.today;
-    add_event(was_empty ? core::EventKind::cartridge_added : core::EventKind::cartridge,
-              static_cast<uint16_t>(filter));
-}
+void on_filter_serviced(core::Filter filter) { core::register_filter(s, filter); }
 
 void on_spares_set(core::Filter filter, uint32_t count) {
     s.spares[static_cast<size_t>(filter)] = static_cast<uint8_t>(count);

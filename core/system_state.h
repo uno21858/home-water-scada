@@ -132,7 +132,15 @@ struct Devices {
 enum class MixerMode : uint8_t { off, on, automatic };
 
 // Por qué se prendió la bomba R
-enum class MixerReason : uint8_t { schedule, dose, manual };
+enum class MixerReason : uint8_t {
+    water,   // Auto: entraron kMixEveryLiters de agua nueva desde la última vuelta
+    dose,    // Auto: se registró una dosis
+    manual,  // la prendieron a mano
+};
+
+// Auto mezcla cada que entran estos litros: el 10 % de la cisterna de 10 m³.
+// Es el agua nueva sin cloro la que vuelve a dejar dispareja la cisterna.
+inline constexpr uint16_t kMixEveryLiters = 1000;
 
 // Lo que vio el INA219 al arrancar la bomba R o mientras corre (documento,
 // pág. 40). El firmware la apaga, lo pone aquí y lo quita cuando se arregla.
@@ -147,7 +155,7 @@ enum class MixerFault : uint8_t {
 struct MixerRun {
     uint16_t at = 0;      // minuto del día en que arrancó
     uint8_t minutes = 0;  // cuánto corrió
-    MixerReason reason = MixerReason::schedule;
+    MixerReason reason = MixerReason::water;
 };
 
 struct DoseRecord {
@@ -252,23 +260,34 @@ struct SystemState {
     std::array<Event, kEventCount> recent_events{};  // el más nuevo primero
     uint8_t recent_event_count = 0;
 
-    // Bomba R de la cisterna
+    // Bomba R de la cisterna (la mueve core/mixer.h)
     MixerMode mixer_mode = MixerMode::automatic;
     bool mixer_on = false;
     uint8_t mixer_minutes_left = 0;
+    uint8_t mixer_run_minutes = 0;  // cuánto dura la vuelta de ahorita
     uint8_t mixer_progress_pct = 0;
     uint16_t mixer_started_at = 0;  // minuto del día en que arrancó
-    uint16_t mixer_next_at = 0;     // minuto del día de la siguiente vuelta en Auto
+    uint16_t liters_since_mix = 0;  // agua nueva desde que arrancó la última vuelta
+    uint8_t mixer_pending_min = 0;  // vuelta que no pudo correr por un aviso; 0 = ninguna
+    MixerReason mixer_pending_reason = MixerReason::water;
     uint16_t mixer_today_minutes = 0;      // cuánto lleva prendida hoy
     uint8_t mixer_today_runs = 0;          // cuántas veces se prendió hoy
     std::array<MixerRun, 4> mixer_runs{};  // las últimas, la más nueva primero;
     uint8_t mixer_run_count = 0;           // si está prendida, la primera es la de ahorita
 
     // Programa del modo Auto y el tope a mano, en minutos
-    uint8_t mixer_after_dose_min = 45;  // corre después de cada dosis (el documento: ~45)
-    uint8_t mixer_every_4h_min = 15;    // corre cada 4 horas
-    uint8_t mixer_manual_max_min = 60;  // a mano se apaga sola
+    uint8_t mixer_after_dose_min = 45;    // corre después de cada dosis (el documento: ~45)
+    uint8_t mixer_every_liters_min = 15;  // corre cada kMixEveryLiters de agua nueva
+    uint8_t mixer_manual_max_min = 60;    // a mano se apaga sola
+
+    // Cambio de cartuchos: con V1 cerrada P1 baja a 0 igual que si se fuera el
+    // SIAPA, así que mientras dura no se avisa ni la caída ni el sin agua.
+    uint8_t service_minutes_left = 0;  // 0 = no se está cambiando nada
 };
+
+// Lo que dura el modo de cambio de cartuchos si nadie toca "Ya terminé"
+inline constexpr uint8_t kServiceMinutes = 60;
+inline bool in_service(const SystemState& s) { return s.service_minutes_left > 0; }
 
 // mL de Cloralex que tocan: litros desde la última dosis por la relación
 inline uint32_t dose_ml(const SystemState& s) {
@@ -309,7 +328,7 @@ inline Level drop_level(const SystemState& s) { return drop_rise_level(drop_rise
 // no se sabe. El firmware pasa P1 ya promediado, así un brinco no lo prende.
 inline constexpr int kNoSupplyPsi = 3;
 inline bool supply_lost(const SystemState& s) {
-    return s.has_pressure && s.flow_lpm < kFlowingLpm && s.p1_psi < kNoSupplyPsi;
+    return s.has_pressure && !in_service(s) && s.flow_lpm < kFlowingLpm && s.p1_psi < kNoSupplyPsi;
 }
 
 // ORP de la cisterna con los umbrales del DS:
@@ -326,7 +345,7 @@ inline Level overall_level(const SystemState& s) {
         if (a.active) return Level::alarm;
     }
     Level worst = Level::ok;
-    if (s.has_pressure) worst = drop_level(s);
+    if (s.has_pressure && !in_service(s)) worst = drop_level(s);
     if (s.has_orp && orp_level(s.orp_mv) > worst) worst = orp_level(s.orp_mv);
     // Avisos: la bomba R que no pudo mezclar y el SIAPA sin agua
     const bool notice = (s.has_mixer && s.mixer_fault != MixerFault::none) || supply_lost(s);

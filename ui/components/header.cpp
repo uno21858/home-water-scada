@@ -3,6 +3,7 @@
 #include <cstdio>
 
 #include "components/primitives.h"
+#include "components/status_pill.h"
 #include "theme/colors.h"
 #include "theme/fonts.h"
 #include "theme/icons.h"
@@ -118,32 +119,19 @@ void Header::handle_help(lv_event_t* e) {
     show(self->help_target_);
 }
 
-void Header::set_level(core::Level level) {
-    if (static_cast<int>(level) == level_) return;
-    level_ = static_cast<int>(level);
+void Header::set_status(const core::SystemState& s) {
+    const PillLook look = pill_look(s);
+    if (static_cast<int>(look.kind) == level_) return;
+    level_ = static_cast<int>(look.kind);
 
-    uint32_t fg = colors::ok;
-    uint32_t bg = colors::ok_bg;
-    uint32_t border = colors::ok;
-    const char* text = "OK";
-    const lv_image_dsc_t* src = &icon_ok_32;
-    if (level == core::Level::warning) {
-        fg = border = colors::warning;
-        bg = colors::warning_bg;
-        text = "Advertencia";
-        src = &icon_advertencia_32;
-    } else if (level == core::Level::alarm) {
-        fg = colors::on_alarm;
-        bg = border = colors::alarm_screen;
-        text = "Alarma";
-        src = &icon_alarma_32;
-    }
-    lv_obj_set_style_bg_color(pill_, color(bg), 0);
-    lv_obj_set_style_border_color(pill_, color(border), 0);
-    lv_image_set_src(pill_icon_, src);
-    set_icon_color(pill_icon_, fg);
-    lv_label_set_text(pill_text_, text);
-    lv_obj_set_style_text_color(pill_text_, color(fg), 0);
+    static const lv_image_dsc_t* const kIcons[4] = {&icon_ok_32, &icon_advertencia_32, &icon_alarma_32,
+                                                     &icon_cartucho_32};
+    lv_obj_set_style_bg_color(pill_, color(look.bg), 0);
+    lv_obj_set_style_border_color(pill_, color(look.border), 0);
+    lv_image_set_src(pill_icon_, kIcons[look.kind]);
+    set_icon_color(pill_icon_, look.fg);
+    lv_label_set_text(pill_text_, look.text);
+    lv_obj_set_style_text_color(pill_text_, color(look.fg), 0);
 }
 
 void Header::set_time(uint8_t hour, uint8_t minute) {

@@ -34,7 +34,7 @@ private:
     void create_runs(lv_obj_t* page);
 
     static void handle_after_dose(lv_event_t* e);
-    static void handle_every_4h(lv_event_t* e);
+    static void handle_every_liters(lv_event_t* e);
 
     lv_obj_t* live_ = nullptr;    // todo lo de la pantalla con bomba
     lv_obj_t* locked_ = nullptr;  // tarjeta de Próximamente sin bomba
@@ -51,10 +51,10 @@ private:
 
     // Programa del modo Auto
     lv_obj_t* after_dose_ = nullptr;
-    lv_obj_t* every_4h_ = nullptr;
+    lv_obj_t* every_liters_ = nullptr;
     lv_obj_t* manual_note_ = nullptr;
     uint8_t after_dose_min_ = 0;  // para la pista del teclado
-    uint8_t every_4h_min_ = 0;
+    uint8_t every_liters_min_ = 0;
 
     // Hoy y últimas veces
     lv_obj_t* today_minutes_ = nullptr;

@@ -37,7 +37,7 @@ int main()
     actions.strip_checked = demo::on_strip_checked;
     actions.mixer_mode_set = demo::on_mixer_mode;
     actions.mixer_after_dose_set = demo::on_mixer_after_dose;
-    actions.mixer_every_4h_set = demo::on_mixer_every_4h;
+    actions.mixer_every_liters_set = demo::on_mixer_every_liters;
     actions.flow_factor_set = demo::on_flow_factor;
     actions.pressure_zeroed = demo::on_pressure_zeroed;
     actions.dose_ratio_set = demo::on_dose_ratio;
@@ -45,6 +45,7 @@ int main()
     actions.idle_minutes_set = demo::on_idle_minutes;
     actions.filter_serviced = demo::on_filter_serviced;
     actions.spares_set = demo::on_spares_set;
+    actions.service_set = demo::on_service;
     actions.alarm_acknowledged = demo::on_alarm_acknowledged;
     actions.alarm_test = demo::on_alarm_test;
     actions.restart_requested = demo::on_restart;

@@ -26,9 +26,10 @@ enum class Screen : uint8_t {
     legend,         // Símbolos del diagrama, desde el "?" del Tren
     overview,       // Panorama de la casa, desde Casa en el Tren
     spares,         // Repuestos en casa, desde Ajustes > Cartuchos
+    service,        // Cambio de cartuchos, desde Cartuchos
 };
 inline constexpr int kTabCount = 7;
-inline constexpr int kScreenCount = 19;
+inline constexpr int kScreenCount = 20;
 
 // Lo que la interfaz le pide a la app. Cualquiera puede quedar en nullptr.
 struct Actions {
@@ -37,7 +38,7 @@ struct Actions {
     void (*strip_checked)(uint32_t tenths_mgl) = nullptr;  // guardó la tira: 5 = 0.5 mg/L
     void (*mixer_mode_set)(core::MixerMode mode) = nullptr;   // eligió Apagada, Prendida o Auto
     void (*mixer_after_dose_set)(uint32_t minutes) = nullptr; // programa: después de cada dosis
-    void (*mixer_every_4h_set)(uint32_t minutes) = nullptr;   // programa: cada 4 horas
+    void (*mixer_every_liters_set)(uint32_t minutes) = nullptr; // programa: cada 1,000 L que entran
     void (*flow_factor_set)(uint32_t pulses_per_liter) = nullptr;
     void (*pressure_zeroed)() = nullptr;                      // confirmó Hacer cero
     void (*dose_ratio_set)(uint32_t thousandths) = nullptr;   // mL por litro x 1000: 20 = 0.020
@@ -49,6 +50,7 @@ struct Actions {
     void (*alarm_test)() = nullptr;            // Diagnóstico: Probar alarma
     void (*restart_requested)() = nullptr;     // Diagnóstico: Reiniciar, ya confirmado
     void (*bucket_test_started)() = nullptr;   // entró a la prueba de cubeta: bucket_pulses a 0
+    void (*service_set)(bool on) = nullptr;    // Empezar o Ya terminé el cambio de cartuchos
 };
 
 struct KeypadSpec;  // components/keypad_dialog.h

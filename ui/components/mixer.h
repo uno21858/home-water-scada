@@ -22,7 +22,7 @@ private:
     int spinning_ = -1;  // -1 = todavía no se pinta
 };
 
-// "Auto · programa de las 18:30", "A mano · se apaga sola a las 19:42"...
+// "Por agua nueva · desde las 18:30", "Auto · la siguiente en 850 L"...
 // Con un aviso del INA219, qué pasa con la mezcla: "No se mezcló: espera agua nueva"
 void mixer_status(char* out, size_t size, const core::SystemState& s);
 

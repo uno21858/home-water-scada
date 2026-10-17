@@ -3,6 +3,7 @@
 #include <cstdio>
 
 #include "components/primitives.h"
+#include "components/status_pill.h"
 #include "theme/colors.h"
 #include "theme/fonts.h"
 #include "theme/format.h"
@@ -90,31 +91,17 @@ void IdleScreen::update(const core::SystemState& s) {
     snprintf(buf, sizeof buf, "%02u:%02u", static_cast<unsigned>(s.hour), static_cast<unsigned>(s.minute));
     set_text(clock_, buf);
 
-    const core::Level level = core::overall_level(s);
-    if (static_cast<int>(level) != level_) {
-        level_ = static_cast<int>(level);
-        uint32_t fg = colors::ok;
-        uint32_t bg = colors::ok_bg;
-        uint32_t border = colors::ok;
-        const char* text = "OK";
-        const lv_image_dsc_t* src = &icon_ok_40;
-        if (level == core::Level::warning) {
-            fg = border = colors::warning;
-            bg = colors::warning_bg;
-            text = "Advertencia";
-            src = &icon_advertencia_40;
-        } else if (level == core::Level::alarm) {
-            fg = colors::on_alarm;
-            bg = border = colors::alarm_screen;
-            text = "Alarma";
-            src = &icon_alarma_40;
-        }
-        lv_obj_set_style_bg_color(pill_, color(bg), 0);
-        lv_obj_set_style_border_color(pill_, color(border), 0);
-        lv_image_set_src(pill_icon_, src);
-        set_icon_color(pill_icon_, fg);
-        lv_label_set_text(pill_text_, text);
-        lv_obj_set_style_text_color(pill_text_, color(fg), 0);
+    const PillLook look = pill_look(s);
+    if (static_cast<int>(look.kind) != level_) {
+        level_ = static_cast<int>(look.kind);
+        static const lv_image_dsc_t* const kIcons[4] = {&icon_ok_40, &icon_advertencia_40, &icon_alarma_40,
+                                                         &icon_cartucho_40};
+        lv_obj_set_style_bg_color(pill_, color(look.bg), 0);
+        lv_obj_set_style_border_color(pill_, color(look.border), 0);
+        lv_image_set_src(pill_icon_, kIcons[look.kind]);
+        set_icon_color(pill_icon_, look.fg);
+        lv_label_set_text(pill_text_, look.text);
+        lv_obj_set_style_text_color(pill_text_, color(look.fg), 0);
     }
 
     const bool flowing = s.flow_lpm >= 0.05f;

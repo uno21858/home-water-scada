@@ -27,6 +27,7 @@
 #include "screens/overview_screen.h"
 #include "screens/pressure_screen.h"
 #include "screens/settings_screen.h"
+#include "screens/service_screen.h"
 #include "screens/spares_screen.h"
 #include "screens/summary_screen.h"
 #include "theme/format.h"
@@ -62,7 +63,7 @@ const std::array<Page, kScreenCount> kPages = {{
     {{"Sensor de flujo F", Screen::flow, nullptr, {}, {}}, Screen::flow},
     {{"Presión P1 y P2", Screen::home, nullptr, {}, {}}, Screen::home},
     {{"Caída del tren", Screen::home, nullptr, {}, {}}, Screen::home},
-    {{"Cartuchos", Screen::home, nullptr, {}, {}}, Screen::home},
+    {{"Cartuchos", Screen::home, "Cambio", Screen::service, {}}, Screen::home},
     {{"Inyección A y B", Screen::dose, nullptr, {}, {}}, Screen::dose},
     {{"Alarmas y eventos", Screen::history, nullptr, {}, {}}, Screen::history},
     {{"Diagnóstico", Screen::settings, nullptr, {}, {}}, Screen::settings},
@@ -70,6 +71,7 @@ const std::array<Page, kScreenCount> kPages = {{
     {{"Símbolos del diagrama", Screen::home, nullptr, {}, {}}, Screen::home},
     {{"Panorama de la casa", Screen::home, nullptr, {}, {}}, Screen::home},
     {{"Repuestos en casa", Screen::settings, nullptr, {}, {}}, Screen::settings},
+    {{"Cambio de cartuchos", Screen::filters, nullptr, {}, {}}, Screen::home},
 }};
 
 Actions app_actions;
@@ -99,6 +101,7 @@ BucketScreen bucket;
 LegendScreen legend;
 OverviewScreen overview;
 SparesScreen spares;
+ServiceScreen service;
 std::array<lv_obj_t*, kScreenCount> pages{};
 
 size_t index_of(Screen screen) { return static_cast<size_t>(screen); }
@@ -167,6 +170,7 @@ void init(const core::SystemState& s, const Actions& a) {
     pages[index_of(Screen::legend)] = legend.create(content);
     pages[index_of(Screen::overview)] = overview.create(content);
     pages[index_of(Screen::spares)] = spares.create(content);
+    pages[index_of(Screen::service)] = service.create(content);
 
     header.create(screen);
     nav.create(screen);
@@ -181,7 +185,7 @@ void init(const core::SystemState& s, const Actions& a) {
 
 void update(const core::SystemState& s) {
     state = s;
-    header.set_level(core::overall_level(s));
+    header.set_status(s);
     header.set_time(s.hour, s.minute);
     header.set_network(s.wifi_ok, s.pending_uploads);
     nav.set_tab_visible(Screen::cistern, available(Screen::cistern));
@@ -203,6 +207,7 @@ void update(const core::SystemState& s) {
     bucket.update(s);
     overview.update(s);
     spares.update(s);
+    service.update(s);
     idle.update(s);
     alarm.update(s);
 

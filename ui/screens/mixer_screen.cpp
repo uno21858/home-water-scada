@@ -24,9 +24,9 @@ const char* reason_word(core::MixerReason reason) {
     switch (reason) {
         case core::MixerReason::dose: return "dosis";
         case core::MixerReason::manual: return "a mano";
-        case core::MixerReason::schedule: break;
+        case core::MixerReason::water: break;
     }
-    return "programa";
+    return "agua";  // "agua nueva" no cabe junto a "ahora"
 }
 
 void on_mode(int index, void*) {
@@ -108,7 +108,13 @@ void MixerScreen::create_program(lv_obj_t* page) {
 
     after_dose_ = program_row(c, 42, "Después de cada dosis", handle_after_dose, this);
     fill(box(c, 16, 94, 566, 1), colors::border);
-    every_4h_ = program_row(c, 95, "Cada 4 horas", handle_every_4h, this);
+    // "Cada 1,000 L de agua": el número sale de core::kMixEveryLiters
+    // ("Cada 1,000 L que entran" se parte en dos renglones)
+    char liters[16];
+    fmt::thousands(liters, sizeof liters, core::kMixEveryLiters);
+    char name[40];
+    snprintf(name, sizeof name, "Cada %s L de agua", liters);
+    every_liters_ = program_row(c, 95, name, handle_every_liters, this);
 
     manual_note_ = label(c, &font_label_26, colors::text_secondary, "");
     lv_obj_set_pos(manual_note_, 16, 148);
@@ -180,11 +186,11 @@ void MixerScreen::update(const core::SystemState& s) {
     mode_.set_selected(static_cast<int>(s.mixer_mode));
 
     after_dose_min_ = s.mixer_after_dose_min;
-    every_4h_min_ = s.mixer_every_4h_min;
+    every_liters_min_ = s.mixer_every_liters_min;
     snprintf(buf, sizeof buf, "%u", static_cast<unsigned>(after_dose_min_));
     set_text(after_dose_, buf);
-    snprintf(buf, sizeof buf, "%u", static_cast<unsigned>(every_4h_min_));
-    set_text(every_4h_, buf);
+    snprintf(buf, sizeof buf, "%u", static_cast<unsigned>(every_liters_min_));
+    set_text(every_liters_, buf);
     snprintf(buf, sizeof buf, "A mano se apaga sola a los %u min", static_cast<unsigned>(s.mixer_manual_max_min));
     set_text(manual_note_, buf);
 
@@ -221,12 +227,16 @@ void MixerScreen::handle_after_dose(lv_event_t* e) {
                 });
 }
 
-void MixerScreen::handle_every_4h(lv_event_t* e) {
+void MixerScreen::handle_every_liters(lv_event_t* e) {
     const auto* self = static_cast<MixerScreen*>(lv_event_get_user_data(e));
     char hint[32];
-    snprintf(hint, sizeof hint, "Ahorita: %u min", static_cast<unsigned>(self->every_4h_min_));
-    open_keypad({"Cada 4 horas", "Minutos que corre", "min", 0, 2, hint, nullptr, nullptr}, [](uint32_t minutes) {
-        if (actions().mixer_every_4h_set != nullptr) actions().mixer_every_4h_set(minutes);
+    snprintf(hint, sizeof hint, "Ahorita: %u min", static_cast<unsigned>(self->every_liters_min_));
+    char liters[16];
+    fmt::thousands(liters, sizeof liters, core::kMixEveryLiters);
+    char title[24];  // el teclado copia los textos al abrir: puede ir en la pila
+    snprintf(title, sizeof title, "Cada %s L", liters);
+    open_keypad({title, "Minutos que corre", "min", 0, 2, hint, nullptr, nullptr}, [](uint32_t minutes) {
+        if (actions().mixer_every_liters_set != nullptr) actions().mixer_every_liters_set(minutes);
     });
 }
 

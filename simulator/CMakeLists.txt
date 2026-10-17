@@ -21,4 +21,11 @@ target_compile_definitions(simulator PRIVATE LV_CONF_INCLUDE_SIMPLE)
 target_link_libraries(simulator PRIVATE ui core lvgl ${SDL2_LIBRARIES} m pthread)
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/../core ${CMAKE_BINARY_DIR}/core)
+
+# Pruebas de core en la compu: ctest --test-dir build
+enable_testing()
+add_executable(core_test ${PROJECT_SOURCE_DIR}/../core/test/core_test.cpp)
+target_link_libraries(core_test PRIVATE core)
+target_compile_options(core_test PRIVATE -Wall -Wextra)
+add_test(NAME core COMMAND core_test)
 add_subdirectory(${PROJECT_SOURCE_DIR}/../ui ${CMAKE_BINARY_DIR}/ui)

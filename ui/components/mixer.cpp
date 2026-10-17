@@ -46,21 +46,24 @@ void Impeller::set_spinning(bool on) {
 
 void mixer_status(char* out, size_t size, const core::SystemState& s) {
     char at[8];
-    const bool for_dose = s.mixer_run_count > 0 && s.mixer_runs[0].reason == core::MixerReason::dose;
+    const core::MixerReason reason = s.mixer_run_count > 0 ? s.mixer_runs[0].reason : core::MixerReason::manual;
     if (s.mixer_fault != core::MixerFault::none) {
         snprintf(out, size, "%s", fmt::mixer_fault_hint(static_cast<unsigned>(s.mixer_fault)));
-    } else if (s.mixer_on && for_dose) {
+    } else if (s.mixer_on && reason == core::MixerReason::dose) {
         fmt::clock(at, sizeof at, s.mixer_started_at);
         snprintf(out, size, "Por la dosis de las %s", at);
-    } else if (s.mixer_on && s.mixer_mode == core::MixerMode::automatic) {
+    } else if (s.mixer_on && reason == core::MixerReason::water) {
         fmt::clock(at, sizeof at, s.mixer_started_at);
-        snprintf(out, size, "Auto · programa de las %s", at);
+        snprintf(out, size, "Por agua nueva · desde las %s", at);
     } else if (s.mixer_on) {
         fmt::clock(at, sizeof at, core::minute_of_day(s) + s.mixer_minutes_left);
         snprintf(out, size, "A mano · se apaga sola a las %s", at);
     } else if (s.mixer_mode == core::MixerMode::automatic) {
-        fmt::clock(at, sizeof at, s.mixer_next_at);
-        snprintf(out, size, "Auto · la siguiente a las %s", at);
+        // Cuánta agua falta para la siguiente vuelta por litros
+        const unsigned left = s.liters_since_mix < core::kMixEveryLiters ? core::kMixEveryLiters - s.liters_since_mix : 0;
+        char liters[16];
+        fmt::thousands(liters, sizeof liters, left);
+        snprintf(out, size, "Auto · la siguiente en %s L", liters);
     } else {
         snprintf(out, size, "A mano · el programa no la prende");
     }

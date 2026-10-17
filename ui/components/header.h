@@ -26,7 +26,8 @@ class Header {
 public:
     void create(lv_obj_t* parent);
     void set_page(const HeaderSpec& spec);
-    void set_level(core::Level level);
+    // Pastilla: OK, Advertencia, Alarma o Mantenimiento (cambio de cartuchos)
+    void set_status(const core::SystemState& s);
     void set_time(uint8_t hour, uint8_t minute);
     // Sin red sale el chip ámbar "Sin red · 24 por enviar" y el enlace se
     // esconde para que quepa (así lo hace Flujo en el canvas)
@@ -56,7 +57,7 @@ private:
     lv_obj_t* pill_text_ = nullptr;
     lv_obj_t* wifi_ = nullptr;
     lv_obj_t* clock_ = nullptr;
-    int level_ = -1;    // -1 = todavía no se pinta
+    int level_ = -1;    // PillLook::Kind de lo pintado; -1 = todavía no se pinta
     int wifi_ok_ = -1;
 };
 

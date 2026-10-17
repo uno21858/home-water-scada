@@ -14,10 +14,20 @@ Mientras llega el hardware, se desarrolla en el simulador con SDL (Mac y Fedora)
 
 ## Estructura
 
-- `core/`: lógica pura, sin LVGL ni hardware. `system_state.h` es el estado que
-  muestra la interfaz y los umbrales: la caída del tren contra la de cartuchos
-  nuevos al mismo caudal (`drop_level`, documento pág. 40), el ORP del DS y el
-  sin agua del SIAPA (`supply_lost`).
+- `core/`: lógica pura, sin LVGL ni hardware; la usan igual el simulador y el
+  firmware. `system_state.h` es el estado que muestra la interfaz y los
+  umbrales: la caída del tren contra la de cartuchos nuevos al mismo caudal
+  (`drop_level`, documento pág. 40), el ORP del DS y el sin agua del SIAPA
+  (`supply_lost`). Lo que decide:
+  - `water`: `count_liters` (lo que contó F), `register_dose` y
+    `register_filter`.
+  - `mixer`: el programa de la bomba R. En Auto corre 45 min después de cada
+    dosis y 15 cada `kMixEveryLiters` (1,000 L) de agua nueva; Prendida corre
+    60 y queda Apagada. Con un aviso del INA219 la vuelta queda pendiente.
+  - `monitor`: `tick_minute` (cada minuto) y el modo de cambio de cartuchos
+    (`service_start`, `service_end`).
+  - `events`: el registro que leen Alarmas e Historial.
+  - `test/core_test.cpp`: pruebas en la compu (`ctest --test-dir build`).
 - `ui/`: la interfaz. No sabe nada de SDL ni del ESP32.
   - `ui.h/.cpp`: `init()`, `update()`, `show()` y las `Actions` que regresan a la
     app. Una sola screen con encabezado, contenido y barra fijos; cada pantalla es
@@ -26,7 +36,8 @@ Mientras llega el hardware, se desarrolla en el simulador con SDL (Mac y Fedora)
     generados), `pid/` (símbolos del P&ID en ARGB8888, generados), `styles`,
     `format` (números al formato de México).
   - `components/`: `primitives` (box, label, icon, card, link_to, botones),
-    `header` (atrás, título, enlace y "?" según la pantalla), `nav_bar`,
+    `header` (atrás, título, enlace y "?" según la pantalla), `status_pill`
+    (OK, Advertencia, Alarma o Mantenimiento; la usan encabezado y Pasillo), `nav_bar`,
     `confirm_dialog`, `keypad_dialog` (unidad y decimales con `KeypadSpec`),
     `segmented` (selector de 2 a 4 opciones), `mixer` (impulsor que gira y el
     renglón de estado de la bomba R), `pipe` (puntos de flujo), `sensor_tag`.
@@ -45,8 +56,9 @@ Mientras llega el hardware, se desarrolla en el simulador con SDL (Mac y Fedora)
     Ajustes) y `bucket_screen` (Prueba de cubeta, desde Ajustes y DetalleF;
     `show()` le llama `enter()` para que cada vez cuente desde 0),
     `legend_screen` (Símbolos del diagrama, el "?" del Tren),
-    `overview_screen` (Panorama de la casa, Casa en el Tren) y
-    `spares_screen` (Repuestos en casa, Cambiar en Ajustes > Cartuchos).
+    `overview_screen` (Panorama de la casa, Casa en el Tren),
+    `spares_screen` (Repuestos en casa, Cambiar en Ajustes > Cartuchos) y
+    `service_screen` (Cambio de cartuchos, el enlace Cambio de Cartuchos).
     `alarm_screen` es la alarma a pantalla completa: va en `lv_layer_top()`
     encima de todo, Pasillo incluido.
   - Lo que la pantalla le pide a la app sale por `actions()`; un campo nuevo
@@ -68,8 +80,10 @@ Mientras llega el hardware, se desarrolla en el simulador con SDL (Mac y Fedora)
   RS485, que el documento ya no lleva. Vacíos.
 - `docs/diseno/`: la especificación de diseño. Leer `docs/diseno/LEEME.md`.
 
-El firmware hará lo mismo que `simulator/main.cpp`: llenar `core::SystemState`,
-llamar `ui::update()` y atender lo que llegue por `ui::Actions`.
+El firmware hará lo mismo que `simulator/main.cpp` y `demo.cpp`: leer los
+sensores, pasarlos a `core` (`count_liters`, `mixer_report_fault`...), llamar
+`core::tick_minute()` cada minuto y `ui::update()`, atender lo que llegue por
+`ui::Actions` llamando a `core`, y prender el GPIO44 según `mixer_on`.
 
 ## Compilar y correr el simulador
 
@@ -78,6 +92,7 @@ git submodule update --init           # LVGL fijado en v9.6.0
 cmake -S simulator -B build -DCMAKE_BUILD_TYPE=Debug
 cmake --build build -j
 ./build/simulator
+ctest --test-dir build                # pruebas de core
 ```
 
 Para ver un estado del canvas sin tocar código: `HMI_DEMO=alarma ./build/simulator`.
@@ -167,6 +182,10 @@ Pendiente, en este orden:
 
 1. Firmware de la 7B.
 
+En `core` falta todavía (hoy lo hace el demo o nadie): los avisos de caída
+(necesitan histéresis para no prenderse y apagarse en el borde), las alarmas
+de la fase 3 y el cambio de día.
+
 ## Diferencias a propósito con el canvas
 
 - El label "V3" mide 40 px en lugar de 34.
@@ -231,7 +250,16 @@ Pendiente, en este orden:
   datos dice "Por enviar" en ámbar si hay pendientes.
 - En Mezcla, los renglones del programa Auto abren el teclado en minutos (de 1
   a 99) y sin bomba R la pantalla se ve bloqueada. El selector marca la opción
-  al tocarla y el estado la confirma en el siguiente `update()`.
+  al tocarla y el estado la confirma en el siguiente `update()`. "Cada 4
+  horas" del canvas es "Cada 1,000 L de agua" (Erick, octubre 2026: lo que
+  deja dispareja la cisterna es el agua nueva, y de noche no entra); en las
+  últimas veces dice "agua" y apagada en Auto dice "la siguiente en 850 L".
+- Cambio de cartuchos no está en el canvas: con V1 cerrada P1 baja a 0 igual
+  que si se fuera el SIAPA. Cartuchos lleva el enlace "Cambio" en el
+  encabezado y abre los pasos con "Empezar" y "Ya terminé" (acomodo de Prueba
+  de cubeta). Mientras dura (60 min o Ya terminé) no hay avisos de sin agua
+  ni de caída y la pastilla dice "Mantenimiento" en gris; un aviso de la
+  bomba R o una alarma pesan más y se ven igual.
 - Alarmas e Historial leen el mismo registro (`SystemState::recent_events`).
   El demo junta los eventos de los dos canvas, así que la lista no sale igual
   a ninguno; con más de 5 renglones se recorre con el dedo. "Activas" lista
