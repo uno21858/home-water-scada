@@ -7,6 +7,10 @@
 
 namespace core {
 
+// Caudal de ahorita (F en la última ventana de 1 s). También es la última
+// muestra de las gráficas de 2 h y 24 h, que así se mueven en vivo.
+void set_flow(SystemState& s, float lpm);
+
 // F contó estos litros: suben los del día, los de la hora, los que van desde
 // la dosis, los de cada cartucho y los de la mezcla (pueden prender la bomba R)
 void count_liters(SystemState& s, uint32_t liters);

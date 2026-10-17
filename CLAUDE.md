@@ -19,16 +19,22 @@ Mientras llega el hardware, se desarrolla en el simulador con SDL (Mac y Fedora)
   umbrales: la caída del tren contra la de cartuchos nuevos al mismo caudal
   (`drop_level`, documento pág. 40), el ORP del DS y el sin agua del SIAPA
   (`supply_lost`). Lo que decide:
-  - `water`: `count_liters` (lo que contó F), `register_dose` y
-    `register_filter`.
+  - `water`: `set_flow` (caudal en vivo), `count_liters` (lo que contó F),
+    `register_dose` y `register_filter`.
+  - `calendar`: `set_time` con la hora del NTP; al pasar de hora abre la hora
+    del historial y mete muestras a las gráficas por hora, y al pasar de día
+    reinicia lo de hoy y recorre el historial (uno por día, aunque la placa
+    haya estado apagada). `sample_minute`: muestras de caudal y promedios.
   - `mixing`: el programa de la bomba R (no `mixer.h`: chocaría con
     `ui/components/mixer.h` al incluirlo desde `ui/components/`). En Auto corre 45 min después de cada
     dosis y 15 cada `kMixEveryLiters` (1,000 L) de agua nueva; Prendida corre
     60 y queda Apagada. Con un aviso del INA219 la vuelta queda pendiente, y
     con la cisterna en 0 % (el mínimo de Calibrar nivel) no arranca o se
     apaga: corre cuando sube el agua.
-  - `monitor`: `tick_minute` (cada minuto) y el modo de cambio de cartuchos
-    (`service_start`, `service_end`).
+  - `monitor`: `tick_minute` (cada minuto: muestras, bomba R, modo de cambio y
+    los avisos de sin agua y de caída) y el modo de cambio de cartuchos
+    (`service_start`, `service_end`). La caída se anota en Revisar o Tapados
+    solo con flujo y sale con 1 psi de margen (`kDropHysteresis`).
   - `events`: el registro que leen Alarmas e Historial.
   - `level`: el sensor de nivel 4-20 mA del A2 (`level_cm` desde el fondo y
     `level_pct`, lo útil de la rejilla de la bomba de pozo a llena) y su
@@ -91,9 +97,10 @@ Mientras llega el hardware, se desarrolla en el simulador con SDL (Mac y Fedora)
 - `docs/diseno/`: la especificación de diseño. Leer `docs/diseno/LEEME.md`.
 
 El firmware hará lo mismo que `simulator/main.cpp` y `demo.cpp`: leer los
-sensores, pasarlos a `core` (`count_liters`, `mixer_report_fault`...), llamar
-`core::tick_minute()` cada minuto y `ui::update()`, atender lo que llegue por
-`ui::Actions` llamando a `core`, y prender el GPIO44 según `mixer_on`.
+sensores, pasarlos a `core` (`set_flow`, `count_liters`, `mixer_report_fault`...),
+cada minuto `core::set_time()` con la hora del NTP y `core::tick_minute()`,
+`ui::update()`, atender lo que llegue por `ui::Actions` llamando a `core`, y
+prender el GPIO44 según `mixer_on`.
 
 ## Compilar y correr el simulador
 
@@ -197,9 +204,8 @@ Pendiente, en este orden:
 
 1. Firmware de la 7B.
 
-En `core` falta todavía (hoy lo hace el demo o nadie): los avisos de caída
-(necesitan histéresis para no prenderse y apagarse en el borde), las alarmas
-de la fase 3 y el cambio de día.
+En `core` falta todavía (hoy lo hace el demo): las alarmas de la fase 3 y
+reconocerlas con Entendido.
 
 ## Diferencias a propósito con el canvas
 

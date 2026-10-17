@@ -6,6 +6,7 @@
 #include <cstdlib>
 #include <cstring>
 
+#include "calendar.h"
 #include "events.h"
 #include "level.h"
 #include "mixing.h"
@@ -249,49 +250,26 @@ bool test_alarm = false;  // la alarma de ahorita es la de Probar alarma
 constexpr float kBucketPulsesPerLiter = 387.2f;
 constexpr uint32_t kBucketFull = 3872;
 
+// El reloj del demo avanza un minuto y hace lo mismo que hará el firmware
+// con la hora del NTP: set_time cierra la hora o el día, tick_minute lo demás
 void next_minute() {
-    s.minute = static_cast<uint8_t>((s.minute + 1) % 60);
-    if (s.minute == 0) s.hour = static_cast<uint8_t>((s.hour + 1) % 24);
+    core::Clock now{s.year, s.month, s.day, s.hour, s.minute};
+    if (++now.minute == 60) {
+        now.minute = 0;
+        if (++now.hour == 24) {
+            now.hour = 0;
+            if (++now.day > core::days_in_month(now.month, now.year)) {
+                now.day = 1;
+                if (++now.month == 13) {
+                    now.month = 1;
+                    ++now.year;
+                }
+            }
+        }
+    }
+    core::set_time(s, now);
     if (s.wifi_ok) s.last_upload_at = core::minute_of_day(s);  // envía cada minuto
-
-    if (s.minute == 0 && s.hour == 0) {  // medianoche (el demo no se fija en el fin de mes)
-        ++s.today;
-        s.weekday = static_cast<uint8_t>((s.weekday + 1) % 7);
-        ++s.day;
-        s.liters_today = 0;
-        s.mixer_today_minutes = 0;
-        s.mixer_today_runs = 0;
-        std::rotate(s.days.begin(), s.days.begin() + 1, s.days.end());
-        s.days.back() = {};
-        s.hours = {};
-    }
-
-    // Lo mismo que hará el firmware cada minuto: bomba R, cambio de
-    // cartuchos y el aviso de sin agua
     core::tick_minute(s);
-
-    // Cada hora entra una muestra nueva a la gráfica de ORP de 7 días y la
-    // hora nueva del historial arranca con las presiones y el ORP de ahorita
-    if (s.minute == 0) {
-        s.hours[s.hour] = {0, 0, static_cast<uint8_t>(s.p1_psi), static_cast<uint8_t>(s.p2_psi),
-                           static_cast<int16_t>(s.orp_mv)};
-        std::rotate(s.p1_24h.begin(), s.p1_24h.begin() + 1, s.p1_24h.end());
-        std::rotate(s.p2_24h.begin(), s.p2_24h.begin() + 1, s.p2_24h.end());
-        s.p1_24h.back() = static_cast<uint8_t>(s.p1_psi);
-        s.p2_24h.back() = static_cast<uint8_t>(s.p2_psi);
-        std::rotate(s.orp_7d.begin(), s.orp_7d.begin() + 1, s.orp_7d.end());
-        s.orp_7d.back() = static_cast<int16_t>(s.orp_mv);
-    }
-
-    // Cada minuto entra una muestra nueva a la gráfica de 2 h
-    std::rotate(s.flow_2h.begin(), s.flow_2h.begin() + 1, s.flow_2h.end());
-    s.flow_2h.back() = s.flow_lpm;
-
-    // Cada 5 min entra una muestra nueva a la gráfica de 24 h
-    if (s.minute % 5 == 0) {
-        std::rotate(s.flow_24h.begin(), s.flow_24h.begin() + 1, s.flow_24h.end());
-        s.flow_24h.back() = s.flow_lpm;
-    }
 }
 
 }  // namespace
@@ -409,9 +387,7 @@ void on_bucket_test_started() {
 
 void tick_1s() {
     ++seconds;
-    s.flow_lpm = no_flow ? 0.0f : 12.4f + 0.15f * std::sin(seconds / 3.0f);
-    s.flow_24h.back() = s.flow_lpm;
-    s.flow_2h.back() = s.flow_lpm;
+    core::set_flow(s, no_flow ? 0.0f : 12.4f + 0.15f * std::sin(seconds / 3.0f));
 
     // Los litros enteros que contó F en este segundo, como el PCNT del firmware
     liters_fraction += s.flow_lpm / 60.0f;

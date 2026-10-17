@@ -13,6 +13,12 @@ uint16_t add16(uint16_t a, uint32_t b) { return static_cast<uint16_t>(std::min<u
 
 }  // namespace
 
+void set_flow(SystemState& s, float lpm) {
+    s.flow_lpm = std::max(0.0f, lpm);
+    s.flow_2h.back() = s.flow_lpm;
+    s.flow_24h.back() = s.flow_lpm;
+}
+
 void count_liters(SystemState& s, uint32_t liters) {
     if (liters == 0) return;
     s.liters_today += liters;

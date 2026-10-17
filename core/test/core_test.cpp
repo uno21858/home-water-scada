@@ -5,6 +5,7 @@
 #include <cmath>
 #include <cstdio>
 
+#include "calendar.h"
 #include "events.h"
 #include "level.h"
 #include "mixing.h"
@@ -213,6 +214,82 @@ void mixer_waits_for_water() {
     CHECK(s.mixer_pending_min == 45);
 }
 
+void calendar_day_change() {
+    core::SystemState s = house();
+    s.today = 1000;
+    s.year = 2026;
+    s.month = 10;
+    s.day = 3;
+    s.hour = 23;
+    s.minute = 58;
+    s.liters_today = 1860;
+    s.mixer_today_minutes = 72;
+    s.days.back().liters = 1860;
+    core::set_time(s, {2026, 10, 3, 23, 59});  // misma hora: no cierra nada
+    CHECK(s.liters_today == 1860);
+    core::set_time(s, {2026, 10, 4, 0, 0});
+    CHECK(s.today == 1001);
+    CHECK(s.weekday == 0);  // domingo 4 de octubre de 2026
+    CHECK(s.liters_today == 0);
+    CHECK(s.mixer_today_minutes == 0);
+    CHECK(s.days[core::kHistoryDays - 2].liters == 1860);  // ayer
+    CHECK(s.days.back().liters == 0);
+    // Apagada tres días: el historial se recorre tres
+    core::set_time(s, {2026, 10, 7, 9, 30});
+    CHECK(s.today == 1004);
+    CHECK(s.days[core::kHistoryDays - 5].liters == 1860);
+    // El reloj para atrás no cierra nada
+    core::set_time(s, {2026, 10, 7, 8, 0});
+    CHECK(s.today == 1004);
+    CHECK(core::days_from_civil(1970, 1, 1) == 0);
+    CHECK(core::days_from_civil(2026, 12, 31) + 1 == core::days_from_civil(2027, 1, 1));
+    CHECK(core::days_from_civil(2028, 2, 28) + 2 == core::days_from_civil(2028, 3, 1));  // bisiesto
+}
+
+void calendar_hour_samples() {
+    core::SystemState s = house();
+    s.today = 10;
+    s.hour = 8;
+    s.minute = 59;
+    s.p1_psi = 47;
+    core::set_time(s, {2026, 1, 1, 9, 0});
+    CHECK(s.p1_24h.back() == 47);
+    CHECK(s.hours[9].p1_psi == 47);
+    core::set_flow(s, 11.0f);
+    CHECK(s.flow_2h.back() == 11.0f);
+    core::tick_minute(s);  // la muestra de este minuto entra a la de 2 h
+    CHECK(s.flow_2h[s.flow_2h.size() - 2] == 11.0f);
+}
+
+void drop_notices() {
+    core::SystemState s = house();  // sin línea base: lo que subió es la caída completa
+    auto open = [&s](core::EventKind kind) { return core::has_open_event(s, kind); };
+    s.p2_psi = s.p1_psi - 5;
+    core::check_drop(s);
+    CHECK(open(core::EventKind::drop_warning));
+    s.p2_psi = s.p1_psi - 4;  // dentro del margen: sigue en Revisar
+    core::check_drop(s);
+    CHECK(open(core::EventKind::drop_warning));
+    s.p2_psi = s.p1_psi - 3;
+    core::check_drop(s);
+    CHECK(!open(core::EventKind::drop_warning));
+    s.p2_psi = s.p1_psi - 10;
+    core::check_drop(s);
+    CHECK(open(core::EventKind::drop_alarm));
+    s.p2_psi = s.p1_psi - 9;  // margen de Tapados
+    core::check_drop(s);
+    CHECK(open(core::EventKind::drop_alarm));
+    s.p2_psi = s.p1_psi - 6;  // baja a Revisar
+    core::check_drop(s);
+    CHECK(!open(core::EventKind::drop_alarm));
+    CHECK(open(core::EventKind::drop_warning));
+    // Sin agua pasando la caída no dice nada: no se quita
+    s.flow_lpm = 0.0f;
+    s.p2_psi = s.p1_psi;
+    core::check_drop(s);
+    CHECK(open(core::EventKind::drop_warning));
+}
+
 }  // namespace
 
 int main() {
@@ -226,6 +303,9 @@ int main() {
     drop_against_baseline();
     level_from_the_bottom();
     mixer_waits_for_water();
+    calendar_day_change();
+    calendar_hour_samples();
+    drop_notices();
     if (failures == 0) std::printf("core: todo bien\n");
     return failures == 0 ? 0 : 1;
 }
