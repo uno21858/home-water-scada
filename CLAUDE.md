@@ -21,9 +21,12 @@ Mientras llega el hardware, se desarrolla en el simulador con SDL (Mac y Fedora)
   (`supply_lost`). Lo que decide:
   - `water`: `count_liters` (lo que contó F), `register_dose` y
     `register_filter`.
-  - `mixer`: el programa de la bomba R. En Auto corre 45 min después de cada
+  - `mixing`: el programa de la bomba R (no `mixer.h`: chocaría con
+    `ui/components/mixer.h` al incluirlo desde `ui/components/`). En Auto corre 45 min después de cada
     dosis y 15 cada `kMixEveryLiters` (1,000 L) de agua nueva; Prendida corre
-    60 y queda Apagada. Con un aviso del INA219 la vuelta queda pendiente.
+    60 y queda Apagada. Con un aviso del INA219 la vuelta queda pendiente, y
+    con la cisterna en 0 % (el mínimo de Calibrar nivel) no arranca o se
+    apaga: corre cuando sube el agua.
   - `monitor`: `tick_minute` (cada minuto) y el modo de cambio de cartuchos
     (`service_start`, `service_end`).
   - `events`: el registro que leen Alarmas e Historial.
@@ -108,7 +111,7 @@ CLion sale en la lista de configuraciones). La lista de targets está en
 `DEMO_SCENARIOS` de `simulator/CMakeLists.txt`: si se agrega un escenario al
 demo, va también ahí.
 Escenarios: `sin-flujo`, `sin-red`, `alarma`, `sensor`, `tope`, `fase1`,
-`revisar`, `tapados`, `sin-agua`, `sin-12v`, `nivel-bajo`, `atorada`,
+`revisar`, `tapados`, `sin-agua`, `cisterna-vacia`, `sin-12v`, `nivel-bajo`, `atorada`,
 `ro-cocina` y `completo` (`demo::set_scenario` en `simulator/demo.h`).
 El demo arranca como la casa de Erick, en la fase 1.5: todo menos la sonda ORP
 y las bombas A y B. `HMI_DEMO=completo` prende la sonda para comparar con el
@@ -343,8 +346,11 @@ de la fase 3 y el cambio de día.
   (2 o 3 cm del fondo para que no lo tape el lodo), la rejilla y Está llena.
   En el Tren el agua de la cisterna sube y baja con el nivel y dice "76 %
   útil" (con sonda ORP, "Cisterna · 76 %"). Diagnóstico muestra el A2 en V.
-  El demo trae un sensor de 0 a 2 m, lleno a 183 cm y con 150 cm (76 %);
-  `sin-agua` lo baja a 70 cm.
+  "Toma de la bomba de pozo" es el 0 %: Erick pone 60 cm (la rejilla anda
+  en ~45 y la bomba R en ~50, así quedan cubiertas). En 0 % la bomba R
+  espera agua ("Cisterna en 0 %: espera agua"). El demo trae un sensor de 0
+  a 2 m, el mínimo en 60, lleno a 183 cm y con 150 cm (73 %); `sin-agua` lo
+  baja a 70 cm y `cisterna-vacia` a 58 (0 %).
 - Repuestos en casa no está en el canvas: Ajustes > Cartuchos lleva
   "Cambiar" junto a "Ver cartuchos" y abre un renglón por cartucho (del 20 µm
   al sarro; el prefiltro no lleva) con − y + de 0 a 99. Cada toque se ve al

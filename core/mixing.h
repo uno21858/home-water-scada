@@ -9,7 +9,9 @@
 //
 // Si el INA219 vio algo (sin 12 V, nivel bajo, atorada) la bomba se apaga y
 // la vuelta queda pendiente: corre en cuanto se arregla. Atorada no se
-// reintenta sola: la revisa una persona y toca el selector.
+// reintenta sola: la revisa una persona y toca el selector. Con sensor de
+// nivel, en 0 % (el mínimo de Calibrar nivel) tampoco arranca, y si iba
+// corriendo se apaga: la vuelta corre cuando la cisterna sube.
 //
 // El firmware llama estas funciones y prende el GPIO44 según s.mixer_on.
 
@@ -37,5 +39,8 @@ void mixer_report_fault(SystemState& s, MixerFault fault);
 
 // Regresaron los 12 V: se quita el aviso y corre lo pendiente
 void mixer_power_back(SystemState& s);
+
+// La cisterna está en el mínimo (0 %): la bomba R espera agua
+bool mixer_low_water(const SystemState& s);
 
 }  // namespace core

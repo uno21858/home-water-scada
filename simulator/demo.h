@@ -20,7 +20,8 @@ const core::SystemState& state();
 //   completo   con la sonda ORP, como el canvas (Cisterna, ORP en Tren y Resumen)
 //   fase1      solo F y la bomba R: sin P1, P2 ni LDR
 //   revisar    caída 5.4 psi arriba de la de nuevos; tapados, 10.4 arriba
-//   sin-agua   se fue el agua del SIAPA: sin flujo y sin presión
+//   sin-agua   se fue el agua del SIAPA: sin flujo y sin presión; cisterna-vacia,
+//              además la cisterna bajó del mínimo y la bomba R espera agua
 //   sin-12v    la bomba R sin 12 V; nivel-bajo y atorada, los otros avisos del INA219
 //   ro-cocina  el RO de la cocina por instalar (Panorama)
 // Regresa false si el nombre no existe.

@@ -3,6 +3,7 @@
 #include <cstdio>
 
 #include "components/primitives.h"
+#include "mixing.h"
 #include "theme/colors.h"
 #include "theme/format.h"
 #include "theme/icons.h"
@@ -49,6 +50,8 @@ void mixer_status(char* out, size_t size, const core::SystemState& s) {
     const core::MixerReason reason = s.mixer_run_count > 0 ? s.mixer_runs[0].reason : core::MixerReason::manual;
     if (s.mixer_fault != core::MixerFault::none) {
         snprintf(out, size, "%s", fmt::mixer_fault_hint(static_cast<unsigned>(s.mixer_fault)));
+    } else if (!s.mixer_on && s.mixer_mode != core::MixerMode::off && core::mixer_low_water(s)) {
+        snprintf(out, size, "Cisterna en 0 %%: espera agua");
     } else if (s.mixer_on && reason == core::MixerReason::dose) {
         fmt::clock(at, sizeof at, s.mixer_started_at);
         snprintf(out, size, "Por la dosis de las %s", at);

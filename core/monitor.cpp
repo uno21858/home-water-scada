@@ -1,7 +1,7 @@
 #include "monitor.h"
 
 #include "events.h"
-#include "mixer.h"
+#include "mixing.h"
 
 namespace core {
 

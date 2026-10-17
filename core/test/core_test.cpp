@@ -7,7 +7,7 @@
 
 #include "events.h"
 #include "level.h"
-#include "mixer.h"
+#include "mixing.h"
 #include "monitor.h"
 #include "system_state.h"
 #include "water.h"
@@ -184,6 +184,35 @@ void level_from_the_bottom() {
     CHECK(core::level_pct(s) == 0);
 }
 
+void mixer_waits_for_water() {
+    core::SystemState s = house();
+    s.has_level = true;
+    s.level_range_cm = 200;
+    s.level_sensor_cm = 3;
+    s.level_intake_cm = 60;
+    s.level_full_cm = 183;
+    auto set_level = [&s](float cm) {
+        s.level_volts = s.level_zero_volts + (cm - 3.0f) / 200.0f * core::kLevelSpanVolts;
+    };
+    set_level(58.0f);  // abajo del mínimo: 0 %
+    CHECK(core::mixer_low_water(s));
+    core::register_dose(s, 40, false);
+    CHECK(!s.mixer_on);
+    CHECK(s.mixer_pending_min == 45);
+    minutes(s, 30);
+    CHECK(!s.mixer_on);
+    set_level(90.0f);  // regresó el agua
+    core::tick_minute(s);
+    CHECK(s.mixer_on);
+    CHECK(s.mixer_runs[0].reason == core::MixerReason::dose);
+    // Andando, la cisterna baja al mínimo: se apaga y queda pendiente
+    minutes(s, 10);
+    set_level(59.0f);
+    core::tick_minute(s);
+    CHECK(!s.mixer_on);
+    CHECK(s.mixer_pending_min == 45);
+}
+
 }  // namespace
 
 int main() {
@@ -196,6 +225,7 @@ int main() {
     supply_and_service();
     drop_against_baseline();
     level_from_the_bottom();
+    mixer_waits_for_water();
     if (failures == 0) std::printf("core: todo bien\n");
     return failures == 0 ? 0 : 1;
 }

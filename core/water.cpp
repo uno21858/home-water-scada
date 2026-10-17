@@ -3,7 +3,7 @@
 #include <algorithm>
 
 #include "events.h"
-#include "mixer.h"
+#include "mixing.h"
 
 namespace core {
 namespace {

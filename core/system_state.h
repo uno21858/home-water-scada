@@ -286,7 +286,8 @@ struct SystemState {
     float level_zero_volts = 0.132f;  // lo que marca en el aire; de fábrica 4 mA x 33 Ω
     uint16_t level_range_cm = 200;    // rango de la etiqueta: 0 a 2 m es 200
     uint8_t level_sensor_cm = 3;      // a cuánto del fondo quedó el sensor
-    uint8_t level_intake_cm = 45;     // la rejilla de la bomba de pozo (documento: ~45)
+    uint8_t level_intake_cm = 60;     // el 0 %: la rejilla de la bomba de pozo (documento: ~45)
+                                      // y un colchón; con 60 la bomba R (~50) sigue cubierta
     uint16_t level_full_cm = 0;       // nivel con la cisterna llena; 0 = sin marcar
 
     // Cambio de cartuchos: con V1 cerrada P1 baja a 0 igual que si se fuera el

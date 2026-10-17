@@ -8,7 +8,7 @@
 
 #include "events.h"
 #include "level.h"
-#include "mixer.h"
+#include "mixing.h"
 #include "monitor.h"
 #include "water.h"
 
@@ -52,11 +52,12 @@ core::SystemState make() {
     s.ldr_volts = 0.88f;  // lo que dio el LDR con luz de cuarto en la prueba del 11 oct
 
     // Sensor de nivel de 0 a 2 m, a 3 cm del fondo, con cero en el aire de
-    // 0.134 V y marcado lleno a 183 cm. Ahorita: 150 cm, 76 % útil.
+    // 0.134 V, el mínimo en 60 cm y marcado lleno a 183 cm. Ahorita: 150 cm,
+    // 73 % útil.
     s.has_level = true;
     s.level_range_cm = 200;
     s.level_sensor_cm = 3;
-    s.level_intake_cm = 45;
+    s.level_intake_cm = 60;
     s.level_zero_volts = 0.134f;
     s.level_full_cm = 183;
     s.level_volts = level_volts_at(150.0f, s);
@@ -353,14 +354,18 @@ bool set_scenario(const char* name) {
         drop(8);  // 5.4 psi más que los 2.6 de nuevos a 12.4 L/min
     } else if (std::strcmp(name, "tapados") == 0) {
         drop(13);  // 10.4 más
-    } else if (std::strcmp(name, "sin-agua") == 0) {
+    } else if (std::strcmp(name, "sin-agua") == 0 || std::strcmp(name, "cisterna-vacia") == 0) {
         // Se fue el agua del SIAPA: sin flujo y P1 y P2 en 0 al mismo tiempo
         stop_flow();
         s.p1_psi = s.p2_psi = 0;
         s.p1_volts = s.p2_volts = 0.5f;
         s.p1_24h.back() = s.p2_24h.back() = 0;
-        s.level_volts = level_volts_at(70.0f, s);  // la casa se ha ido comiendo la cisterna
+        // La casa se ha ido comiendo la cisterna; vacía ya pasó del mínimo y
+        // la bomba R se apaga a esperar agua
+        const bool empty = std::strcmp(name, "cisterna-vacia") == 0;
+        s.level_volts = level_volts_at(empty ? 58.0f : 70.0f, s);
         core::check_supply(s);  // lo anota ya, sin esperar al siguiente minuto
+        if (empty) core::mixer_tick_minute(s);
     } else if (std::strcmp(name, "sin-12v") == 0) {
         mixer_fault(core::MixerFault::no_power);
     } else if (std::strcmp(name, "nivel-bajo") == 0) {
