@@ -195,7 +195,7 @@ void PressureScreen::update(const core::SystemState& s) {
     const int drop = s.p1_psi - s.p2_psi;
     snprintf(buf, sizeof buf, "%d", drop);
     set_text(drop_value_, buf);
-    const core::Level level = core::pressure_drop_level(drop);
+    const core::Level level = core::drop_level(s);
     if (static_cast<int>(level) != drop_level_) {
         drop_level_ = static_cast<int>(level);
         const uint32_t fg = level == core::Level::ok ? colors::ok : level == core::Level::warning ? colors::warning

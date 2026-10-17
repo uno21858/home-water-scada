@@ -36,4 +36,9 @@ const char* alarm_short(unsigned kind);
 // core::Filter -> cada cuánto se purga o se cambia: "cada 7 días", "2 a 3 meses"
 const char* filter_every(unsigned filter);
 
+// core::MixerFault -> la palabra del estado: "Sin 12 V", "Nivel bajo", "Atorada"
+const char* mixer_fault(unsigned fault);
+// Y qué pasa con la mezcla, para el renglón de abajo (caben 456 px en Resumen)
+const char* mixer_fault_hint(unsigned fault);
+
 }  // namespace ui::fmt

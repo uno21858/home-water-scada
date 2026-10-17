@@ -57,6 +57,11 @@ lv_obj_t* icon(lv_obj_t* parent, const lv_image_dsc_t* src, uint32_t hex) {
     return obj;
 }
 
+void set_text_color(lv_obj_t* label, uint32_t hex) {
+    const lv_color_t tone = color(hex);
+    if (!lv_color_eq(lv_obj_get_style_text_color(label, LV_PART_MAIN), tone)) lv_obj_set_style_text_color(label, tone, 0);
+}
+
 void set_icon_color(lv_obj_t* icon, uint32_t hex) {
     lv_obj_set_style_image_recolor(icon, color(hex), 0);
     lv_obj_set_style_image_recolor_opa(icon, LV_OPA_COVER, 0);

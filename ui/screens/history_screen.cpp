@@ -542,6 +542,16 @@ void HistoryScreen::update_events(const core::SystemState& s) {
                 src = alarm ? &icon_alarma_32 : &icon_advertencia_32;
                 break;
             }
+            case core::EventKind::mixer_fault:
+                snprintf(title, sizeof title, "Bomba R · %s", fmt::mixer_fault(ev.value));
+                tone = icon_tone = colors::warning;
+                src = &icon_advertencia_32;
+                break;
+            case core::EventKind::no_supply:  // explica los días con pocos litros
+                snprintf(title, sizeof title, "Sin agua del SIAPA");
+                tone = icon_tone = colors::warning;
+                src = &icon_advertencia_32;
+                break;
         }
         set_text(r.title, title);
         set_text(r.when, when);

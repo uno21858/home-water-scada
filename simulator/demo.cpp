@@ -245,6 +245,17 @@ void add_event(core::EventKind kind, uint16_t value) {
     s.recent_event_count = static_cast<uint8_t>(std::min<int>(s.recent_event_count + 1, core::kEventCount));
 }
 
+// El aviso más nuevo de ese tipo que sigue sin quitarse ya se quitó
+void resolve_event(core::EventKind kind) {
+    for (int i = 0; i < s.recent_event_count; ++i) {
+        core::Event& e = s.recent_events[static_cast<size_t>(i)];
+        if (e.kind == kind && e.resolved_at == core::kNoTime) {
+            e.resolved_at = core::minute_of_day(s);
+            return;
+        }
+    }
+}
+
 void add_dose(uint32_t ml, bool typed) {
     std::rotate(s.recent_doses.rbegin(), s.recent_doses.rbegin() + 1, s.recent_doses.rend());
     s.recent_doses[0] = {s.today, core::minute_of_day(s), static_cast<uint16_t>(ml), typed};
@@ -254,7 +265,9 @@ void add_dose(uint32_t ml, bool typed) {
     s.days.back().dose_ml = static_cast<uint16_t>(s.days.back().dose_ml + ml);
     add_event(typed ? core::EventKind::dose_typed : core::EventKind::dose, static_cast<uint16_t>(ml));
     // Registrar la dosis prende la mezcla (documento: unos 45 minutos)
-    if (s.has_mixer && s.mixer_mode != core::MixerMode::off) start_mixer(core::MixerReason::dose, s.mixer_after_dose_min);
+    if (s.has_mixer && s.mixer_mode != core::MixerMode::off && s.mixer_fault == core::MixerFault::none) {
+        start_mixer(core::MixerReason::dose, s.mixer_after_dose_min);
+    }
 }
 
 void next_minute() {
@@ -286,7 +299,8 @@ void next_minute() {
             if (s.mixer_mode == core::MixerMode::on) s.mixer_mode = core::MixerMode::off;
         }
     }
-    if (s.mixer_mode == core::MixerMode::automatic && !s.mixer_on && core::minute_of_day(s) == s.mixer_next_at) {
+    if (s.mixer_mode == core::MixerMode::automatic && !s.mixer_on && s.mixer_fault == core::MixerFault::none &&
+        core::minute_of_day(s) == s.mixer_next_at) {
         start_mixer(core::MixerReason::schedule, s.mixer_every_4h_min);
         s.mixer_next_at = static_cast<uint16_t>((s.mixer_next_at + 4 * 60) % 1440);
     }
@@ -329,6 +343,15 @@ bool set_scenario(const char* name) {
         s.p2_psi = s.p1_psi - psi;
         s.p2_24h.back() = static_cast<uint8_t>(s.p2_psi);
     };
+    // La bomba R se apaga y deja su aviso, como lo haría el firmware con el INA219
+    auto mixer_fault = [](core::MixerFault fault) {
+        s.mixer_on = false;
+        s.mixer_minutes_left = 0;
+        s.mixer_amps = 0.0f;
+        if (fault == core::MixerFault::no_power) s.mixer_volts = 0.0f;
+        s.mixer_fault = fault;
+        add_event(core::EventKind::mixer_fault, static_cast<uint16_t>(fault));
+    };
     auto stop_flow = [] {
         no_flow = true;
         s.flow_lpm = 0.0f;
@@ -367,9 +390,22 @@ bool set_scenario(const char* name) {
     } else if (std::strcmp(name, "ro-cocina") == 0) {
         s.ro_kitchen_planned = true;
     } else if (std::strcmp(name, "revisar") == 0) {
-        drop(7);
+        drop(8);  // 5.4 psi más que los 2.6 de nuevos a 12.4 L/min
     } else if (std::strcmp(name, "tapados") == 0) {
-        drop(12);
+        drop(13);  // 10.4 más
+    } else if (std::strcmp(name, "sin-agua") == 0) {
+        // Se fue el agua del SIAPA: sin flujo y P1 y P2 en 0 al mismo tiempo
+        stop_flow();
+        s.p1_psi = s.p2_psi = 0;
+        s.p1_volts = s.p2_volts = 0.5f;
+        s.p1_24h.back() = s.p2_24h.back() = 0;
+        add_event(core::EventKind::no_supply, 0);
+    } else if (std::strcmp(name, "sin-12v") == 0) {
+        mixer_fault(core::MixerFault::no_power);
+    } else if (std::strcmp(name, "nivel-bajo") == 0) {
+        mixer_fault(core::MixerFault::dry);
+    } else if (std::strcmp(name, "atorada") == 0) {
+        mixer_fault(core::MixerFault::stuck);
     } else {
         return false;
     }
@@ -459,8 +495,14 @@ void on_dose_typed(uint32_t ml) { add_dose(ml, true); }
 void on_mixer_mode(core::MixerMode mode) {
     if (mode == s.mixer_mode) return;
     s.mixer_mode = mode;
+    // Tocar otro modo vuelve a intentar: el demo hace como que ya quedó.
+    // Sin 12 V no: eso se quita solo cuando regresa la luz.
+    if (s.mixer_fault != core::MixerFault::none && s.mixer_fault != core::MixerFault::no_power) {
+        s.mixer_fault = core::MixerFault::none;
+        resolve_event(core::EventKind::mixer_fault);
+    }
     if (mode == core::MixerMode::on) {
-        start_mixer(core::MixerReason::manual, s.mixer_manual_max_min);
+        if (s.mixer_fault == core::MixerFault::none) start_mixer(core::MixerReason::manual, s.mixer_manual_max_min);
     } else if (mode == core::MixerMode::off || mixer_by_hand) {
         s.mixer_on = false;  // apagarla, o pasar de a mano a Auto: espera la siguiente
     }

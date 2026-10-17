@@ -23,6 +23,10 @@ private:
 };
 
 // "Auto · programa de las 18:30", "A mano · se apaga sola a las 19:42"...
+// Con un aviso del INA219, qué pasa con la mezcla: "No se mezcló: espera agua nueva"
 void mixer_status(char* out, size_t size, const core::SystemState& s);
+
+// "Prendida" o "Apagada" en texto; con un aviso, su palabra en ámbar
+void mixer_state(lv_obj_t* label, const core::SystemState& s);
 
 }  // namespace ui

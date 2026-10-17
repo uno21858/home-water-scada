@@ -58,5 +58,7 @@ lv_obj_t* button_secondary(lv_obj_t* parent, int32_t x, int32_t y, int32_t w, co
 
 // Cambia el texto solo si es distinto: cada lv_label_set_text redibuja
 void set_text(lv_obj_t* label, const char* text);
+// Lo mismo con el color del texto
+void set_text_color(lv_obj_t* label, uint32_t hex);
 
 }  // namespace ui

@@ -121,9 +121,11 @@ void IdleScreen::update(const core::SystemState& s) {
     fmt::one_decimal(buf, sizeof buf, flowing ? s.flow_lpm : 0.0f);
     set_text(flow_value_, buf);
     pipe_.set_flow(flowing ? s.flow_lpm : 0.0f);
-    if (static_cast<int>(flowing) != flowing_) {
-        flowing_ = flowing;
-        set_text(flow_title_, flowing ? "Caudal" : "Sin flujo");
+    const int state = flowing ? 0 : core::supply_lost(s) ? 2 : 1;
+    if (state != flow_state_) {
+        flow_state_ = state;
+        set_text(flow_title_, state == 0 ? "Caudal" : state == 1 ? "Sin flujo" : "Sin agua del SIAPA");
+        set_text_color(flow_title_, state == 2 ? colors::warning : colors::text_secondary);
         lv_obj_set_style_text_color(flow_value_, color(flowing ? colors::water : colors::text_disabled), 0);
     }
 
@@ -140,7 +142,7 @@ void IdleScreen::update(const core::SystemState& s) {
         const int drop = s.p1_psi - s.p2_psi;
         snprintf(buf, sizeof buf, "%d", drop);
         set_text(drop_value_, buf);
-        const core::Level drop_level = core::pressure_drop_level(drop);
+        const core::Level drop_level = core::drop_level(s);
         if (static_cast<int>(drop_level) != drop_level_) {
             drop_level_ = static_cast<int>(drop_level);
             const uint32_t tone = drop_level == core::Level::ok        ? colors::ok

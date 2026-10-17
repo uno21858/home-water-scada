@@ -60,6 +60,17 @@ const char* alarm_short(unsigned kind) {
     return kind < 3 ? kTitles[kind] : "";
 }
 
+const char* mixer_fault(unsigned fault) {
+    static const char* const kWords[4] = {"", "Sin 12 V", "Nivel bajo", "Atorada"};
+    return fault < 4 ? kWords[fault] : "";
+}
+
+const char* mixer_fault_hint(unsigned fault) {
+    static const char* const kHints[4] = {"", "Se mezcla al regresar los 12 V", "No se mezcló: espera agua nueva",
+                                          "Se apagó: revisa que gire libre"};
+    return fault < 4 ? kHints[fault] : "";
+}
+
 const char* filter_every(unsigned filter) {
     static const char* const kEvery[6] = {"cada 7 días", "2 a 3 meses", "3 a 6 meses",
                                           "3 a 6 meses", "6 meses",     "1 año"};

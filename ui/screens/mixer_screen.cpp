@@ -167,7 +167,7 @@ void MixerScreen::update(const core::SystemState& s) {
     }
 
     char buf[64];
-    set_text(state_, s.mixer_on ? "Prendida" : "Apagada");
+    mixer_state(state_, s);
     impeller_.set_spinning(s.mixer_on);
     lv_obj_set_hidden(side_, !s.mixer_on);
     lv_obj_set_hidden(bar_, !s.mixer_on);

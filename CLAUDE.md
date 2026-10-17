@@ -15,7 +15,9 @@ Mientras llega el hardware, se desarrolla en el simulador con SDL (Mac y Fedora)
 ## Estructura
 
 - `core/`: lógica pura, sin LVGL ni hardware. `system_state.h` es el estado que
-  muestra la interfaz y los umbrales del DS (caída del tren, ORP).
+  muestra la interfaz y los umbrales: la caída del tren contra la de cartuchos
+  nuevos al mismo caudal (`drop_level`, documento pág. 40), el ORP del DS y el
+  sin agua del SIAPA (`supply_lost`).
 - `ui/`: la interfaz. No sabe nada de SDL ni del ESP32.
   - `ui.h/.cpp`: `init()`, `update()`, `show()` y las `Actions` que regresan a la
     app. Una sola screen con encabezado, contenido y barra fijos; cada pantalla es
@@ -55,7 +57,11 @@ Mientras llega el hardware, se desarrolla en el simulador con SDL (Mac y Fedora)
   2026) hay un solo micro, la 7B. F entra al GPIO6 (PCNT) y la bomba R sale
   por un MOSFET en el GPIO44, vigilada por un INA219 (0x40). En la caja
   Hammond, junto a la pantalla y por I2C, va el ADS1115 (0x48: A0 P1, A1 P2,
-  A2 libre para un sensor de nivel, A3 el LDR). El RS485 de la 7B es solo para
+  A2 libre para un sensor de nivel, A3 el LDR). P1 y P2 entran por un divisor
+  10k/10k (Erick lo dejó así, octubre 2026; el documento lo trae como opción):
+  el firmware multiplica por 2 y `p1_volts` es la salida del sensor. El
+  INA219 apaga la bomba R y deja `mixer_fault` (sin 12 V, nivel bajo,
+  atorada); el firmware lo quita cuando se arregla. El RS485 de la 7B es solo para
   el EZO-ORP de la fase 2, y las bombas A y B (fase 3) van por un PCF8574
   (0x20).
 - `firmware/nodo` y `hardware/nodo`: del plan viejo con un segundo ESP32 por
@@ -76,8 +82,8 @@ cmake --build build -j
 
 Para ver un estado del canvas sin tocar código: `HMI_DEMO=alarma ./build/simulator`.
 Escenarios: `sin-flujo`, `sin-red`, `alarma`, `sensor`, `tope`, `fase1`,
-`revisar`, `tapados`, `ro-cocina` y `completo` (`demo::set_scenario` en
-`simulator/demo.h`).
+`revisar`, `tapados`, `sin-agua`, `sin-12v`, `nivel-bajo`, `atorada`,
+`ro-cocina` y `completo` (`demo::set_scenario` en `simulator/demo.h`).
 El demo arranca como la casa de Erick, en la fase 1.5: todo menos la sonda ORP
 y las bombas A y B. `HMI_DEMO=completo` prende la sonda para comparar con el
 canvas. Dosis con 0.1 mL por litro (la prueba de jarras del documento: el
@@ -197,8 +203,12 @@ Pendiente, en este orden:
   el borde de su botón.
 - En DetalleCaida los textos que no cabían se acortaron: "con 12.4 L/min",
   "Mismo caudal: 12.4 L/min" y "Subió 1.4 psi desde 2 sep" (de 10 psi para
-  arriba sin decimal). "Si llega a Revisar" se leía como verbo: dice "Si llega
-  a 5 psi (Revisar)".
+  arriba sin decimal). "Si llega a Revisar" se leía como verbo: dice "Si sube
+  5 psi (Revisar)".
+- La caída se califica contra la de cartuchos nuevos al mismo caudal, como
+  dice el documento (Revisar a +5 psi y Tapados a +10), no con 5 y 10 psi
+  fijos como el DS. La cifra grande sigue siendo P1 − P2, pero la escala de
+  DetalleCaida va de 0 a "+15 psi" y la marca es lo que subió.
 - Los vasos del Tren salen llenos o vacíos según `filters[].installed` (en el
   canvas el del sarro siempre está vacío). Poner cartucho en un vaso vacío se
   registra como `EventKind::cartridge_added`: "· puesto" en Historial y "Se
@@ -225,8 +235,21 @@ Pendiente, en este orden:
 - Alarmas e Historial leen el mismo registro (`SystemState::recent_events`).
   El demo junta los eventos de los dos canvas, así que la lista no sale igual
   a ninguno; con más de 5 renglones se recorre con el dedo. "Activas" lista
-  las alarmas activas (reconocidas o no) con "Desde 18:42"; el canvas solo
-  dibuja el caso sin ninguna. Historial no muestra los "Sin red".
+  las alarmas activas (reconocidas o no) con "Desde 18:42" y los avisos que
+  siguen sin quitarse; el canvas solo dibuja el caso sin ninguna. Historial
+  no muestra los "Sin red".
+- Avisos que no están en el DS, en ámbar con palabra (pastilla en
+  Advertencia, sin pantalla completa):
+  - Bomba R (documento pág. 40): "Sin 12 V", "Nivel bajo" o "Atorada" en
+    lugar de Prendida o Apagada en Mezcla, Resumen y la R del Tren, con lo
+    que pasa abajo ("No se mezcló: espera agua nueva"). En Alarmas e Historial
+    "Bomba R · Atorada". El demo lo quita al tocar otro modo (sin 12 V no).
+  - Sin agua del SIAPA: sin flujo y P1 abajo de 3 psi al mismo tiempo (sin
+    flujo con presión es la cisterna llena). "Sin agua" arriba de SIAPA en el
+    Tren, "Sin agua del SIAPA" en lugar de "Sin flujo" en Flujo, Resumen y
+    Pasillo, y en Alarmas e Historial.
+- Registrar una dosis prende la mezcla (`mixer_after_dose_min`) y la bomba R
+  dice "Por la dosis de las 18:42".
 - En Diagnóstico, "Probar alarma" va sin ícono: con él no cabe en 239 px (en el
   canvas se sale del botón). El canvas es de la 5B con un nodo; aquí es el
   mapa de pines de la 7B del documento: Entradas (GPIO6, A0, A1, A3 y A2

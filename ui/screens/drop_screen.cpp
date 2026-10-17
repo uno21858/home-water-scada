@@ -19,7 +19,10 @@ namespace {
 
 constexpr int32_t kValueY = 44 + 10;  // cifra de 136 bajada como en Cisterna
 
-// Escala de 0 a 15 psi en 576 px, tres zonas de 5 psi
+// Escala de lo que subió la caída sobre cartuchos nuevos al mismo caudal
+// (documento: Revisar a +5 y Tapados a +10), de 0 a +15 psi en 576 px.
+// El canvas la pinta con la caída completa; así no se confunde la caída
+// natural de mucho caudal con cartuchos tapados.
 constexpr int32_t kScaleW = 576;
 int32_t scale_x(float psi) { return static_cast<int32_t>(std::lround(std::clamp(psi, 0.0f, 15.0f) * kScaleW / 15.0f)); }
 
@@ -45,15 +48,6 @@ constexpr float kPlotH = 102.0f;     // de 0 a 6 psi
 float chart_x(float lpm) { return kPlotX + std::clamp(lpm, 0.0f, 15.0f) / 15.0f * kPlotW; }
 float chart_y(float psi) { return kPlotBase - std::clamp(psi, 0.0f, 6.0f) / 6.0f * kPlotH; }
 int32_t px(float v) { return static_cast<int32_t>(std::lround(v)); }
-
-// Caída con cartuchos nuevos a cualquier caudal, entre las de cada L/min
-float new_drop(const core::SystemState& s, float lpm) {
-    const float q = std::clamp(lpm, 0.0f, 15.0f);
-    const int i = std::min(14, static_cast<int>(q));
-    const float a = s.drop_new_tenths[static_cast<size_t>(i)] / 10.0f;
-    const float b = s.drop_new_tenths[static_cast<size_t>(i + 1)] / 10.0f;
-    return a + (b - a) * (q - static_cast<float>(i));
-}
 
 lv_obj_t* axis_label(lv_obj_t* parent, const char* text, int32_t x, int32_t y, lv_text_align_t align) {
     lv_obj_t* obj = label(parent, &font_label_26, colors::text_disabled, text);
@@ -113,9 +107,9 @@ void DropScreen::create_scale(lv_obj_t* page) {
         lv_obj_set_style_text_color(zone_names_[i], color(colors::text_secondary), 0);
     }
     axis_label(scale, "0", 0, -3, LV_TEXT_ALIGN_LEFT);
-    axis_label(scale, "5", scale_x(5), -3, LV_TEXT_ALIGN_CENTER);
-    axis_label(scale, "10", scale_x(10), -3, LV_TEXT_ALIGN_CENTER);
-    axis_label(scale, "15 psi", kScaleW, -3, LV_TEXT_ALIGN_RIGHT);
+    axis_label(scale, "+5", scale_x(5), -3, LV_TEXT_ALIGN_CENTER);
+    axis_label(scale, "+10", scale_x(10), -3, LV_TEXT_ALIGN_CENTER);
+    axis_label(scale, "+15 psi", kScaleW, -3, LV_TEXT_ALIGN_RIGHT);
     marker_ = box(scale, 0, 26, 6, 44);
     lv_obj_set_style_radius(marker_, 2, 0);
     fill(marker_, colors::text);
@@ -172,8 +166,8 @@ void DropScreen::create_side(lv_obj_t* page) {
     lv_obj_set_pos(rise_, 16, 144);
 
     lv_obj_t* todo = card(page, 628, 220, 380, 136);
-    // "Si llega a Revisar" se leía como verbo: dice el número y la zona de la barra
-    lv_obj_set_pos(label(todo, &font_label_26, colors::text_secondary, "Si llega a 5 psi (Revisar)"), 16, 10);
+    // "Si llega a Revisar" se leía como verbo: dice cuánto y la zona de la barra
+    lv_obj_set_pos(label(todo, &font_label_26, colors::text_secondary, "Si sube 5 psi (Revisar)"), 16, 10);
     lv_obj_t* steps = label(todo, &font_label_26, colors::text, "1. Purga el PRF\n2. Cambia el de 20 µm");
     lv_obj_set_pos(steps, 16, 46);
 
@@ -198,7 +192,7 @@ void DropScreen::update(const core::SystemState& s) {
     lv_text_get_size(&size, buf, &font_digits_136, 0, 0, LV_COORD_MAX, LV_TEXT_FLAG_NONE);
     lv_obj_set_x(unit_, 16 + size.x + 13);
     lv_obj_set_x(state_, 16 + size.x + 13);
-    lv_obj_set_x(marker_, scale_x(static_cast<float>(drop)) - 3);
+    lv_obj_set_x(marker_, scale_x(core::drop_rise(s)) - 3);
 
     snprintf(buf, sizeof buf, "P1 %d \xE2\x88\x92 P2 %d", s.p1_psi, s.p2_psi);
     set_text(formula_, buf);
@@ -210,7 +204,7 @@ void DropScreen::update(const core::SystemState& s) {
     }
     set_text(flow_note_, buf);
 
-    const core::Level level = core::pressure_drop_level(drop);
+    const core::Level level = core::drop_level(s);
     if (static_cast<int>(level) != level_) {
         level_ = static_cast<int>(level);
         const int zone = static_cast<int>(level);
@@ -231,7 +225,7 @@ void DropScreen::update(const core::SystemState& s) {
     // esta tarjeta tienen 346 px: "Al mismo caudal, 12.3 L/min" no cabía
     snprintf(buf, sizeof buf, "Mismo caudal: %.1f L/min", static_cast<double>(s.flow_lpm));
     set_text(same_flow_title_, buf);
-    const float fresh = new_drop(s, s.flow_lpm);
+    const float fresh = core::baseline_drop(s, s.flow_lpm);
     snprintf(buf, sizeof buf, "%.1f", static_cast<double>(fresh));
     set_text(new_value_, buf);
     snprintf(buf, sizeof buf, "%.1f", static_cast<double>(drop));

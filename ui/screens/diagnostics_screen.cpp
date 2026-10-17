@@ -1,10 +1,12 @@
 #include "screens/diagnostics_screen.h"
 
+#include <cctype>
 #include <cstdio>
 
 #include "components/primitives.h"
 #include "theme/colors.h"
 #include "theme/fonts.h"
+#include "theme/format.h"
 #include "theme/icons.h"
 #include "ui.h"
 
@@ -38,13 +40,13 @@ lv_obj_t* entry(lv_obj_t* c, const char* name, const char* value, uint32_t tone 
 // "Responde" en verde o "No responde" en rojo
 void device(lv_obj_t* value, bool ok) {
     set_text(value, ok ? "Responde" : "No responde");
-    lv_obj_set_style_text_color(value, color(ok ? colors::ok : colors::alarm), 0);
+    set_text_color(value, ok ? colors::ok : colors::alarm);
 }
 
 // Lo de una fase que todavía no se instala: "fase 2" en texto-3
 void future(lv_obj_t* value, const char* text) {
     set_text(value, text);
-    lv_obj_set_style_text_color(value, color(colors::text_disabled), 0);
+    set_text_color(value, colors::text_disabled);
 }
 
 }  // namespace
@@ -109,10 +111,10 @@ void DiagnosticsScreen::update(const core::SystemState& s) {
     if (s.has_pressure) {
         snprintf(buf, sizeof buf, "%.3f V", static_cast<double>(s.p1_volts));
         set_text(a0_, buf);
-        lv_obj_set_style_text_color(a0_, color(colors::text), 0);
+        set_text_color(a0_, colors::text);
         snprintf(buf, sizeof buf, "%.3f V", static_cast<double>(s.p2_volts));
         set_text(a1_, buf);
-        lv_obj_set_style_text_color(a1_, color(colors::text), 0);
+        set_text_color(a1_, colors::text);
     } else {
         future(a0_, "fase 1.5");
         future(a1_, "fase 1.5");
@@ -127,7 +129,7 @@ void DiagnosticsScreen::update(const core::SystemState& s) {
     if (s.has_ldr) {
         snprintf(buf, sizeof buf, "%.3f V", static_cast<double>(s.ldr_volts));
         set_text(a3_, buf);
-        lv_obj_set_style_text_color(a3_, color(colors::text), 0);
+        set_text_color(a3_, colors::text);
     } else {
         future(a3_, "libre");
     }
@@ -136,13 +138,18 @@ void DiagnosticsScreen::update(const core::SystemState& s) {
     device(ina_, s.devices.ina219);
 
     // Bomba R con lo que lee el INA219: la corriente si anda (que pase
-    // corriente es que está prendida) y 0 V es que no le llegan los 12 V:
-    // apagón o fusible. "prendida · 1.58 A" no cabe junto al nombre.
+    // corriente es que está prendida), el aviso que dejó o "sin 12 V" aunque
+    // esté apagada (0 V es apagón o fusible), en ámbar y en minúscula como los
+    // demás. "prendida · 1.58 A" no cabe junto al nombre.
+    const bool no_power = s.mixer_volts < 1.0f;
     if (!s.has_mixer) {
         future(mixer_, "sin bomba");
-    } else if (s.mixer_volts < 1.0f) {
-        set_text(mixer_, "sin 12 V");
-        lv_obj_set_style_text_color(mixer_, color(colors::warning), 0);
+    } else if (s.mixer_fault != core::MixerFault::none || no_power) {
+        const auto fault = no_power ? core::MixerFault::no_power : s.mixer_fault;
+        snprintf(buf, sizeof buf, "%s", fmt::mixer_fault(static_cast<unsigned>(fault)));
+        buf[0] = static_cast<char>(std::tolower(static_cast<unsigned char>(buf[0])));
+        set_text(mixer_, buf);
+        set_text_color(mixer_, colors::warning);
     } else {
         if (s.mixer_on) {
             snprintf(buf, sizeof buf, "%.2f A", static_cast<double>(s.mixer_amps));
@@ -150,7 +157,7 @@ void DiagnosticsScreen::update(const core::SystemState& s) {
             snprintf(buf, sizeof buf, "apagada");
         }
         set_text(mixer_, buf);
-        lv_obj_set_style_text_color(mixer_, color(colors::text), 0);
+        set_text_color(mixer_, colors::text);
     }
     if (s.has_pumps) {
         device(pumps_, s.devices.pcf8574);
@@ -167,10 +174,10 @@ void DiagnosticsScreen::update(const core::SystemState& s) {
     set_text(wifi_name_, buf);
     const char* const strength[4] = {"sin señal", "señal débil", "señal regular", "señal buena"};
     set_text(wifi_, s.wifi_ok ? strength[s.wifi_bars % 4] : "sin conexión");
-    lv_obj_set_style_text_color(wifi_, color(s.wifi_ok ? colors::text : colors::warning), 0);
+    set_text_color(wifi_, s.wifi_ok ? colors::text : colors::warning);
     const bool up_to_date = s.wifi_ok && s.pending_uploads == 0;
     set_text(server_, up_to_date ? "al día" : "pendiente");
-    lv_obj_set_style_text_color(server_, color(up_to_date ? colors::ok : colors::warning), 0);
+    set_text_color(server_, up_to_date ? colors::ok : colors::warning);
     snprintf(buf, sizeof buf, "%u", static_cast<unsigned>(s.pending_uploads));
     set_text(pending_, buf);
 

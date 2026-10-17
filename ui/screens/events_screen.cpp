@@ -29,6 +29,8 @@ Look look_of(core::EventKind kind) {
             return {&icon_cartucho_32, colors::text_secondary, colors::text};
         case core::EventKind::drop_warning:
         case core::EventKind::offline:
+        case core::EventKind::mixer_fault:
+        case core::EventKind::no_supply:
             return {&icon_advertencia_32, colors::warning, colors::warning};
         case core::EventKind::drop_alarm:
         case core::EventKind::alarm:
@@ -125,7 +127,7 @@ void EventsScreen::on_filter(int index, void* user_data) {
 
 void EventsScreen::refresh() {
     char title[48];
-    char when[64];
+    char when[96];
     char status[32];
     char time[8];
     size_t shown = 0;
@@ -146,81 +148,105 @@ void EventsScreen::refresh() {
             set_text(r.when, when);
             set_text(r.status, a.acknowledged ? "Reconocida" : "Activa");
         }
-        snprintf(status, sizeof status, shown == 1 ? "1 activa" : "%u activas", static_cast<unsigned>(shown));
-        set_text(summary_, status);
-    } else {
-        for (size_t i = 0; i < event_count_ && shown < rows_.size(); ++i) {
-            const core::Event& ev = events_[i];
-            const uint32_t ago = today_ >= ev.day ? today_ - ev.day : 0;
-            if (filter_ == Filter::today ? ago != 0 : ago >= 7) continue;
-
-            const char* detail = "";
-            switch (ev.kind) {
-                case core::EventKind::dose:
-                case core::EventKind::dose_typed:
-                    snprintf(title, sizeof title, "Dosis %u mL", static_cast<unsigned>(ev.value));
-                    detail = ev.kind == core::EventKind::dose ? " · en la boca B" : " · otra cantidad";
-                    snprintf(status, sizeof status, "Registrada");
-                    break;
-                case core::EventKind::cartridge:
-                    snprintf(title, sizeof title, "Cambio de cartucho %s", fmt::filter_name(ev.value));
-                    snprintf(status, sizeof status, "Registrado");
-                    break;
-                case core::EventKind::cartridge_added:
-                    snprintf(title, sizeof title, "Se puso cartucho %s", fmt::filter_name(ev.value));
-                    snprintf(status, sizeof status, "Registrado");
-                    break;
-                case core::EventKind::purge:
-                    snprintf(title, sizeof title, "Purga del prefiltro");
-                    snprintf(status, sizeof status, "Registrada");
-                    break;
-                case core::EventKind::drop_warning:
-                case core::EventKind::drop_alarm:
-                    snprintf(title, sizeof title, "Caída del tren %u psi · %s", static_cast<unsigned>(ev.value),
-                             ev.kind == core::EventKind::drop_warning ? "Revisar" : "Tapados");
-                    break;
-                case core::EventKind::offline:
-                    snprintf(title, sizeof title, "Sin red %u min", static_cast<unsigned>(ev.value));
-                    detail = " · se guardó y se mandó después";
-                    break;
-                case core::EventKind::alarm:
-                    snprintf(title, sizeof title, "%s", fmt::alarm_title(ev.value));
-                    break;
-            }
-            // Avisos y alarmas: si ya se resolvió y cuándo
-            const bool notice = ev.kind == core::EventKind::drop_warning || ev.kind == core::EventKind::drop_alarm ||
-                                ev.kind == core::EventKind::offline || ev.kind == core::EventKind::alarm;
-            if (notice) {
-                if (ev.resolved_at == core::kNoTime) {
-                    snprintf(status, sizeof status, "Activa");
-                } else {
-                    fmt::clock(time, sizeof time, ev.resolved_at);
-                    snprintf(status, sizeof status, "Resuelta %s", time);
-                }
-            }
-            char ack[32] = "";
-            if (ev.kind == core::EventKind::alarm && ev.acknowledged_at != core::kNoTime) {
-                fmt::clock(time, sizeof time, ev.acknowledged_at);
-                snprintf(ack, sizeof ack, " · reconocida %s", time);
-                detail = ack;
-            }
-            char date[32];
-            when_text(date, sizeof date, date_, year_, today_, ev);
-            snprintf(when, sizeof when, "%s%s", date, detail);
-
-            Row& r = rows_[shown++];
-            const Look look = look_of(ev.kind);
-            lv_obj_set_hidden(r.obj, false);
-            lv_image_set_src(r.icon, look.icon);
-            set_icon_color(r.icon, look.tone);
-            set_text(r.title, title);
-            lv_obj_set_style_text_color(r.title, color(look.title_tone), 0);
-            set_text(r.when, when);
-            set_text(r.status, status);
-        }
-        snprintf(status, sizeof status, shown == 1 ? "1 evento" : "%u eventos", static_cast<unsigned>(shown));
-        set_text(summary_, status);
     }
+    for (size_t i = 0; i < event_count_ && shown < rows_.size(); ++i) {
+        const core::Event& ev = events_[i];
+        const uint32_t ago = today_ >= ev.day ? today_ - ev.day : 0;
+        // Avisos y alarmas: si ya se resolvió y cuándo
+        const bool notice = ev.kind == core::EventKind::drop_warning || ev.kind == core::EventKind::drop_alarm ||
+                            ev.kind == core::EventKind::offline || ev.kind == core::EventKind::alarm ||
+                            ev.kind == core::EventKind::mixer_fault || ev.kind == core::EventKind::no_supply;
+        if (filter_ == Filter::active) {
+            // Además de las alarmas, los avisos que siguen sin quitarse
+            if (!notice || ev.kind == core::EventKind::alarm || ev.resolved_at != core::kNoTime) continue;
+        } else if (filter_ == Filter::today ? ago != 0 : ago >= 7) {
+            continue;
+        }
+
+        const char* detail = "";
+        char hint[48] = "";
+        switch (ev.kind) {
+            case core::EventKind::dose:
+            case core::EventKind::dose_typed:
+                snprintf(title, sizeof title, "Dosis %u mL", static_cast<unsigned>(ev.value));
+                detail = ev.kind == core::EventKind::dose ? " · en la boca B" : " · otra cantidad";
+                snprintf(status, sizeof status, "Registrada");
+                break;
+            case core::EventKind::cartridge:
+                snprintf(title, sizeof title, "Cambio de cartucho %s", fmt::filter_name(ev.value));
+                snprintf(status, sizeof status, "Registrado");
+                break;
+            case core::EventKind::cartridge_added:
+                snprintf(title, sizeof title, "Se puso cartucho %s", fmt::filter_name(ev.value));
+                snprintf(status, sizeof status, "Registrado");
+                break;
+            case core::EventKind::purge:
+                snprintf(title, sizeof title, "Purga del prefiltro");
+                snprintf(status, sizeof status, "Registrada");
+                break;
+            case core::EventKind::drop_warning:
+            case core::EventKind::drop_alarm:
+                snprintf(title, sizeof title, "Caída del tren %u psi · %s", static_cast<unsigned>(ev.value),
+                         ev.kind == core::EventKind::drop_warning ? "Revisar" : "Tapados");
+                break;
+            case core::EventKind::offline:
+                snprintf(title, sizeof title, "Sin red %u min", static_cast<unsigned>(ev.value));
+                detail = " · se guardó y se mandó después";
+                break;
+            case core::EventKind::alarm:
+                snprintf(title, sizeof title, "%s", fmt::alarm_title(ev.value));
+                break;
+            case core::EventKind::mixer_fault:
+                snprintf(title, sizeof title, "Bomba R · %s", fmt::mixer_fault(ev.value));
+                // A media frase en minúscula: "Hoy 18:42 · no se mezcló: espera agua nueva"
+                {
+                    // El "·" son 2 bytes en UTF-8: la letra va después de todo el prefijo
+                    static constexpr char kDot[] = " · ";
+                    snprintf(hint, sizeof hint, "%s%s", kDot, fmt::mixer_fault_hint(ev.value));
+                    char& first = hint[sizeof kDot - 1];
+                    first = static_cast<char>(std::tolower(static_cast<unsigned char>(first)));
+                }
+                detail = hint;
+                break;
+            case core::EventKind::no_supply:
+                snprintf(title, sizeof title, "Sin agua del SIAPA");
+                detail = " · sin flujo ni presión";
+                break;
+        }
+        if (notice) {
+            if (ev.resolved_at == core::kNoTime) {
+                snprintf(status, sizeof status, "Activa");
+            } else {
+                fmt::clock(time, sizeof time, ev.resolved_at);
+                snprintf(status, sizeof status, "Resuelta %s", time);
+            }
+        }
+        char ack[32] = "";
+        if (ev.kind == core::EventKind::alarm && ev.acknowledged_at != core::kNoTime) {
+            fmt::clock(time, sizeof time, ev.acknowledged_at);
+            snprintf(ack, sizeof ack, " · reconocida %s", time);
+            detail = ack;
+        }
+        char date[32];
+        when_text(date, sizeof date, date_, year_, today_, ev);
+        snprintf(when, sizeof when, "%s%s", date, detail);
+
+        Row& r = rows_[shown++];
+        const Look look = look_of(ev.kind);
+        lv_obj_set_hidden(r.obj, false);
+        lv_image_set_src(r.icon, look.icon);
+        set_icon_color(r.icon, look.tone);
+        set_text(r.title, title);
+        lv_obj_set_style_text_color(r.title, color(look.title_tone), 0);
+        set_text(r.when, when);
+        set_text(r.status, status);
+    }
+    if (filter_ == Filter::active) {
+        snprintf(status, sizeof status, shown == 1 ? "1 activa" : "%u activas", static_cast<unsigned>(shown));
+    } else {
+        snprintf(status, sizeof status, shown == 1 ? "1 evento" : "%u eventos", static_cast<unsigned>(shown));
+    }
+    set_text(summary_, status);
     for (size_t i = shown; i < rows_.size(); ++i) lv_obj_set_hidden(rows_[i].obj, true);
     if (filter_ != shown_filter_) {  // otro filtro: la lista vuelve arriba
         shown_filter_ = filter_;

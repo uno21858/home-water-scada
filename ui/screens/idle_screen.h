@@ -54,7 +54,7 @@ private:
 
     // -1 = todavía no se pinta
     int level_ = -1;
-    int flowing_ = -1;
+    int flow_state_ = -1;  // 0 con flujo, 1 sin flujo, 2 sin agua
     int drop_level_ = -1;
     int three_digits_ = -1;
 };

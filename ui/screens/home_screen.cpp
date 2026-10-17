@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cstdio>
 
+#include "components/mixer.h"
 #include "components/primitives.h"
 #include "theme/colors.h"
 #include "theme/fonts.h"
@@ -106,6 +107,13 @@ void HomeScreen::create_pipes(lv_obj_t* page) {
 void HomeScreen::create_inlet(lv_obj_t* page) {
     tag_text(page, "SIAPA", 16, 240);
     symbol(page, &pid_medidor, 16, 276);
+
+    // Se fue el agua: el aviso va pegado a de dónde viene, con ícono y palabra
+    no_supply_ = row(page, 6, LV_FLEX_ALIGN_CENTER);
+    lv_obj_set_pos(no_supply_, 16, 200);
+    icon(no_supply_, &icon_advertencia_28, colors::warning);
+    label(no_supply_, &font_label_26, colors::warning, "Sin agua");
+    lv_obj_set_hidden(no_supply_, true);
 
     // Prefiltro PRF. El cuerpo tiene esquinas redondas solo abajo: se hace
     // 10 px más alto hacia arriba y la cabeza tapa las esquinas de arriba.
@@ -310,6 +318,8 @@ void HomeScreen::update(const core::SystemState& s) {
     const float fraction = std::clamp(flowing ? s.flow_lpm / 30.0f : 0.0f, 0.0f, 1.0f);
     lv_obj_set_width(f_fill_, static_cast<int32_t>(fraction * static_cast<float>(f_.bar_w)));
 
+    lv_obj_set_hidden(no_supply_, !core::supply_lost(s));
+
     has_pumps_ = s.has_pumps;
     update_pressure(s);
     update_orp(s);
@@ -354,7 +364,7 @@ void HomeScreen::update_pressure(const core::SystemState& s) {
     snprintf(buf, sizeof buf, "%d", drop);
     set_text(drop_value_, buf);
 
-    const core::Level level = core::pressure_drop_level(drop);
+    const core::Level level = core::drop_level(s);
     if (static_cast<int>(level) == drop_level_) return;
     drop_level_ = static_cast<int>(level);
     uint32_t fg = colors::ok;
@@ -411,7 +421,7 @@ void HomeScreen::update_mixer(const core::SystemState& s) {
     lv_obj_set_hidden(r_live_, !s.has_mixer);
     lv_obj_set_hidden(pump_ring_, !s.has_mixer);
     lv_obj_set_hidden(pump_rotor_, !s.has_mixer);
-    if (s.has_mixer) set_text(r_state_, s.mixer_on ? "Prendida" : "Apagada");
+    if (s.has_mixer) mixer_state(r_state_, s);
 
     // 0 = no instalada, 1 = apagada, 2 = girando
     const int state = !s.has_mixer ? 0 : s.mixer_on ? 2 : 1;

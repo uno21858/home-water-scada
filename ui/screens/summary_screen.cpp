@@ -269,9 +269,12 @@ void SummaryScreen::update_flow(const core::SystemState& s) {
     char buf[16];
     fmt::one_decimal(buf, sizeof buf, flowing ? s.flow_lpm : 0.0f);
     set_text(flow_value_, buf);
-    if (static_cast<int>(flowing) != flowing_) {
-        flowing_ = flowing;
-        set_text(flow_title_, flowing ? "Caudal" : "Sin flujo");
+    const int state = flowing ? 0 : core::supply_lost(s) ? 2 : 1;
+    if (state != flow_state_) {
+        flow_state_ = state;
+        // Sin flujo y sin presión: se fue el agua, en ámbar con la palabra
+        set_text(flow_title_, state == 0 ? "Caudal" : state == 1 ? "Sin flujo" : "Sin agua del SIAPA");
+        set_text_color(flow_title_, state == 2 ? colors::warning : colors::text_secondary);
         const uint32_t tone = flowing ? colors::water : colors::text_disabled;
         lv_obj_set_style_text_color(flow_value_, color(tone), 0);
         lv_obj_set_style_bg_color(chart_dot_, color(tone), 0);
@@ -390,7 +393,7 @@ void SummaryScreen::update_filters(const core::SystemState& s) {
     snprintf(buf, sizeof buf, "%d", drop);
     set_text(drop_value_, buf);
 
-    const core::Level level = core::pressure_drop_level(drop);
+    const core::Level level = core::drop_level(s);
     if (static_cast<int>(level) == drop_level_) return;
     drop_level_ = static_cast<int>(level);
 
@@ -424,7 +427,7 @@ void SummaryScreen::update_mixer(const core::SystemState& s) {
         return;
     }
 
-    set_text(mixer_state_, s.mixer_on ? "Prendida" : "Apagada");
+    mixer_state(mixer_state_, s);
     lv_obj_set_hidden(mixer_left_, !s.mixer_on);
     lv_obj_set_hidden(mixer_bar_, !s.mixer_on);
 

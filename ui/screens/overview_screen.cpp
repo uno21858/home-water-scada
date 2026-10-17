@@ -270,7 +270,7 @@ void OverviewScreen::update(const core::SystemState& s) {
         const int drop = s.p1_psi - s.p2_psi;
         snprintf(buf, sizeof buf, "Caída %d psi", drop);
         set_text(drop_, buf);
-        const core::Level level = core::pressure_drop_level(drop);
+        const core::Level level = core::drop_level(s);
         if (static_cast<int>(level) != drop_level_) {
             drop_level_ = static_cast<int>(level);
             lv_image_set_src(drop_icon_, level == core::Level::ok        ? &icon_ok_28

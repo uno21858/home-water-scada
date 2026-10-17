@@ -2,6 +2,7 @@
 // Estado del sistema que muestra la pantalla.
 // Lógica pura: sin LVGL ni hardware, así lo usan igual el firmware y el simulador.
 
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
@@ -100,6 +101,8 @@ enum class EventKind : uint8_t {
     drop_warning,  // caída del tren en Revisar
     drop_alarm,    // caída del tren en Tapados
     offline,       // se cayó la red; value son los minutos sin red
+    mixer_fault,   // aviso de la bomba R; value es su MixerFault
+    no_supply,     // se fue el agua del SIAPA
 };
 
 inline constexpr uint16_t kNoTime = 0xFFFF;  // "todavía no" en un minuto del día
@@ -115,7 +118,6 @@ struct Event {
     uint16_t resolved_at = kNoTime;      // alarmas y avisos: cuándo se quitó
 };
 
-// Lo que hay en el bus I2C de la 7B y del nodo
 // Lo que responde. En el I2C de la 7B (GPIO8/9): táctil, expansor, ADS1115,
 // INA219 y, en fase 3, el PCF8574. La sonda ORP va aparte, por RS485.
 struct Devices {
@@ -131,6 +133,15 @@ enum class MixerMode : uint8_t { off, on, automatic };
 
 // Por qué se prendió la bomba R
 enum class MixerReason : uint8_t { schedule, dose, manual };
+
+// Lo que vio el INA219 al arrancar la bomba R o mientras corre (documento,
+// pág. 40). El firmware la apaga, lo pone aquí y lo quita cuando se arregla.
+enum class MixerFault : uint8_t {
+    none,
+    no_power,  // sin 12 V (apagón o fusible): la mezcla queda pendiente
+    dry,       // corriente baja, en seco: nivel bajo; espera agua nueva
+    stuck,     // corriente alta: atorada
+};
 
 // Una vez que se prendió la bomba R
 struct MixerRun {
@@ -199,11 +210,12 @@ struct SystemState {
     int p2_psi = 0;
     float p1_zero_psi = 0.0f;  // corrimiento del cero guardado con Hacer cero
     float p2_zero_psi = 0.0f;
-    float p1_volts = 0.0f;     // lo que lee el ADS1115 en A0 y A1
+    float p1_volts = 0.0f;     // salida de P1 y P2: el ADS1115 lee la mitad por el divisor 10k/10k
     float p2_volts = 0.0f;
     float ldr_volts = 0.0f;    // A3: la luz que le llega a la pantalla
     float mixer_volts = 0.0f;  // INA219 en la rama de la bomba R: 0 V es apagón o fusible
     float mixer_amps = 0.0f;   // ~1.6 A sumergida; menos es en seco, más es atorada
+    MixerFault mixer_fault = MixerFault::none;
     std::array<uint8_t, 24> p1_24h{};  // una por hora, la última es la de ahorita
     std::array<uint8_t, 24> p2_24h{};
 
@@ -263,12 +275,41 @@ inline uint32_t dose_ml(const SystemState& s) {
     return static_cast<uint32_t>(static_cast<float>(s.liters_since_dose) * s.ml_per_liter + 0.5f);
 }
 
-// Caída del tren (P1 - P2) con los umbrales del DS:
-// menor a 5 psi Normal, de 5 a 10 Revisar, mayor a 10 Tapados
-constexpr Level pressure_drop_level(int drop_psi) {
-    if (drop_psi > 10) return Level::alarm;
-    if (drop_psi >= 5) return Level::warning;
+// Abajo de esto F no cuenta y se toma como sin flujo
+inline constexpr float kFlowingLpm = 0.05f;
+
+// Caída que tenían los cartuchos nuevos a ese caudal, entre las de cada L/min.
+// Sin línea base guardada la curva es 0 y la caída cuenta completa.
+inline float baseline_drop(const SystemState& s, float lpm) {
+    const float q = std::clamp(lpm, 0.0f, 15.0f);
+    const int i = std::min(14, static_cast<int>(q));
+    const float a = static_cast<float>(s.drop_new_tenths[static_cast<std::size_t>(i)]) / 10.0f;
+    const float b = static_cast<float>(s.drop_new_tenths[static_cast<std::size_t>(i + 1)]) / 10.0f;
+    return a + (b - a) * (q - static_cast<float>(i));
+}
+
+// Cuánto subió la caída (P1 - P2) sobre la de cartuchos nuevos al mismo caudal.
+// Así 6 psi a 15 L/min con cartuchos nuevos no se confunde con tapados.
+inline float drop_rise(const SystemState& s) {
+    return static_cast<float>(s.p1_psi - s.p2_psi) - baseline_drop(s, s.flow_lpm);
+}
+
+// Documento, pág. 40: Revisar a +5 psi sobre la base y Tapados a +10
+inline constexpr float kDropWarningRise = 5.0f;
+inline constexpr float kDropAlarmRise = 10.0f;
+constexpr Level drop_rise_level(float rise) {
+    if (rise >= kDropAlarmRise) return Level::alarm;
+    if (rise >= kDropWarningRise) return Level::warning;
     return Level::ok;
+}
+inline Level drop_level(const SystemState& s) { return drop_rise_level(drop_rise(s)); }
+
+// Se fue el agua del SIAPA: sin flujo y P1 abajo de 3 psi al mismo tiempo.
+// Sin flujo pero con presión es la cisterna llena (el flotador cerró). Sin P1
+// no se sabe. El firmware pasa P1 ya promediado, así un brinco no lo prende.
+inline constexpr int kNoSupplyPsi = 3;
+inline bool supply_lost(const SystemState& s) {
+    return s.has_pressure && s.flow_lpm < kFlowingLpm && s.p1_psi < kNoSupplyPsi;
 }
 
 // ORP de la cisterna con los umbrales del DS:
@@ -285,8 +326,11 @@ inline Level overall_level(const SystemState& s) {
         if (a.active) return Level::alarm;
     }
     Level worst = Level::ok;
-    if (s.has_pressure) worst = pressure_drop_level(s.p1_psi - s.p2_psi);
+    if (s.has_pressure) worst = drop_level(s);
     if (s.has_orp && orp_level(s.orp_mv) > worst) worst = orp_level(s.orp_mv);
+    // Avisos: la bomba R que no pudo mezclar y el SIAPA sin agua
+    const bool notice = (s.has_mixer && s.mixer_fault != MixerFault::none) || supply_lost(s);
+    if (notice && worst < Level::warning) worst = Level::warning;
     return worst;
 }
 

@@ -41,7 +41,7 @@ private:
     std::array<lv_obj_t*, 4> mark_labels_{};
     std::array<int32_t, core::kFlowSamples24h> chart_values_{};
     bool chart_drawn_ = false;
-    int flowing_ = -1;
+    int flow_state_ = -1;  // 0 con flujo, 1 sin flujo, 2 sin agua
     int marks_minute_ = -1;
 
     // Toca echar

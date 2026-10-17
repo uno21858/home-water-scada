@@ -28,7 +28,9 @@ private:
     // Caudal de ahorita
     lv_obj_t* flow_value_ = nullptr;
     lv_obj_t* no_flow_chip_ = nullptr;
-    int flowing_ = -1;  // -1 = todavía no se pinta
+    lv_obj_t* no_flow_icon_ = nullptr;
+    lv_obj_t* no_flow_text_ = nullptr;
+    int flow_state_ = -1;  // 0 con flujo, 1 sin flujo, 2 sin agua; -1 = todavía no se pinta
 
     // Litros
     lv_obj_t* liters_today_ = nullptr;
