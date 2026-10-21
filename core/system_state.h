@@ -116,6 +116,7 @@ struct Event {
     uint16_t value = 0; // mL de la dosis, psi de la caída o el Filter que se cambió
     uint16_t acknowledged_at = kNoTime;  // alarmas: cuándo tocaron Entendido
     uint16_t resolved_at = kNoTime;      // alarmas y avisos: cuándo se quitó
+    uint32_t seq = 0;                    // número del evento: el servidor recibe los que no ha visto
 };
 
 // Lo que responde. En el I2C de la 7B (GPIO8/9): táctil, expansor, ADS1115,
@@ -198,7 +199,7 @@ struct SystemState {
     char wifi_ssid[33] = "";      // nombre de la red, hasta 32 letras
     uint8_t wifi_bars = 0;        // señal de 0 a 3
     uint16_t last_upload_at = 0;  // minuto del día del último envío de datos
-    uint16_t pending_uploads = 0; // lecturas guardadas que faltan por enviar
+    uint32_t pending_uploads = 0; // lecturas y eventos que faltan por enviar (core::Outbox)
 
     // Flujo
     uint16_t flow_pulses_per_liter = kFactoryPulsesPerLiter;  // factor del sensor F
@@ -261,8 +262,9 @@ struct SystemState {
     std::array<Totals, 24> hours{};           // las horas de hoy; valen de 0 a la de ahorita
     std::array<Event, kEventCount> recent_events{};  // el más nuevo primero
     uint8_t recent_event_count = 0;
+    uint32_t event_seq = 0;  // el seq del último evento que se anotó
 
-    // Bomba R de la cisterna (la mueve core/mixer.h)
+    // Bomba R de la cisterna (la mueve core/mixing.h)
     MixerMode mixer_mode = MixerMode::automatic;
     bool mixer_on = false;
     uint8_t mixer_minutes_left = 0;

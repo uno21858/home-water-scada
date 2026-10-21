@@ -7,7 +7,7 @@ namespace core {
 void add_event(SystemState& s, EventKind kind, uint16_t value) {
     // Recorre todos un lugar hacia atrás: el último se cae y el nuevo va primero
     std::rotate(s.recent_events.rbegin(), s.recent_events.rbegin() + 1, s.recent_events.rend());
-    s.recent_events[0] = {s.today, minute_of_day(s), kind, value, kNoTime, kNoTime};
+    s.recent_events[0] = {s.today, minute_of_day(s), kind, value, kNoTime, kNoTime, ++s.event_seq};
     s.recent_event_count = static_cast<uint8_t>(std::min<int>(s.recent_event_count + 1, kEventCount));
 }
 

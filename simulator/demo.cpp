@@ -11,6 +11,7 @@
 #include "level.h"
 #include "mixing.h"
 #include "monitor.h"
+#include "telemetry.h"
 #include "water.h"
 
 namespace demo {
@@ -250,6 +251,33 @@ bool test_alarm = false;  // la alarma de ahorita es la de Probar alarma
 constexpr float kBucketPulsesPerLiter = 387.2f;
 constexpr uint32_t kBucketFull = 3872;
 
+// La cola de lo que va al servidor, como en el firmware: cabe un día sin red
+constexpr std::size_t kOutboxSize = 8640;
+core::Record outbox_buffer[kOutboxSize];
+core::Outbox make_outbox() {
+    core::Outbox out(outbox_buffer, kOutboxSize);
+    out.last_event_seq = s.event_seq;  // los eventos del ejemplo ya estaban en el servidor
+    return out;
+}
+core::Outbox outbox = make_outbox();
+
+// Segundos UTC del reloj del demo. Zapopan va en UTC-6 todo el año: México
+// quitó el horario de verano en 2022.
+uint32_t utc_now() {
+    const int64_t days = core::days_from_civil(s.year, s.month, s.day);
+    return static_cast<uint32_t>(days * 86400 + (s.hour * 60 + s.minute) * 60 + seconds % 60 + 6 * 3600);
+}
+
+// Cada 10 s, lo que hará el firmware: la lectura a la cola y, con red, el
+// lote al servidor. El demo no manda nada: con red da el envío por bueno.
+void upload() {
+    core::queue_reading(s, outbox, utc_now());
+    if (!s.wifi_ok) return;
+    static char body[4096];
+    std::size_t records = 0;
+    if (core::format_batch(outbox, body, sizeof body, &records) > 0) core::mark_sent(s, outbox, records);
+}
+
 // El reloj del demo avanza un minuto y hace lo mismo que hará el firmware
 // con la hora del NTP: set_time cierra la hora o el día, tick_minute lo demás
 void next_minute() {
@@ -268,7 +296,6 @@ void next_minute() {
         }
     }
     core::set_time(s, now);
-    if (s.wifi_ok) s.last_upload_at = core::minute_of_day(s);  // envía cada minuto
     core::tick_minute(s);
 }
 
@@ -302,7 +329,9 @@ bool set_scenario(const char* name) {
     } else if (std::strcmp(name, "sin-red") == 0) {
         s.wifi_ok = false;
         s.wifi_bars = 0;
-        s.pending_uploads = 24;
+        // Lleva 4 min sin red: 24 lecturas en la cola, como el canvas
+        s.last_upload_at = static_cast<uint16_t>(core::minute_of_day(s) - 4);
+        for (uint32_t i = 24; i > 0; --i) core::queue_reading(s, outbox, utc_now() - i * 10);
     } else if (std::strcmp(name, "alarma") == 0) {
         stop_flow();
         alarm(core::AlarmKind::no_flow);
@@ -422,6 +451,7 @@ void tick_1s() {
     s.mixer_amps = s.mixer_on ? 1.58f + 0.02f * std::sin(seconds / 5.0f) : 0.0f;
 
     if (seconds % 60 == 0) next_minute();
+    if (seconds % 10 == 0) upload();
 }
 
 void on_dose_confirmed(uint32_t ml) { core::register_dose(s, ml, false); }

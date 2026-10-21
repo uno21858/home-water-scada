@@ -185,7 +185,7 @@ void DiagnosticsScreen::update(const core::SystemState& s) {
     const bool up_to_date = s.wifi_ok && s.pending_uploads == 0;
     set_text(server_, up_to_date ? "al día" : "pendiente");
     set_text_color(server_, up_to_date ? colors::ok : colors::warning);
-    snprintf(buf, sizeof buf, "%u", static_cast<unsigned>(s.pending_uploads));
+    fmt::thousands(buf, sizeof buf, s.pending_uploads);
     set_text(pending_, buf);
 
     // "encendida hace 3 días", "hace 5 h" o "hace 12 min"

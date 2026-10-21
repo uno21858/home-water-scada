@@ -6,6 +6,7 @@
 #include "components/status_pill.h"
 #include "theme/colors.h"
 #include "theme/fonts.h"
+#include "theme/format.h"
 #include "theme/icons.h"
 #include "theme/styles.h"
 
@@ -140,10 +141,12 @@ void Header::set_time(uint8_t hour, uint8_t minute) {
     set_text(clock_, buf);
 }
 
-void Header::set_network(bool ok, uint16_t pending) {
+void Header::set_network(bool ok, uint32_t pending) {
     if (!ok) {
-        char buf[32];
-        snprintf(buf, sizeof buf, "Sin red · %u por enviar", static_cast<unsigned>(pending));
+        char count[16];
+        fmt::thousands(count, sizeof count, pending);  // un día sin red son 8,640 lecturas
+        char buf[40];
+        snprintf(buf, sizeof buf, "Sin red · %s por enviar", count);
         set_text(offline_text_, buf);
     }
     if (static_cast<int>(ok) == wifi_ok_) return;

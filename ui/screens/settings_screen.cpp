@@ -307,7 +307,9 @@ void SettingsScreen::update(const core::SystemState& s) {
     set_text(upload_word_, up_to_date ? "Al día" : "Por enviar");
     lv_obj_set_style_text_color(upload_word_, color(tone), 0);
     fmt::clock(a, sizeof a, s.last_upload_at);
-    snprintf(buf, sizeof buf, "Último envío %s · %u por enviar", a, static_cast<unsigned>(s.pending_uploads));
+    char pending[16];
+    fmt::thousands(pending, sizeof pending, s.pending_uploads);
+    snprintf(buf, sizeof buf, "Último envío %s · %s por enviar", a, pending);
     set_text(upload_note_, buf);
 
     // Cartuchos

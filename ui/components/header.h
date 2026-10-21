@@ -31,7 +31,7 @@ public:
     void set_time(uint8_t hour, uint8_t minute);
     // Sin red sale el chip ámbar "Sin red · 24 por enviar" y el enlace se
     // esconde para que quepa (así lo hace Flujo en el canvas)
-    void set_network(bool ok, uint16_t pending);
+    void set_network(bool ok, uint32_t pending);
 
 private:
     static void handle_back(lv_event_t* e);

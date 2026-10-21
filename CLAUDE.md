@@ -39,6 +39,13 @@ Mientras llega el hardware, se desarrolla en el simulador con SDL (Mac y Fedora)
   - `level`: el sensor de nivel 4-20 mA del A2 (`level_cm` desde el fondo y
     `level_pct`, lo útil de la rejilla de la bomba de pozo a llena) y su
     calibración (`level_zero` en el aire, `level_mark_full`).
+  - `telemetry`: lo que va al servidor de la casa (VictoriaMetrics en el NAS,
+    formato de línea de Influx). `queue_reading` mete a la cola (`Outbox`, un
+    anillo sobre memoria del que llama: en la 7B la PSRAM, 8,640 de 48 bytes
+    = un día sin red) la lectura y los eventos nuevos (`Event::seq` mayor que
+    `last_event_seq`); `format_batch` arma el body del POST con los más
+    viejos y `mark_sent` los saca cuando el servidor contesta. "Por enviar"
+    es `pending_uploads`, lo que hay en la cola.
   - `test/core_test.cpp`: pruebas en la compu (`ctest --test-dir build`).
 - `ui/`: la interfaz. No sabe nada de SDL ni del ESP32.
   - `ui.h/.cpp`: `init()`, `update()`, `show()` y las `Actions` que regresan a la
@@ -99,8 +106,11 @@ Mientras llega el hardware, se desarrolla en el simulador con SDL (Mac y Fedora)
 El firmware hará lo mismo que `simulator/main.cpp` y `demo.cpp`: leer los
 sensores, pasarlos a `core` (`set_flow`, `count_liters`, `mixer_report_fault`...),
 cada minuto `core::set_time()` con la hora del NTP y `core::tick_minute()`,
-`ui::update()`, atender lo que llegue por `ui::Actions` llamando a `core`, y
-prender el GPIO44 según `mixer_on`.
+cada 10 s `core::queue_reading()` y, con red, el POST de `format_batch` y
+`mark_sent` (el modo de uso va arriba en `core/telemetry.h`), `ui::update()`,
+atender lo que llegue por `ui::Actions` llamando a `core`, y prender el GPIO44
+según `mixer_on`. El demo hace lo mismo pero no manda nada: con red da el
+envío por bueno, y en `sin-red` la cola crece de 24 en adelante.
 
 ## Compilar y correr el simulador
 

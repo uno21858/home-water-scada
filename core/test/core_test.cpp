@@ -4,6 +4,7 @@
 
 #include <cmath>
 #include <cstdio>
+#include <cstring>
 
 #include "calendar.h"
 #include "events.h"
@@ -11,6 +12,7 @@
 #include "mixing.h"
 #include "monitor.h"
 #include "system_state.h"
+#include "telemetry.h"
 #include "water.h"
 
 namespace {
@@ -290,6 +292,146 @@ void drop_notices() {
     CHECK(open(core::EventKind::drop_warning));
 }
 
+// Telemetría: el renglón tiene que salir exacto, el servidor no adivina
+bool line_is(const core::Record& r, const char* expected) {
+    char line[256];
+    const std::size_t n = core::format_record(r, line, sizeof line);
+    if (n != std::strlen(expected) || std::strcmp(line, expected) != 0) {
+        std::printf("  sale:   %s\n  espera: %s\n", line, expected);
+        return false;
+    }
+    return true;
+}
+
+void telemetry_lines() {
+    core::Record r;
+    r.time = 1760000000;
+    CHECK(line_is(r, "water flow_lpm=0.00,liters_today=0i 1760000000000000000"));
+    r.flow_lpm = 12.4f;
+    r.liters_today = 1860;
+    r.pressure = true;
+    r.p1_psi = 42;
+    r.p2_psi = 38;
+    r.drop_rise = 1.4f;
+    r.level = true;
+    r.level_cm = 150.0f;
+    r.level_pct = 73;
+    r.mixer = true;
+    r.mixer_on = true;
+    r.mixer_amps = 1.58f;
+    r.orp = true;
+    r.orp_mv = 650;
+    CHECK(line_is(r,
+                  "water flow_lpm=12.40,liters_today=1860i,p1_psi=42i,p2_psi=38i,drop_rise=1.4,"
+                  "level_cm=150.0,level_pct=73i,mixer_on=1i,mixer_amps=1.58,orp_mv=650i 1760000000000000000"));
+    // Sin marcar llena no va el %; un sensor raro (NaN) sale como 0
+    r.pressure = r.mixer = r.orp = false;
+    r.level_pct = -1;
+    r.flow_lpm = NAN;
+    CHECK(line_is(r, "water flow_lpm=0.00,liters_today=1860i,level_cm=150.0 1760000000000000000"));
+
+    core::Record e;
+    e.type = core::Record::Type::event;
+    e.time = 1760000000;
+    e.event = core::EventKind::dose;
+    e.value = 185;
+    CHECK(line_is(e, "water_event,kind=dose value=185i 1760000000000000000"));
+    e.event = core::EventKind::no_supply;
+    e.value = 0;
+    CHECK(line_is(e, "water_event,kind=no_supply value=0i 1760000000000000000"));
+
+    // Si no cabe no sale medio renglón
+    char small[20];
+    CHECK(core::format_record(e, small, sizeof small) == 0);
+    CHECK(small[0] == '\0');
+}
+
+void telemetry_events_once() {
+    core::SystemState s = house();
+    core::register_dose(s, 40, false);  // ya estaba antes de prender
+    core::Record buffer[16];
+    core::Outbox out(buffer, 16);
+    out.last_event_seq = s.event_seq;  // como al arrancar la 7B
+
+    core::queue_reading(s, out, 1000);
+    CHECK(out.size() == 1);  // solo la lectura: el evento viejo no se repite
+    CHECK(out.at(0).type == core::Record::Type::reading);
+
+    core::register_dose(s, 185, false);
+    core::register_filter(s, core::Filter::pp20);
+    core::queue_reading(s, out, 1010);
+    CHECK(out.size() == 4);  // lectura, dosis y cartucho, del más viejo al más nuevo
+    CHECK(out.at(2).type == core::Record::Type::event);
+    CHECK(out.at(2).event == core::EventKind::dose);
+    CHECK(out.at(2).value == 185);
+    CHECK(out.at(3).event == core::EventKind::cartridge);
+    CHECK(s.pending_uploads == 4);
+
+    core::queue_reading(s, out, 1020);
+    CHECK(out.size() == 5);  // otra lectura, sin repetir eventos
+    CHECK(out.at(4).type == core::Record::Type::reading);
+    CHECK(out.at(4).time == 1020);
+}
+
+void telemetry_full_queue() {
+    core::Record buffer[3];
+    core::Outbox out(buffer, 3);
+    for (uint32_t t = 1; t <= 5; ++t) {
+        core::Record r;
+        r.time = t;
+        out.push(r);
+    }
+    CHECK(out.size() == 3);  // se quedan los 3 más nuevos
+    CHECK(out.dropped() == 2);
+    CHECK(out.at(0).time == 3);
+    CHECK(out.at(2).time == 5);
+    out.pop(2);
+    CHECK(out.size() == 1);
+    CHECK(out.at(0).time == 5);
+    core::Record r;
+    r.time = 6;
+    out.push(r);  // da la vuelta al arreglo
+    CHECK(out.at(1).time == 6);
+    out.pop(10);  // pedir de más no rompe nada
+    CHECK(out.size() == 0);
+}
+
+void telemetry_batch() {
+    core::SystemState s = house();
+    s.minute = 30;
+    core::Record buffer[8];
+    core::Outbox out(buffer, 8);
+    char body[512];
+    std::size_t records = 99;
+    CHECK(core::format_batch(out, body, sizeof body, &records) == 0);  // cola vacía
+    CHECK(records == 0);
+    CHECK(body[0] == '\0');
+
+    for (uint32_t t = 0; t < 3; ++t) core::queue_reading(s, out, 1760000000 + t * 10);
+    const std::size_t bytes = core::format_batch(out, body, sizeof body, &records);
+    CHECK(records == 3);
+    CHECK(bytes == std::strlen(body));
+    CHECK(body[bytes - 1] == '\n');
+    int lines = 0;
+    for (std::size_t i = 0; i < bytes; ++i) lines += body[i] == '\n';
+    CHECK(lines == 3);
+
+    // Un body chico se lleva solo los más viejos que quepan
+    char line[256];
+    const std::size_t one = core::format_record(out.at(0), line, sizeof line);
+    char tight[256];
+    CHECK(core::format_batch(out, tight, one + 2, &records) == one + 1);
+    CHECK(records == 1);
+    CHECK(core::format_batch(out, tight, one + 1, &records) == 0);  // no cabe el '\0'
+    CHECK(records == 0);
+
+    core::mark_sent(s, out, 1);
+    CHECK(out.size() == 2);
+    CHECK(s.pending_uploads == 2);
+    CHECK(s.last_upload_at == 8 * 60 + 30);
+    CHECK(out.at(0).time == 1760000010);
+}
+
 }  // namespace
 
 int main() {
@@ -306,6 +448,10 @@ int main() {
     calendar_day_change();
     calendar_hour_samples();
     drop_notices();
+    telemetry_lines();
+    telemetry_events_once();
+    telemetry_full_queue();
+    telemetry_batch();
     if (failures == 0) std::printf("core: todo bien\n");
     return failures == 0 ? 0 : 1;
 }
