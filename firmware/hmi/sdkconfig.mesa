@@ -1,0 +1,4 @@
+# La 7B en la mesa, sin bomba R: la consola sale por UART0, que con el switch
+# en UART1 es el mismo USB-C con el que se flashea. Con la bomba R puesta no
+# compila (su pin es el RX de UART0): ahí la consola va por el USB nativo.
+CONFIG_ESP_CONSOLE_UART_DEFAULT=y

@@ -21,8 +21,18 @@ constexpr int kTimeoutMs = 50;
 constexpr gpio_num_t kFlowPin = GPIO_NUM_6;
 constexpr int kPcntLimit = 30000;
 
-// Bomba R: módulo MOSFET en el RXD del header UART2
+// Bomba R: módulo MOSFET en el RXD del header UART2. Sin bomba R el GPIO44
+// no se toca: con el switch en UART1 ese pin es la salida del chip USB-serial,
+// y con la consola en UART0 es su RX. Con bomba R la consola no puede ir ahí.
 constexpr gpio_num_t kPumpPin = GPIO_NUM_44;
+#ifdef CONFIG_HMI_HAS_MIXER
+constexpr bool kHasPump = true;
+#if CONFIG_ESP_CONSOLE_UART_NUM == 0
+#error "La bomba R va en el GPIO44, el RX de UART0: con bomba R la consola va por el USB nativo (menuconfig > ESP-STDIO)"
+#endif
+#else
+constexpr bool kHasPump = false;
+#endif
 
 // ADS1115 en 0x48: ±4.096 V y 128 muestras/s (documento, pág. 39)
 constexpr uint8_t kAdsAddress = 0x48;
@@ -171,6 +181,7 @@ void start_flow() {
 }  // namespace
 
 void pump_off_now() {
+    if (!kHasPump) return;
     gpio_set_level(kPumpPin, 0);  // primero el nivel, para que al volverse salida ya salga en bajo
     gpio_config_t config = {};
     config.pin_bit_mask = 1ULL << kPumpPin;
@@ -197,6 +208,8 @@ Readings latest() {
     return r;
 }
 
-void set_pump(bool on) { gpio_set_level(kPumpPin, on ? 1 : 0); }
+void set_pump(bool on) {
+    if (kHasPump) gpio_set_level(kPumpPin, on ? 1 : 0);
+}
 
 }  // namespace sensors

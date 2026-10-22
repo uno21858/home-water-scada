@@ -66,6 +66,24 @@ Al terminar, el switch de regreso a **UART2**. Los mensajes de la placa salen
 por el USB nativo, no por UART0 (su RX es la bomba R): `idf.py -p PUERTO monitor`
 con el cable en el otro USB-C.
 
+## En la mesa, sin bomba R
+
+Con `sdkconfig.mesa` la consola sale por UART0. Con el switch en UART1, el
+mismo USB-C sirve para flashear y para ver los mensajes. Sin bomba R el
+firmware no toca el GPIO44, así que se puede quedar en UART1. Con la bomba R
+prendida en `menuconfig` así ya no compila: su pin es el RX de UART0.
+
+```fish
+rm -f sdkconfig
+idf.py -D SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.mesa" build
+idf.py -p /dev/ttyACM0 flash monitor
+```
+
+Del monitor se sale con `Ctrl+]`. Los mensajes dicen a cuántos ms quedaron
+armadas las pantallas y a cuántos se prendió la pantalla.
+
+Para regresar a la consola por el USB nativo: `rm -f sdkconfig` y `idf.py build`.
+
 ## Actualizar por WiFi
 
 1. Cambia el código y `idf.py build`.

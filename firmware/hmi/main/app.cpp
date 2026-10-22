@@ -102,6 +102,9 @@ bool was_flowing = false;
 bool test_alarm = false;        // la alarma de ahorita es la de Probar alarma
 float brightness = 100.0f;
 
+// Desde que arrancó la app (sin contar el ROM ni el bootloader), para medir
+unsigned long ms_since_boot() { return static_cast<unsigned long>(esp_timer_get_time() / 1000); }
+
 void persist(bool settings, bool history) {
     bool ok = true;
     if (settings) ok = core::save(s, nvs, core::SaveGroup::settings) >= 0 && ok;
@@ -295,13 +298,19 @@ void lvgl_task(void*) {
     lv_display_t* display = board::start_display();
     {
         Locked locked;
-        s.devices.gt911 = board::touch_ok();
         ui::init(s, actions());
+        ESP_LOGI(kTag, "Pantallas armadas a los %lu ms", ms_since_boot());
         lv_timer_create(every_second, 1000, nullptr);
         lv_refr_now(display);  // el primer cuadro antes del backlight: que no se vea basura
     }
     board::set_brightness(static_cast<uint8_t>(brightness));
     board::backlight(true);
+    ESP_LOGI(kTag, "Pantalla prendida a los %lu ms", ms_since_boot());
+    board::start_touch(display);
+    {
+        Locked locked;
+        s.devices.gt911 = board::touch_ok();
+    }
 
     while (true) {
         uint32_t wait_ms = 0;
@@ -394,14 +403,16 @@ void start() {
 
     char ssid[33] = {};
     char password[65] = {};
-    if (storage::wifi_credentials(ssid, sizeof ssid, password, sizeof password)) {
-        std::memcpy(s.wifi_ssid, ssid, sizeof s.wifi_ssid);
+    const bool has_wifi = storage::wifi_credentials(ssid, sizeof ssid, password, sizeof password);
+    if (has_wifi) std::memcpy(s.wifi_ssid, ssid, sizeof s.wifi_ssid);
+
+    // Primero la pantalla; el WiFi tarda en arrancar y no tiene por qué esperarla
+    xTaskCreatePinnedToCore(lvgl_task, "lvgl", 16 * 1024, nullptr, 3, nullptr, 1);
+    if (has_wifi) {
         net::start(ssid, password);
     } else {
         ESP_LOGE(kTag, "Sin red: falta grabar wifi.csv (idf.py flash)");
     }
-
-    xTaskCreatePinnedToCore(lvgl_task, "lvgl", 16 * 1024, nullptr, 3, nullptr, 1);
     xTaskCreate(upload_task, "upload", 6 * 1024, nullptr, 2, nullptr);
     ota::start(can_install, restart_for_update);
 }

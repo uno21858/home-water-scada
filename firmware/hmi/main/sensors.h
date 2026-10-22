@@ -23,7 +23,8 @@ struct Readings {
 };
 
 // El GPIO44 en bajo. Lo primero que hace app_main (documento: antes de
-// inicializar cualquier otra cosa, para que la bomba R no se mueva).
+// inicializar cualquier otra cosa, para que la bomba R no se mueva). Sin
+// bomba R en menuconfig no toca el pin.
 void pump_off_now();
 
 // PCNT, ADS1115, INA219 y su tarea. Necesita el bus de board::start_i2c().

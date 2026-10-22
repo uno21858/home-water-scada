@@ -106,7 +106,9 @@ Mientras llega el hardware, se desarrolla en el simulador con SDL (Mac y Fedora)
   `core::Store`), `net` (WiFi, NTP y POST), `ota` y `app`, que junta todo
   como `simulator/main.cpp` y `demo.cpp`. Lo que está instalado y las URLs
   van en `menuconfig` > Casa; la red en `wifi.csv` y la llave de las OTA en
-  `secretos/`, los dos fuera de git. Según el documento de proyecto (15 oct
+  `secretos/`, los dos fuera de git. Sin bomba R el GPIO44 no se toca y
+  `sdkconfig.mesa` saca la consola por UART0 (switch en UART1: flashear y ver
+  los mensajes por el mismo USB-C); con bomba R eso no compila (`#error`). Según el documento de proyecto (15 oct
   2026) hay un solo micro, la 7B. F entra al GPIO6 (PCNT) y la bomba R sale
   por un MOSFET en el GPIO44, vigilada por un INA219 (0x40). En la caja
   Hammond, junto a la pantalla y por I2C, va el ADS1115 (0x48: A0 P1, A1 P2,

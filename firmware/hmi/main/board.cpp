@@ -224,19 +224,21 @@ lv_display_t* start_display() {
     lv_display_set_buffers(display, first, second, kWidth * kHeight * 2, LV_DISPLAY_RENDER_MODE_DIRECT);
     lv_display_set_flush_cb(display, flush);
     lv_display_set_flush_wait_cb(display, flush_wait);
+    return display;
+}
 
+void start_touch(lv_display_t* display) {
     if (expander_found) reset_touch();
     touch_found = probe(kTouchAddress);
-    if (touch_found) {
-        touch = add_device(kTouchAddress);
-        lv_indev_t* indev = lv_indev_create();
-        lv_indev_set_type(indev, LV_INDEV_TYPE_POINTER);
-        lv_indev_set_read_cb(indev, read_touch);
-        lv_indev_set_display(indev, display);
-    } else {
+    if (!touch_found) {
         ESP_LOGE(kTag, "El táctil GT911 (0x%02x) no contesta", kTouchAddress);
+        return;
     }
-    return display;
+    touch = add_device(kTouchAddress);
+    lv_indev_t* indev = lv_indev_create();
+    lv_indev_set_type(indev, LV_INDEV_TYPE_POINTER);
+    lv_indev_set_read_cb(indev, read_touch);
+    lv_indev_set_display(indev, display);
 }
 
 bool touch_ok() { return touch_found; }

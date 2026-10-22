@@ -19,9 +19,13 @@ i2c_master_bus_handle_t i2c();
 // ¿Contesta alguien en esa dirección?
 bool probe(uint8_t address);
 
-// Pantalla y táctil, registrados en LVGL. Se llama desde la tarea de LVGL,
-// después de lv_init(): esa tarea espera ahí el cambio de framebuffer.
+// La pantalla, registrada en LVGL. Se llama desde la tarea de LVGL, después
+// de lv_init(): esa tarea espera ahí el cambio de framebuffer.
 lv_display_t* start_display();
+
+// El táctil (su reset tarda 0.4 s): después del primer cuadro, para que la
+// pantalla no espere
+void start_touch(lv_display_t* display);
 
 // Lo que respondió al arrancar, para Diagnóstico
 bool touch_ok();
