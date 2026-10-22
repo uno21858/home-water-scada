@@ -1,0 +1,9 @@
+# 16 MB de flash. Dos particiones de aplicación para la OTA (si la nueva no
+# levanta, el bootloader regresa a la otra) y el resto libre para después.
+# Name,   Type, SubType, Offset,   Size
+nvs,      data, nvs,     0x9000,   0x40000
+otadata,  data, ota,     0x49000,  0x2000
+phy_init, data, phy,     0x4b000,  0x1000
+wifi,     data, nvs,     0x4c000,  0x3000
+ota_0,    app,  ota_0,   0x50000,  0x400000
+ota_1,    app,  ota_1,   0x450000, 0x400000

@@ -1,0 +1,76 @@
+menu "Casa (home-water-scada)"
+
+    menu "Qué está instalado"
+        # Arranca todo apagado: la 7B sola en la mesa. Se prende cada cosa
+        # conforme se conecta (documento: nada se conecta de golpe).
+
+        config HMI_HAS_MIXER
+            bool "Bomba R de mezcla (GPIO44 y el INA219)"
+            default n
+
+        config HMI_HAS_PRESSURE
+            bool "Sensores de presión P1 y P2 (A0 y A1 del ADS1115)"
+            default n
+
+        config HMI_HAS_LEVEL
+            bool "Sensor de nivel 4-20 mA (A2 del ADS1115)"
+            default n
+
+        config HMI_HAS_LDR
+            bool "LDR para el brillo (A3 del ADS1115)"
+            default n
+    endmenu
+
+    menu "Red y servidor"
+        config HMI_METRICS_URL
+            string "URL de VictoriaMetrics para los datos"
+            default ""
+            help
+                El /write de VictoriaMetrics en el NAS, por ejemplo
+                http://192.168.1.20:8428/write. Vacío: los datos se quedan en
+                la cola ("Por enviar").
+
+        config HMI_OTA_URL
+            string "URL del firmware para la OTA"
+            default ""
+            help
+                Dónde la placa busca el .bin nuevo, por ejemplo
+                http://192.168.1.20:8070/hmi.bin. Solo instala uno firmado con
+                la misma llave. Vacío: sin OTA.
+
+        config HMI_OTA_CHECK_MINUTES
+            int "Cada cuántos minutos revisa si hay firmware nuevo"
+            range 1 1440
+            default 10
+    endmenu
+
+    menu "Bomba R (INA219)"
+        # Los umbrales salen de la prueba 9b (bomba en una cubeta); estos son
+        # para arrancar: ~1.6 A sumergida y fusible de 2 A.
+
+        config HMI_MIXER_MIN_VOLTS_X10
+            int "Abajo de este voltaje es sin 12 V (décimas de V)"
+            default 90
+
+        config HMI_MIXER_DRY_AMPS_X100
+            int "Abajo de esta corriente es nivel bajo (centésimas de A)"
+            default 100
+
+        config HMI_MIXER_STUCK_AMPS_X100
+            int "Arriba de esta corriente es atorada (centésimas de A)"
+            default 190
+
+        config HMI_INA219_SHUNT_MOHM
+            int "Resistencia shunt del módulo INA219 (mΩ)"
+            default 100
+    endmenu
+
+    config HMI_LCD_PCLK_MHZ
+        int "Reloj de píxel de la pantalla (MHz)"
+        range 10 30
+        default 24
+        help
+            El del demo de Waveshare para la 7B. Si la imagen se recorre o
+            parpadea, bajarlo (18 o 20).
+
+endmenu

@@ -5,12 +5,16 @@
 #include <cmath>
 #include <cstdio>
 #include <cstring>
+#include <map>
+#include <string>
+#include <vector>
 
 #include "calendar.h"
 #include "events.h"
 #include "level.h"
 #include "mixing.h"
 #include "monitor.h"
+#include "persist.h"
 #include "system_state.h"
 #include "telemetry.h"
 #include "water.h"
@@ -432,6 +436,159 @@ void telemetry_batch() {
     CHECK(out.at(0).time == 1760000010);
 }
 
+void alarms_raise_and_acknowledge() {
+    core::SystemState s = house();
+    const auto kind = core::AlarmKind::no_flow;
+    core::alarm_raise(s, kind);
+    CHECK(s.alarms[0].active && !s.alarms[0].acknowledged);
+    CHECK(s.recent_events[0].kind == core::EventKind::alarm);
+    const uint8_t count = s.recent_event_count;
+    core::alarm_raise(s, kind);  // ya estaba: no se anota otra vez
+    CHECK(s.recent_event_count == count);
+    s.minute = 5;
+    core::alarm_acknowledge(s, kind);
+    CHECK(s.alarms[0].acknowledged && s.alarms[0].active);
+    CHECK(s.recent_events[0].acknowledged_at == 8 * 60 + 5);
+    s.minute = 9;
+    core::alarm_clear(s, kind);
+    CHECK(!s.alarms[0].active);
+    CHECK(s.recent_events[0].resolved_at == 8 * 60 + 9);
+}
+
+void pressure_with_zero() {
+    core::SystemState s;
+    core::set_pressures(s, 0.5f + 42.0f / core::kPsiPerVolt, 0.5f + 38.0f / core::kPsiPerVolt);
+    CHECK(s.p1_psi == 42 && s.p2_psi == 38);
+    // V1 cerrada: P1 dio 0.448 V al aire (documento), abajo del 0.5 nominal
+    core::set_pressures(s, 0.448f, 0.4495f);
+    CHECK(s.p1_psi == 0);  // abajo de 0 queda en 0
+    core::pressure_zero(s);
+    CHECK(std::fabs(s.p1_zero_psi + 3.016f) < 0.01f);
+    core::set_pressures(s, 0.448f + 42.0f / core::kPsiPerVolt, 0.4495f + 38.0f / core::kPsiPerVolt);
+    CHECK(s.p1_psi == 42 && s.p2_psi == 38);
+    core::set_pressures(s, NAN, 0.0f);  // el ADS1115 no contestó bien
+    CHECK(s.p1_psi == 0);
+}
+
+void mixer_resumes_after_restart() {
+    core::SystemState s = house();
+    core::register_dose(s, 40, false);
+    minutes(s, 10);
+    CHECK(s.mixer_on && s.mixer_minutes_left == 35);
+    core::mixer_after_restart(s);  // se fue la luz o llegó una OTA
+    CHECK(!s.mixer_on);
+    CHECK(s.mixer_pending_min == 35);
+    CHECK(s.mixer_pending_reason == core::MixerReason::dose);
+    core::tick_minute(s);  // al minuto sigue lo que faltaba
+    CHECK(s.mixer_on && s.mixer_minutes_left == 35);
+}
+
+void offline_event() {
+    core::SystemState s = house();
+    s.today = 10;
+    s.hour = 0;
+    s.minute = 1;
+    for (int i = 0; i < 100; ++i) core::network_tick(s, false);
+    CHECK(!s.wifi_ok);
+    core::network_tick(s, true);  // caída corta: no se anota
+    CHECK(s.wifi_ok && s.recent_event_count == 0);
+    for (int i = 0; i < 5 * 60; ++i) core::network_tick(s, false);
+    core::network_tick(s, true);
+    CHECK(s.recent_event_count == 1);
+    const core::Event& e = s.recent_events[0];
+    CHECK(e.kind == core::EventKind::offline && e.value == 5);
+    CHECK(e.day == 9 && e.at == 23 * 60 + 56);  // se cayó a las 23:56 de ayer
+    CHECK(e.resolved_at == 1);
+    CHECK(s.offline_seconds == 0);
+}
+
+// La NVS de mentira: un mapa de llave a bytes
+struct MemoryStore : core::Store {
+    std::map<std::string, std::vector<unsigned char>> data;
+    int writes = 0;
+    bool broken = false;
+
+    bool read(const char* key, void* out, std::size_t size) override {
+        const auto it = data.find(key);
+        if (it == data.end() || it->second.size() != size) return false;
+        std::memcpy(out, it->second.data(), size);
+        return true;
+    }
+    bool write(const char* key, const void* in, std::size_t size) override {
+        if (broken) return false;
+        ++writes;
+        const auto* bytes = static_cast<const unsigned char*>(in);
+        data[key].assign(bytes, bytes + size);
+        return true;
+    }
+    template <typename T>
+    void put(const char* key, const T& value) {
+        const auto* bytes = reinterpret_cast<const unsigned char*>(&value);
+        data[key].assign(bytes, bytes + sizeof value);
+    }
+};
+
+void persist_round_trip() {
+    core::SystemState s = house();
+    s.today = 1000;
+    s.flow_pulses_per_liter = 387;
+    s.p1_zero_psi = -3.0f;
+    s.level_full_cm = 183;
+    core::count_liters(s, 250);
+    core::register_dose(s, 40, false);
+    core::register_filter(s, core::Filter::pp20);
+    s.days.back().liters = 1860;
+    s.flow_24h[10] = 7.5f;
+
+    MemoryStore store;
+    for (core::SaveGroup g : core::kSaveGroups) CHECK(core::save(s, store, g) > 0);
+    CHECK(store.data.size() == static_cast<std::size_t>(store.writes));  // ninguna llave repetida
+    for (const auto& entry : store.data) CHECK(entry.first.size() <= 15);  // lo más que deja la NVS
+
+    // Sin cambios no se gasta la flash
+    for (core::SaveGroup g : core::kSaveGroups) CHECK(core::save(s, store, g) == 0);
+    s.liters_today += 5;
+    CHECK(core::save(s, store, core::SaveGroup::counters) == 1);
+
+    core::SystemState back;
+    core::load(back, store);
+    CHECK(back.flow_pulses_per_liter == 387);
+    CHECK(back.p1_zero_psi == -3.0f);
+    CHECK(back.level_full_cm == 183);
+    CHECK(back.today == 1000 && back.hour == 8);
+    CHECK(back.liters_today == s.liters_today);
+    CHECK(back.liters_since_dose == 0);
+    CHECK(back.recent_event_count == s.recent_event_count);
+    CHECK(back.recent_events[0].kind == core::EventKind::cartridge);
+    CHECK(back.event_seq == s.event_seq);
+    CHECK(back.filters[1].since_day == 1000);
+    CHECK(back.mixer_on && back.mixer_minutes_left == 45);
+    CHECK(back.days.back().liters == 1860);
+    CHECK(back.flow_24h[10] == 7.5f);
+}
+
+void persist_ignores_bad_data() {
+    MemoryStore store;
+    store.put("flow_k", uint32_t{387});      // mide otra cosa: de otra versión
+    store.put("lvl_range", uint16_t{0});     // no tiene sentido
+    store.put("ml_per_l", NAN);
+    store.put("event_count", uint8_t{200});
+    store.put("month", uint8_t{13});
+    store.put("today", uint32_t{1000});
+    store.put("mix_on", true);               // prendida, pero sin vueltas en la lista
+    core::SystemState s;
+    core::load(s, store);
+    CHECK(s.flow_pulses_per_liter == core::kFactoryPulsesPerLiter);
+    CHECK(s.level_range_cm == 200);
+    CHECK(s.ml_per_liter == 0.100f);
+    CHECK(s.recent_event_count == 0);
+    CHECK(s.today == 0);  // reloj raro: espera al NTP
+    CHECK(!s.mixer_on);
+
+    store.broken = true;  // la flash no deja escribir: se avisa
+    CHECK(core::save(house(), store, core::SaveGroup::settings) == -1);
+}
+
 }  // namespace
 
 int main() {
@@ -452,6 +609,12 @@ int main() {
     telemetry_events_once();
     telemetry_full_queue();
     telemetry_batch();
+    alarms_raise_and_acknowledge();
+    pressure_with_zero();
+    mixer_resumes_after_restart();
+    offline_event();
+    persist_round_trip();
+    persist_ignores_bad_data();
     if (failures == 0) std::printf("core: todo bien\n");
     return failures == 0 ? 0 : 1;
 }

@@ -1,0 +1,4 @@
+key,type,encoding,value
+wifi,namespace,,
+ssid,data,string,Casa-2.4G
+password,data,string,la-contraseña

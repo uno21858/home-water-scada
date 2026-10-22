@@ -19,4 +19,15 @@ bool resolve_event(SystemState& s, EventKind kind);
 // ¿Hay un aviso de ese tipo que todavía no se quita?
 bool has_open_event(const SystemState& s, EventKind kind);
 
+// Alarmas a pantalla completa (las de la fase 3; Probar alarma usa la de sin
+// flujo). Prender una la saca en pantalla y la anota; si ya estaba, nada.
+void alarm_raise(SystemState& s, AlarmKind kind);
+
+// Tocaron Entendido: sale de la pantalla y su evento queda reconocido a esta
+// hora, pero sigue activa (y la pastilla en Alarma) hasta alarm_clear()
+void alarm_acknowledge(SystemState& s, AlarmKind kind);
+
+// Se quitó la condición: deja de estar activa y su evento queda cerrado
+void alarm_clear(SystemState& s, AlarmKind kind);
+
 }  // namespace core

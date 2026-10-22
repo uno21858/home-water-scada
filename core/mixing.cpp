@@ -146,4 +146,10 @@ void mixer_power_back(SystemState& s) {
     run_due(s);
 }
 
+void mixer_after_restart(SystemState& s) {
+    if (!s.mixer_on) return;
+    if (s.mixer_run_count > 0) pend(s, s.mixer_runs[0].reason, s.mixer_minutes_left);
+    stop(s);
+}
+
 }  // namespace core

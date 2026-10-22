@@ -43,4 +43,9 @@ void mixer_power_back(SystemState& s);
 // La cisterna está en el mínimo (0 %): la bomba R espera agua
 bool mixer_low_water(const SystemState& s);
 
+// Se reinició la placa (apagón, OTA o Reiniciar) con la bomba andando: arranca
+// apagada (documento: el GPIO44 en bajo antes que nada) y lo que le faltaba a
+// la vuelta queda pendiente; corre en el siguiente minuto si nada lo impide
+void mixer_after_restart(SystemState& s);
+
 }  // namespace core

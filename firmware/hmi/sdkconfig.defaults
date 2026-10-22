@@ -1,0 +1,41 @@
+# La 7B: ESP32-S3 con 16 MB de flash y 8 MB de PSRAM octal
+CONFIG_IDF_TARGET="esp32s3"
+CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
+CONFIG_ESPTOOLPY_FLASHMODE_QIO=y
+CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ_240=y
+CONFIG_FREERTOS_HZ=1000
+CONFIG_COMPILER_OPTIMIZATION_PERF=y
+
+# Particiones: NVS grande (litros e historial), wifi aparte y dos para la OTA
+CONFIG_PARTITION_TABLE_CUSTOM=y
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
+
+# PSRAM a 80 MHz (el demo de Waveshare usa 120, que en IDF es experimental).
+# XIP desde la PSRAM: la pantalla sigue viva mientras se escribe la flash
+# (NVS y OTA); sin esto se apaga o se recorre en cada escritura.
+CONFIG_SPIRAM=y
+CONFIG_SPIRAM_MODE_OCT=y
+CONFIG_SPIRAM_SPEED_80M=y
+CONFIG_SPIRAM_XIP_FROM_PSRAM=y
+CONFIG_ESP32S3_DATA_CACHE_64KB=y
+CONFIG_ESP32S3_DATA_CACHE_LINE_64B=y
+# La RAM interna es para los bounce buffers de la pantalla (80 KB) y las
+# tareas: los buffers del WiFi y del TLS van a la PSRAM
+CONFIG_SPIRAM_TRY_ALLOCATE_WIFI_LWIP=y
+CONFIG_MBEDTLS_EXTERNAL_MEM_ALLOC=y
+
+# Consola por el USB nativo y nunca por UART0: su RX es el GPIO44, la bomba R
+# (documento, pág. 39)
+CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y
+
+# OTA: si la versión nueva no levanta (o no se conecta a la red), el
+# bootloader regresa a la anterior
+CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE=y
+
+# Solo acepta firmware firmado con la llave de la casa (secretos/, fuera de
+# git). La OTA viaja por HTTP en la LAN; la firma es la que la protege.
+CONFIG_SECURE_SIGNED_APPS_NO_SECURE_BOOT=y
+CONFIG_SECURE_SIGNED_APPS_RSA_SCHEME=y
+CONFIG_SECURE_SIGNED_ON_UPDATE_NO_SECURE_BOOT=y
+CONFIG_SECURE_BOOT_SIGNING_KEY="secretos/firma_ota.pem"
+CONFIG_ESP_HTTPS_OTA_ALLOW_HTTP=y

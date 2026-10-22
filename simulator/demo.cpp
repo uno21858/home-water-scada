@@ -304,11 +304,7 @@ void next_minute() {
 const core::SystemState& state() { return s; }
 
 bool set_scenario(const char* name) {
-    auto alarm = [](core::AlarmKind kind) {
-        core::Alarm& a = s.alarms[static_cast<size_t>(kind)];
-        a = {true, false, core::minute_of_day(s)};
-        core::add_event(s, core::EventKind::alarm, static_cast<uint16_t>(kind));
-    };
+    auto alarm = [](core::AlarmKind kind) { core::alarm_raise(s, kind); };
     auto drop = [](int psi) {
         s.p2_psi = s.p1_psi - psi;
         s.p2_24h.back() = static_cast<uint8_t>(s.p2_psi);
@@ -385,22 +381,10 @@ bool set_scenario(const char* name) {
     return true;
 }
 
-void on_alarm_acknowledged(core::AlarmKind kind) {
-    s.alarms[static_cast<size_t>(kind)].acknowledged = true;
-    // El evento de esa alarma (el más nuevo) queda reconocido a esta hora
-    for (uint8_t i = 0; i < s.recent_event_count; ++i) {
-        core::Event& e = s.recent_events[i];
-        if (e.kind == core::EventKind::alarm && e.value == static_cast<uint16_t>(kind)) {
-            if (e.acknowledged_at == core::kNoTime) e.acknowledged_at = core::minute_of_day(s);
-            break;
-        }
-    }
-}
+void on_alarm_acknowledged(core::AlarmKind kind) { core::alarm_acknowledge(s, kind); }
 
 void on_alarm_test() {
-    core::Alarm& a = s.alarms[static_cast<size_t>(core::AlarmKind::no_flow)];
-    a = {true, false, core::minute_of_day(s)};
-    core::add_event(s, core::EventKind::alarm, static_cast<uint16_t>(core::AlarmKind::no_flow));
+    core::alarm_raise(s, core::AlarmKind::no_flow);
     test_alarm = true;
 }
 
@@ -434,17 +418,9 @@ void tick_1s() {
     }
 
     // La de Probar alarma se quita sola cuando la reconocen
-    core::Alarm& tested = s.alarms[static_cast<size_t>(core::AlarmKind::no_flow)];
-    if (test_alarm && tested.acknowledged) {
-        tested.active = false;
+    if (test_alarm && s.alarms[static_cast<size_t>(core::AlarmKind::no_flow)].acknowledged) {
+        core::alarm_clear(s, core::AlarmKind::no_flow);
         test_alarm = false;
-        for (uint8_t i = 0; i < s.recent_event_count; ++i) {
-            core::Event& e = s.recent_events[i];
-            if (e.kind == core::EventKind::alarm && e.value == static_cast<uint16_t>(core::AlarmKind::no_flow)) {
-                e.resolved_at = core::minute_of_day(s);
-                break;
-            }
-        }
     }
 
     // INA219: la bomba R jala ~1.6 A sumergida (documento de proyecto)

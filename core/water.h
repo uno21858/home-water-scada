@@ -19,6 +19,20 @@ void count_liters(SystemState& s, uint32_t liters);
 // la cuenta de litros vuelve a 0 y en Auto prende la mezcla
 void register_dose(SystemState& s, uint32_t ml, bool typed);
 
+// Presión del SEN0257: 0 a 1.6 MPa en 0.5 a 4.5 V (documento, pág. 39):
+// psi = (V − V0) × 1.6 / 4 × 145, con V0 el cero de cada sensor. El cero se
+// guarda en psi contra los 0.5 V nominales (p1_zero_psi): P1 dio 0.448 V al
+// aire, o sea −3.0 psi.
+inline constexpr float kPressureNominalZeroVolts = 0.5f;
+inline constexpr float kPsiPerVolt = 1.6f / 4.0f * 145.0f;  // 58
+
+// Lo que leyeron A0 y A1, ya por 2 por el divisor 10k/10k: la salida de cada
+// sensor. Pone los volts y los psi con su cero (abajo de 0 queda en 0).
+void set_pressures(SystemState& s, float p1_volts, float p2_volts);
+
+// Hacer cero con V1 cerrada y sin presión: lo que marcan ahorita es el 0
+void pressure_zero(SystemState& s);
+
 // "Lo cambié", "Lo puse" o "Ya purgué": el filtro vuelve a contar desde hoy
 // y, si es cartucho, baja uno de los repuestos
 void register_filter(SystemState& s, Filter filter);

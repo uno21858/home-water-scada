@@ -1,6 +1,7 @@
 #include "water.h"
 
 #include <algorithm>
+#include <cmath>
 
 #include "events.h"
 #include "mixing.h"
@@ -10,6 +11,14 @@ namespace {
 
 // Suma sin pasarse del tope de un uint16_t
 uint16_t add16(uint16_t a, uint32_t b) { return static_cast<uint16_t>(std::min<uint32_t>(a + b, 0xFFFF)); }
+
+// psi contra los 0.5 V nominales, sin el cero guardado
+float raw_psi(float volts) { return (volts - kPressureNominalZeroVolts) * kPsiPerVolt; }
+
+int psi(float volts, float zero_psi) {
+    const float p = raw_psi(volts) - zero_psi;
+    return std::isfinite(p) ? std::max(0, static_cast<int>(std::lround(p))) : 0;
+}
 
 }  // namespace
 
@@ -57,6 +66,19 @@ void register_filter(SystemState& s, Filter filter) {
     s.last_cartridge = filter;
     s.last_cartridge_day = s.today;
     add_event(s, was_empty ? EventKind::cartridge_added : EventKind::cartridge, static_cast<uint16_t>(filter));
+}
+
+void set_pressures(SystemState& s, float p1_volts, float p2_volts) {
+    s.p1_volts = p1_volts;
+    s.p2_volts = p2_volts;
+    s.p1_psi = psi(p1_volts, s.p1_zero_psi);
+    s.p2_psi = psi(p2_volts, s.p2_zero_psi);
+}
+
+void pressure_zero(SystemState& s) {
+    s.p1_zero_psi = raw_psi(s.p1_volts);
+    s.p2_zero_psi = raw_psi(s.p2_volts);
+    set_pressures(s, s.p1_volts, s.p2_volts);
 }
 
 }  // namespace core

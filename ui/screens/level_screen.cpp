@@ -140,7 +140,7 @@ void LevelScreen::update(const core::SystemState& s) {
     lv_obj_set_y(surface_, std::min(y_level, kInner - 3));
     // Útil: de la superficie a la rejilla; abajo de la rejilla, gris
     lv_obj_set_pos(usable_, 0, y_level);
-    lv_obj_set_height(usable_, std::max(0, y_intake - y_level));
+    lv_obj_set_height(usable_, std::max<int32_t>(0, y_intake - y_level));  // en el ESP32 int32_t es long
     const int32_t dead_top = std::max(y_level, y_intake);
     lv_obj_set_pos(dead_, 0, dead_top);
     lv_obj_set_height(dead_, kInner - dead_top);

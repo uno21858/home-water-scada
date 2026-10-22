@@ -1,0 +1,32 @@
+#pragma once
+// Actualización por WiFi (documento, pág. 41: dos particiones y rollback).
+//
+// Cada CONFIG_HMI_OTA_CHECK_MINUTES la placa lee el encabezado del .bin de
+// CONFIG_HMI_OTA_URL y lo baja solo si es otro binario (se compara el hash,
+// no la versión), del mismo proyecto y no es uno que ya falló. ESP-IDF revisa
+// que venga firmado con la llave de la casa; si no, no lo instala. Con la
+// bomba R andando espera a que acabe para reiniciar.
+//
+// La versión nueva arranca "a prueba": si en kHealthTimeoutSeconds no se
+// conecta a la red (sin red ya no llegaría otra OTA), regresa a la anterior.
+
+#include <cstdint>
+
+namespace ota {
+
+inline constexpr uint32_t kHealthySeconds = 60;         // tiene que aguantar al menos esto
+inline constexpr uint32_t kHealthTimeoutSeconds = 300;  // y conectarse antes de esto
+
+// can_install: ¿se puede reiniciar ahorita? restart: guarda todo y reinicia.
+// Los dos se llaman desde la tarea de la OTA.
+void start(bool (*can_install)(), void (*restart)());
+
+enum class Health : uint8_t { fine, testing, failed };
+
+// Cada segundo. Si esta versión está a prueba: fine cuando ya lleva
+// kHealthySeconds con red (queda como buena), failed si se acabó el tiempo
+// sin red (la app guarda y llama rollback()).
+Health check_health(uint32_t uptime_seconds, bool online);
+void rollback();
+
+}  // namespace ota

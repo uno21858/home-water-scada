@@ -332,7 +332,7 @@ void HistoryScreen::rebuild() {
     // borde: por eso el + 1).
     struct Mark {
         float x;
-        char text[12];
+        char text[16];  // "14 sep"; mide lo que buf, así snprintf no corta
         lv_text_align_t align;
     };
     std::array<Mark, 7> marks{};

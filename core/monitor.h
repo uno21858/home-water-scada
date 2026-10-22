@@ -25,4 +25,10 @@ void check_supply(SystemState& s);
 inline constexpr float kDropHysteresis = 1.0f;
 void check_drop(SystemState& s);
 
+// Cada segundo, con o sin red. Al regresar, si estuvo caída al menos
+// kOfflineEventSeconds, anota "Sin red" con los minutos y desde cuándo (lo
+// que se quedó en la cola se mandó después). Las caídas cortas no se anotan.
+inline constexpr uint32_t kOfflineEventSeconds = 120;
+void network_tick(SystemState& s, bool online);
+
 }  // namespace core

@@ -20,7 +20,9 @@ Mientras llega el hardware, se desarrolla en el simulador con SDL (Mac y Fedora)
   (`drop_level`, documento pág. 40), el ORP del DS y el sin agua del SIAPA
   (`supply_lost`). Lo que decide:
   - `water`: `set_flow` (caudal en vivo), `count_liters` (lo que contó F),
-    `register_dose` y `register_filter`.
+    `register_dose`, `register_filter` y la presión: `set_pressures` con los
+    volts de cada sensor (psi = (V − V0) × 58, documento pág. 39) y
+    `pressure_zero` (Hacer cero).
   - `calendar`: `set_time` con la hora del NTP; al pasar de hora abre la hora
     del historial y mete muestras a las gráficas por hora, y al pasar de día
     reinicia lo de hoy y recorre el historial (uno por día, aunque la placa
@@ -30,12 +32,21 @@ Mientras llega el hardware, se desarrolla en el simulador con SDL (Mac y Fedora)
     dosis y 15 cada `kMixEveryLiters` (1,000 L) de agua nueva; Prendida corre
     60 y queda Apagada. Con un aviso del INA219 la vuelta queda pendiente, y
     con la cisterna en 0 % (el mínimo de Calibrar nivel) no arranca o se
-    apaga: corre cuando sube el agua.
+    apaga: corre cuando sube el agua. Después de un reinicio arranca apagada
+    y lo que faltaba queda pendiente (`mixer_after_restart`).
   - `monitor`: `tick_minute` (cada minuto: muestras, bomba R, modo de cambio y
     los avisos de sin agua y de caída) y el modo de cambio de cartuchos
     (`service_start`, `service_end`). La caída se anota en Revisar o Tapados
     solo con flujo y sale con 1 psi de margen (`kDropHysteresis`).
-  - `events`: el registro que leen Alarmas e Historial.
+    `network_tick` cada segundo: al regresar la red, si estuvo caída 2 min o
+    más, anota "Sin red" con los minutos.
+  - `events`: el registro que leen Alarmas e Historial, y las alarmas a
+    pantalla completa (`alarm_raise`, `alarm_acknowledge` con Entendido,
+    `alarm_clear`).
+  - `persist`: lo que sobrevive a un reinicio. Cada campo en su llave de la
+    NVS con su tamaño (si un firmware nuevo cambia uno, solo ese regresa a
+    fábrica), en tres grupos: ajustes, contadores e historial. `save` solo
+    escribe lo que cambió y `load` no se cree lo que no tiene sentido.
   - `level`: el sensor de nivel 4-20 mA del A2 (`level_cm` desde el fondo y
     `level_pct`, lo útil de la rejilla de la bomba de pozo a llena) y su
     calibración (`level_zero` en el aire, `level_mark_full`).
@@ -86,7 +97,16 @@ Mientras llega el hardware, se desarrolla en el simulador con SDL (Mac y Fedora)
     se captura con `open_keypad(KeypadSpec, callback)`.
 - `simulator/`: ventana SDL. `demo.cpp` llena el estado con los datos de ejemplo
   del DS y lo mueve cada segundo.
-- `firmware/hmi` (la 7B): vacío todavía. Según el documento de proyecto (15 oct
+- `firmware/hmi` (la 7B): ESP-IDF v6.1, cómo se carga y se actualiza en su
+  `LEEME.md`. `core/` y `ui/` entran como componentes (`components/`) y LVGL
+  es el submódulo tal cual, con `hmi_lv_conf.h` (el `lv_conf.h` del simulador
+  con la memoria en PSRAM y sin SDL). `main/`: `board` (pantalla, GT911 y el
+  expansor CH32V003, pines del demo de Waveshare), `sensors` (PCNT, ADS1115,
+  INA219 y GPIO44, en su propia tarea), `storage` (la NVS como
+  `core::Store`), `net` (WiFi, NTP y POST), `ota` y `app`, que junta todo
+  como `simulator/main.cpp` y `demo.cpp`. Lo que está instalado y las URLs
+  van en `menuconfig` > Casa; la red en `wifi.csv` y la llave de las OTA en
+  `secretos/`, los dos fuera de git. Según el documento de proyecto (15 oct
   2026) hay un solo micro, la 7B. F entra al GPIO6 (PCNT) y la bomba R sale
   por un MOSFET en el GPIO44, vigilada por un INA219 (0x40). En la caja
   Hammond, junto a la pantalla y por I2C, va el ADS1115 (0x48: A0 P1, A1 P2,
@@ -98,12 +118,16 @@ Mientras llega el hardware, se desarrolla en el simulador con SDL (Mac y Fedora)
   INA219 apaga la bomba R y deja `mixer_fault` (sin 12 V, nivel bajo,
   atorada); el firmware lo quita cuando se arregla. El RS485 de la 7B es solo para
   el EZO-ORP de la fase 2, y las bombas A y B (fase 3) van por un PCF8574
-  (0x20).
+  (0x20). Del repo de Waveshare de la 7B
+  (github.com/waveshareteam/ESP32-S3-Touch-LCD-7B): el expansor está en 0x24
+  (IO1 reset del táctil, IO2 backlight, IO5 elige USB o CAN en GPIO19/20; va
+  en 0 para que la consola salga por el USB nativo), su PWM del brillo va al
+  revés (0 es todo el brillo) y el RS485 es GPIO15/16.
 - `firmware/nodo` y `hardware/nodo`: del plan viejo con un segundo ESP32 por
   RS485, que el documento ya no lleva. Vacíos.
 - `docs/diseno/`: la especificación de diseño. Leer `docs/diseno/LEEME.md`.
 
-El firmware hará lo mismo que `simulator/main.cpp` y `demo.cpp`: leer los
+El firmware (`firmware/hmi/main/app.cpp`) hace lo mismo que `simulator/main.cpp` y `demo.cpp`: leer los
 sensores, pasarlos a `core` (`set_flow`, `count_liters`, `mixer_report_fault`...),
 cada minuto `core::set_time()` con la hora del NTP y `core::tick_minute()`,
 cada 10 s `core::queue_reading()` y, con red, el POST de `format_batch` y
@@ -194,6 +218,21 @@ En Mac, SDL2 viene de Homebrew (`brew install sdl2`). Si CMake no lo encuentra:
   en líneas horizontales o verticales, y el patrón va pegado a la x de la
   pantalla: no se anima.
 
+## ESP-IDF: lo que ya mordió
+
+- En el ESP32 `int32_t` es `long`, no `int`: `std::max(0, a - b)` con
+  `int32_t` no compila. Darle el tipo: `std::max<int32_t>(...)`.
+- IDF compila con `-std=gnu++26 -Werror` y gcc 15: avisa si un `snprintf`
+  puede cortar (`-Wformat-truncation`). Los búferes miden lo que copian.
+- En el CMake de un componente no va `CONFIGURE_DEPENDS` (IDF lo lee en modo
+  script). Un `.cpp` nuevo en `core/` o `ui/` se ve con `idf.py reconfigure`.
+- LVGL usa `%lu` con `int32_t`: solo a LVGL se le quita `-Wformat`.
+- La definición `LV_CONF_PATH` con comillas no aguanta `idf_build_set_property`:
+  va con `target_compile_definitions` en el target de LVGL, PUBLIC.
+- QEMU (`idf.py qemu`) lee mal la flash desde la app con QIO y trae 32 MB de
+  PSRAM: para probar ahí, otra build con DIO, PSRAM quad, consola en UART0 y
+  `qemu-system-xtensa -m 8M`. Sin eso la app no encuentra su firma y aborta.
+
 ## Antes de dar por buena una pantalla
 
 1. Compila sin warnings propios con gcc y con clang.
@@ -210,12 +249,14 @@ Panorama, la alarma a pantalla completa, el aviso de sin red en
 el encabezado, el diálogo de confirmar y el teclado (Registrar otra cantidad, Calibrar con tira y los
 minutos de la bomba R).
 
+Firmware de la 7B (octubre 2026): compila, firma y arranca en QEMU hasta la
+pantalla; falta probarlo en la placa (llega después).
+
 Pendiente, en este orden:
 
-1. Firmware de la 7B.
-
-En `core` falta todavía (hoy lo hace el demo): las alarmas de la fase 3 y
-reconocerlas con Entendido.
+1. Probar el firmware en la 7B (`firmware/hmi/LEEME.md`, "Para afinar").
+2. Las alarmas de la fase 3 en `core` (hoy solo Probar alarma usa
+   `alarm_raise`).
 
 ## Diferencias a propósito con el canvas
 

@@ -194,6 +194,7 @@ struct SystemState {
     uint8_t hour = 0;
     uint8_t minute = 0;
     bool wifi_ok = false;
+    uint32_t offline_seconds = 0;  // cuánto lleva sin red (network_tick)
     bool flow_sensor_ok = true;   // llegan pulsos de F cuando debe
     std::array<Alarm, kAlarmKinds> alarms{};  // una por AlarmKind
     char wifi_ssid[33] = "";      // nombre de la red, hasta 32 letras

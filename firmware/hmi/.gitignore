@@ -1,0 +1,8 @@
+build/
+managed_components/
+dependencies.lock
+sdkconfig
+sdkconfig.old
+# Lo que no va a git: la red de la casa y la llave que firma las OTA
+wifi.csv
+secretos/
