@@ -67,10 +67,13 @@ menu "Casa (home-water-scada)"
 
     config HMI_LCD_PCLK_MHZ
         int "Reloj de píxel de la pantalla (MHz)"
-        range 10 30
+        range 10 40
         default 24
         help
-            El del demo de Waveshare para la 7B. Si la imagen se recorre o
-            parpadea, bajarlo (18 o 20).
+            Cuántas veces por segundo se refresca: MHz / (1386 x 661), así que
+            24 da ~26 por segundo y 30 da ~33. El de fábrica es el del demo de
+            Waveshare para la 7B. Subirlo quita el parpadeo, pero cada MHz
+            pide 2 MB/s más a la PSRAM: si la imagen se recorre o salen rayas,
+            ya no alcanza (bajarlo, o subir la PSRAM a 120 MHz).
 
 endmenu
