@@ -27,7 +27,7 @@ menu "Casa (home-water-scada)"
             default ""
             help
                 El /write de VictoriaMetrics en el NAS, por ejemplo
-                http://192.168.1.20:8428/write. Vacío: los datos se quedan en
+                http://192.168.1.68:8428/write. Vacío: los datos se quedan en
                 la cola ("Por enviar").
 
         config HMI_OTA_URL
@@ -35,7 +35,8 @@ menu "Casa (home-water-scada)"
             default ""
             help
                 Dónde la placa busca el .bin nuevo, por ejemplo
-                http://192.168.1.20:8070/hmi.bin. Solo instala uno firmado con
+                http://192.168.1.68:8070/hmi.bin (el NAS) o la IP de la laptop.
+                Solo instala uno firmado con
                 la misma llave. Vacío: sin OTA.
 
         config HMI_OTA_CHECK_MINUTES

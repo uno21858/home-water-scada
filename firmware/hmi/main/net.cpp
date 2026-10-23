@@ -53,7 +53,7 @@ void start(const char* ssid, const char* password) {
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
     esp_netif_t* netif = esp_netif_create_default_wifi_sta();
-    // Así sale en la lista de equipos de los Deco, en vez de "espressif"
+    // Así sale en la lista de equipos del módem (el DHCP), en vez de "espressif"
     esp_netif_set_hostname(netif, kHostname);
 
     esp_timer_create_args_t timer = {};

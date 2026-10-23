@@ -263,13 +263,18 @@ Panorama, la alarma a pantalla completa, el aviso de sin red en
 el encabezado, el diálogo de confirmar y el teclado (Registrar otra cantidad, Calibrar con tira y los
 minutos de la bomba R).
 
-Firmware de la 7B (octubre 2026): compila, firma y arranca en QEMU hasta la
-pantalla; falta probarlo en la placa (llega después).
+Firmware en la 7B (octubre 2026): pantalla, táctil y arranque probados en la
+placa (pantalla prendida a ~1.4 s, reloj de píxel de 30 MHz sin rayas). Falta
+probar en la casa: WiFi y NTP, la OTA, la NVS después de un reinicio y los
+sensores. La red de la casa es una sola, 192.168.1.x (los Deco en modo AP, las
+IPs las da el módem); el NAS es 192.168.1.68.
 
 Pendiente, en este orden:
 
-1. Probar el firmware en la 7B (`firmware/hmi/LEEME.md`, "Para afinar").
-2. Las alarmas de la fase 3 en `core` (hoy solo Probar alarma usa
+1. Lo que falta de la 7B, un sensor a la vez (`firmware/hmi/LEEME.md`,
+   "Conectar los sensores" y "Para afinar").
+2. VictoriaMetrics en el NAS, y la URL de la OTA apuntando a él.
+3. Las alarmas de la fase 3 en `core` (hoy solo Probar alarma usa
    `alarm_raise`).
 
 ## Diferencias a propósito con el canvas

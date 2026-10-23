@@ -96,8 +96,10 @@ USB-serial de la placa; si no lo encuentra, se le pasa como argumento.
 La URL de la OTA va dentro del firmware, así que la primera vez se carga por
 cable con la URL ya puesta. Después ya no hace falta el cable.
 
-1. Elige la compu que va a servir el `.bin` y apártale su IP en la app de
-   los Deco, para que la URL no cambie. Para siempre conviene el NAS.
+1. Elige la compu que va a servir el `.bin` y apártale su IP en el DHCP del
+   módem, para que la URL no cambie. Los Deco van en modo AP: toda la casa,
+   cable y WiFi, es una sola red 192.168.1.x y las IPs las da el módem. Para
+   siempre conviene el NAS (192.168.1.68), que ya tiene la suya fija.
 2. `idf.py menuconfig` > Casa > Red y servidor > URL del firmware para la
    OTA: `http://IP-de-esa-compu:8070/hmi.bin`. Para probar, "Cada cuántos
    minutos" en 1.
@@ -109,16 +111,38 @@ cable con la URL ya puesta. Después ya no hace falta el cable.
    python3 -m http.server 8070 --directory build
    ```
 
-   La 7B llega a las dos redes de la casa, así que funciona igual en la del
-   módem o en la de los Deco. Revisa al minuto de arrancar y luego cada los
-   minutos de `menuconfig`: lo baja, revisa la firma y reinicia. Si la bomba
-   R está corriendo, espera a que acabe.
+   La compu puede estar por cable o por WiFi. La 7B revisa al minuto de
+   arrancar y luego cada los minutos de `menuconfig`: lo baja, revisa la
+   firma y reinicia. Si la bomba R está corriendo, espera a que acabe.
+
+La URL también se cambia por OTA: el firmware nuevo trae la suya. Para pasar
+de la laptop al NAS, se compila con la URL del NAS y se sirve una última vez
+desde la laptop.
 
 Si compilas en otra compu (la Mac), lleva la misma llave
 `secretos/firma_ota.pem`: con otra llave la placa no acepta la OTA.
 
 La placa compara el hash del binario, no la versión: lo que esté en la URL es lo
 que va a correr. Un `.bin` que ya falló una vez no se vuelve a instalar.
+
+## Conectar los sensores
+
+Uno a la vez y con la placa apagada al conectar. Cada uno se prende en
+`idf.py menuconfig` > Casa > Qué está instalado, se carga y se revisa en
+Ajustes > Diagnóstico antes de pasar al siguiente.
+
+| Qué | En `menuconfig` | En Diagnóstico | Luego |
+|---|---|---|---|
+| F (GPIO6) | siempre prendido | Hz con agua corriendo | Prueba de cubeta |
+| P1 y P2 (A0, A1) | Sensores de presión | ~0.500 V cada uno sin presión | Hacer cero con V1 cerrada |
+| Nivel (A2) | Sensor de nivel | 0.132 V en el aire (4 mA) | Calibrar nivel |
+| LDR (A3) | LDR | cambia al taparlo | |
+| Bomba R (GPIO44, INA219) | Bomba R | la corriente al prenderla | umbrales de la prueba 9b |
+
+- P1 y P2 entran por su divisor 10k/10k. Sin él, los 4.5 V del sensor pasan
+  el máximo del ADS1115 a 3.3 V (VDD + 0.3 V, hoja de datos de TI).
+- La bomba R al final: su pin es el RX de UART0, así que antes se sale del
+  modo mesa (`rm -f sdkconfig` y `idf.py build`) y el switch va en UART2.
 
 ## Para afinar con la placa en la mano
 
