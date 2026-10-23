@@ -84,20 +84,38 @@ armadas las pantallas y a cuántos se prendió la pantalla.
 
 Para regresar a la consola por el USB nativo: `rm -f sdkconfig` y `idf.py build`.
 
+## Desde CLion
+
+Run > Edit Configurations > + > Shell Script, y en Script path
+`firmware/hmi/flashear.sh`. Con el switch en UART1, después de un `git pull`
+nomás es darle Run: compila y flashea. Busca solo el puerto del chip
+USB-serial de la placa; si no lo encuentra, se le pasa como argumento.
+
 ## Actualizar por WiFi
 
-1. Cambia el código y `idf.py build`.
-2. Deja `build/hmi.bin` donde apunta la URL de la OTA. Para probar desde la Mac:
+La URL de la OTA va dentro del firmware, así que la primera vez se carga por
+cable con la URL ya puesta. Después ya no hace falta el cable.
+
+1. Elige la compu que va a servir el `.bin` y apártale su IP en la app de
+   los Deco, para que la URL no cambie. Para siempre conviene el NAS.
+2. `idf.py menuconfig` > Casa > Red y servidor > URL del firmware para la
+   OTA: `http://IP-de-esa-compu:8070/hmi.bin`. Para probar, "Cada cuántos
+   minutos" en 1.
+3. Flashéala por cable (`./flashear.sh`) y regresa el switch a UART2.
+4. Cada actualización: cambia el código, `idf.py build` y sirve la carpeta
+   `build`:
 
    ```bash
    python3 -m http.server 8070 --directory build
    ```
 
-   con la URL `http://IP-de-la-Mac:8070/hmi.bin`. La 7B llega a las dos redes
-   de la casa, así que funciona igual en la del módem o en la de los Deco.
+   La 7B llega a las dos redes de la casa, así que funciona igual en la del
+   módem o en la de los Deco. Revisa al minuto de arrancar y luego cada los
+   minutos de `menuconfig`: lo baja, revisa la firma y reinicia. Si la bomba
+   R está corriendo, espera a que acabe.
 
-3. En menos de 10 min la placa lo ve, lo baja, revisa la firma y reinicia. Si
-   la bomba R está corriendo, espera a que acabe.
+Si compilas en otra compu (la Mac), lleva la misma llave
+`secretos/firma_ota.pem`: con otra llave la placa no acepta la OTA.
 
 La placa compara el hash del binario, no la versión: lo que esté en la URL es lo
 que va a correr. Un `.bin` que ya falló una vez no se vuelve a instalar.
