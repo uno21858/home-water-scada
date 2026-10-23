@@ -18,6 +18,18 @@ namespace {
 // El diálogo de confirmar no pasa datos a su callback: aquí se guarda cuál se preguntó
 core::Filter asked = core::Filter::prefilter;
 
+// Los días van en x 216 y los litros justo después. En el canvas los litros
+// van fijos en x 340 a 32 px y "31 días" ya los toca: con 100 días o más se
+// encimaban. Por eso van en etiqueta (26 px, texto-2) detrás de los días.
+constexpr int32_t kDaysX = 216;
+constexpr int32_t kLitersGap = 14;
+
+int32_t text_width(const char* text, const lv_font_t* font) {
+    lv_point_t size;
+    lv_text_get_size(&size, text, font, 0, 0, LV_COORD_MAX, LV_TEXT_FLAG_NONE);
+    return size.x;
+}
+
 void on_confirmed() {
     if (actions().filter_serviced != nullptr) actions().filter_serviced(asked);
 }
@@ -34,12 +46,17 @@ lv_obj_t* FiltersScreen::create(lv_obj_t* parent) {
         r.name = label(r.obj, &font_body_32, colors::text, fmt::filter_name(static_cast<unsigned>(i)));
         lv_obj_set_pos(r.name, 60, 10);
         r.days = label(r.obj, &font_body_32, colors::text, "");
-        lv_obj_set_pos(r.days, 216, 10);
-        r.liters = label(r.obj, &font_body_32, colors::text, "");
-        lv_obj_set_pos(r.liters, 340, 10);
+        lv_obj_set_pos(r.days, kDaysX, 10);
+        // Los litros en la misma línea base que los días: la línea base queda
+        // a (alto de línea − base_line) de arriba de cada label
+        const int32_t baseline_32 = lv_font_get_line_height(&font_body_32) - font_body_32.base_line;
+        const int32_t baseline_26 = lv_font_get_line_height(&font_label_26) - font_label_26.base_line;
+        r.liters = label(r.obj, &font_label_26, colors::text_secondary, "");
+        lv_obj_set_pos(r.liters, kDaysX + 100, 10 + baseline_32 - baseline_26);
 
-        // Barra de lo que lleva de su vida útil
-        r.track = box(r.obj, 500, 24, 140, 10);
+        // Barra de lo que lleva de su vida útil: 120 desde x 520 (el canvas,
+        // 140 desde x 500), para que quepan 365 días y 334,800 L
+        r.track = box(r.obj, 520, 24, 120, 10);
         lv_obj_set_style_radius(r.track, 5, 0);
         lv_obj_set_style_clip_corner(r.track, true, 0);
         r.bar = box(r.track, 0, 0, 0, 10);
@@ -68,7 +85,8 @@ void FiltersScreen::update(const core::SystemState& s) {
             r.installed = f.installed;
             const uint32_t tone = f.installed ? colors::text : colors::text_disabled;
             set_icon_color(r.icon, tone);
-            for (lv_obj_t* text : {r.name, r.days, r.liters}) lv_obj_set_style_text_color(text, color(tone), 0);
+            for (lv_obj_t* text : {r.name, r.days}) lv_obj_set_style_text_color(text, color(tone), 0);
+            set_text_color(r.liters, f.installed ? colors::text_secondary : colors::text_disabled);
             fill(r.track, f.installed ? colors::panel_raised : colors::panel);
         }
 
@@ -78,23 +96,39 @@ void FiltersScreen::update(const core::SystemState& s) {
         if (!f.installed) {
             set_text(r.days, "Fuera");
             set_text(r.liters, "vaso vacío");
+            lv_obj_set_x(r.liters, kDaysX + text_width("Fuera", &font_body_32) + kLitersGap);
             lv_obj_set_width(r.bar, 0);
             set_text(r.every, s.spares[i] == 0 ? "sin repuesto" : fmt::filter_every(static_cast<unsigned>(i)));
             continue;
         }
-        const uint32_t days = s.today >= f.since_day ? s.today - f.since_day : 0;
+        // Sin fecha (recién instalada la pantalla): ni días ni litros, que
+        // contarían desde 1970 o desde que se prendió. "Sin fecha" ocupa
+        // también el lugar de los litros.
+        const auto filter = static_cast<core::Filter>(i);
+        if (!core::filter_dated(s, filter)) {
+            set_text(r.days, "Sin fecha");
+            set_text_color(r.days, colors::text_secondary);
+            set_text(r.liters, "");
+            lv_obj_set_width(r.bar, 0);
+            set_text(r.every, fmt::filter_every(static_cast<unsigned>(i)));
+            continue;
+        }
+        set_text_color(r.days, colors::text);
+        const uint32_t days = core::filter_days(s, filter);
+        char count[16];
         if (days == 0) {
             snprintf(buf, sizeof buf, "Hoy");
         } else {
-            snprintf(buf, sizeof buf, days == 1 ? "%lu día" : "%lu días", static_cast<unsigned long>(days));
+            fmt::thousands(count, sizeof count, days);
+            snprintf(buf, sizeof buf, days == 1 ? "%s día" : "%s días", count);
         }
         set_text(r.days, buf);
-        char liters[16];
-        fmt::thousands(liters, sizeof liters, f.liters);
-        snprintf(buf, sizeof buf, "%s L", liters);
+        lv_obj_set_x(r.liters, kDaysX + text_width(buf, &font_body_32) + kLitersGap);
+        fmt::thousands(count, sizeof count, f.liters);
+        snprintf(buf, sizeof buf, "%s L", count);
         set_text(r.liters, buf);
-        const uint32_t pct = std::min<uint32_t>(100, core::filter_wear_pct(s, static_cast<core::Filter>(i)));
-        lv_obj_set_width(r.bar, static_cast<int32_t>(140 * pct / 100));
+        const uint32_t pct = std::min<uint32_t>(100, core::filter_wear_pct(s, filter));
+        lv_obj_set_width(r.bar, static_cast<int32_t>(120 * pct / 100));
         set_text(r.every, fmt::filter_every(static_cast<unsigned>(i)));
     }
     now_ = core::minute_of_day(s);

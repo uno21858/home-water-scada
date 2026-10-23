@@ -126,6 +126,10 @@ void SettingsScreen::create_categories(lv_obj_t* page) {
         lv_obj_set_pos(name, 62, 2);
         t.summary = label(t.obj, &font_label_26, colors::text_secondary, defs[i].summary);
         lv_obj_set_pos(t.summary, 62, 38);
+        // Un nombre de red largo ("INFINITUM1234_2.4GHz") se salía de la
+        // pestaña: se corta con "..." antes de la orilla
+        lv_obj_set_size(t.summary, 360 - 62 - 12, lv_font_get_line_height(&font_label_26));
+        lv_label_set_long_mode(t.summary, LV_LABEL_LONG_MODE_DOTS);
     }
 }
 
@@ -300,17 +304,27 @@ void SettingsScreen::update(const core::SystemState& s) {
     set_text(signal_, buf);
     snprintf(buf, sizeof buf, "%s · %s", ssid, s.wifi_ok ? "en línea" : "sin conexión");
     set_text(tabs_[2].summary, buf);
-    const bool up_to_date = s.pending_uploads == 0;
-    const uint32_t tone = up_to_date ? colors::ok : colors::warning;
-    lv_image_set_src(upload_icon_, up_to_date ? &icon_ok_32 : &icon_advertencia_32);
-    set_icon_color(upload_icon_, tone);
-    set_text(upload_word_, up_to_date ? "Al día" : "Por enviar");
-    lv_obj_set_style_text_color(upload_word_, color(tone), 0);
-    fmt::clock(a, sizeof a, s.last_upload_at);
-    char pending[16];
-    fmt::thousands(pending, sizeof pending, s.pending_uploads);
-    snprintf(buf, sizeof buf, "Último envío %s · %s por enviar", a, pending);
-    set_text(upload_note_, buf);
+    // Sin la URL de VictoriaMetrics (menuconfig) no se manda nada: ni
+    // "Al día" ni "Por enviar", que no es cierto
+    if (!s.has_server) {
+        lv_image_set_src(upload_icon_, &icon_info_32);
+        set_icon_color(upload_icon_, colors::text_secondary);
+        set_text(upload_word_, "Sin servidor");
+        set_text_color(upload_word_, colors::text_secondary);
+        set_text(upload_note_, "Los datos se quedan en la pantalla");
+    } else {
+        const bool up_to_date = s.pending_uploads == 0;
+        const uint32_t tone = up_to_date ? colors::ok : colors::warning;
+        lv_image_set_src(upload_icon_, up_to_date ? &icon_ok_32 : &icon_advertencia_32);
+        set_icon_color(upload_icon_, tone);
+        set_text(upload_word_, up_to_date ? "Al día" : "Por enviar");
+        set_text_color(upload_word_, tone);
+        fmt::clock(a, sizeof a, s.last_upload_at);
+        char pending[16];
+        fmt::thousands(pending, sizeof pending, s.pending_uploads);
+        snprintf(buf, sizeof buf, "Último envío %s · %s por enviar", a, pending);
+        set_text(upload_note_, buf);
+    }
 
     // Cartuchos
     auto spare = [&s](core::Filter f) { return static_cast<unsigned>(s.spares[static_cast<size_t>(f)]); };
@@ -326,7 +340,7 @@ void SettingsScreen::update(const core::SystemState& s) {
     snprintf(buf, sizeof buf, "CTO: %u · Sarro: %u", spare(core::Filter::carbon), spare(core::Filter::scale));
     set_text(spares_rest_, buf);
     if (s.last_cartridge_day == 0) {
-        set_text(tabs_[3].summary, "Sin cambios registrados");
+        set_text(tabs_[3].summary, "Sin cambios todavía");  // "registrados" no cabe
     } else {
         const uint32_t ago = s.today >= s.last_cartridge_day ? s.today - s.last_cartridge_day : 0;
         const core::Date d = core::date_days_ago(core::today(s), s.year, ago);

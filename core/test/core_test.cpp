@@ -591,6 +591,27 @@ void persist_ignores_bad_data() {
 
 }  // namespace
 
+// Recién instalada la pantalla los cartuchos no tienen fecha: no cuentan
+// los días desde 1970 (20,748 en la 7B) ni le ganan a los demás
+void filters_without_date() {
+    core::SystemState s;
+    core::register_filter(s, core::Filter::pp20);  // antes del NTP: sigue sin fecha
+    CHECK(!core::filter_dated(s, core::Filter::pp20));
+
+    core::set_time(s, {2026, 10, 23, 23, 29});
+    CHECK(s.today > 20000);
+    CHECK(!core::filter_dated(s, core::Filter::pp10));
+    CHECK(core::filter_days(s, core::Filter::pp10) == 0);
+    CHECK(core::filter_wear_pct(s, core::Filter::pp10) == 0);
+
+    core::register_filter(s, core::Filter::prefilter);
+    CHECK(core::filter_dated(s, core::Filter::prefilter));
+    core::set_time(s, {2026, 10, 31, 8, 0});
+    CHECK(core::filter_days(s, core::Filter::prefilter) == 8);
+    CHECK(core::filter_wear_pct(s, core::Filter::prefilter) == 114);  // 8 de 7 días
+    CHECK(core::filter_wear_pct(s, core::Filter::pp10) == 0);
+}
+
 int main() {
     auto_by_liters();
     dose_mixes();
@@ -615,6 +636,7 @@ int main() {
     offline_event();
     persist_round_trip();
     persist_ignores_bad_data();
+    filters_without_date();
     if (failures == 0) std::printf("core: todo bien\n");
     return failures == 0 ? 0 : 1;
 }

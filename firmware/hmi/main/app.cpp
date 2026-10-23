@@ -324,7 +324,8 @@ void lvgl_task(void*) {
 }
 
 // Cada 10 s la lectura entra a la cola; con red se manda lo más viejo que
-// quepa en un POST. Si quedó algo, sigue sin esperar, hasta vaciarla.
+// quepa en un POST. Si quedó algo, sigue sin esperar, hasta vaciarla. Sin
+// la URL de VictoriaMetrics no se encola nada: no hay a dónde mandarlo.
 void upload_task(void*) {
     static char body[kBodySize];
     bool more = false;
@@ -334,7 +335,7 @@ void upload_task(void*) {
         std::size_t bytes = 0;
         {
             Locked locked;
-            if (!more && net::time_valid()) {
+            if (!more && s.has_server && net::time_valid()) {
                 core::queue_reading(s, *outbox, static_cast<uint32_t>(std::time(nullptr)));
             }
             if (net::online() && kMetricsUrl[0] != '\0') bytes = core::format_batch(*outbox, body, sizeof body, &records);
@@ -386,6 +387,7 @@ void start() {
     s.has_pressure = kHasPressure;
     s.has_level = kHasLevel;
     s.has_ldr = kHasLdr;
+    s.has_server = kMetricsUrl[0] != '\0';
     s.devices.pcf8574 = false;  // fase 3
     s.devices.ezo_orp = false;  // fase 2
     const char* version = esp_app_get_description()->version;

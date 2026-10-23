@@ -72,6 +72,7 @@ private:
     // Cartuchos (sin Filtros o sin Bomba R)
     lv_obj_t* cartridges_ = nullptr;
     lv_obj_t* next_name_ = nullptr;
+    lv_obj_t* next_since_ = nullptr;  // "Lleva 12 días": se esconde si no tiene fecha
     lv_obj_t* next_days_ = nullptr;
     lv_obj_t* next_unit_ = nullptr;
     lv_obj_t* next_track_ = nullptr;

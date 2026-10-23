@@ -79,6 +79,10 @@ lv_obj_t* DiagnosticsScreen::create(lv_obj_t* parent) {
     lv_obj_t* net = table_card(page, 518, 176, 152, "Red y datos");
     wifi_ = entry(net, "", "");
     wifi_name_ = lv_obj_get_child(lv_obj_get_parent(wifi_), 0);
+    // El nombre de la red puede tener 32 letras ("INFINITUM1234_2.4GHz" ya
+    // se encimaba con la señal): se corta con "..." antes de "señal regular"
+    lv_obj_set_size(wifi_name_, 268, lv_font_get_line_height(&font_label_26));
+    lv_label_set_long_mode(wifi_name_, LV_LABEL_LONG_MODE_DOTS);
     server_ = entry(net, "Servidor de la casa", "");
     pending_ = entry(net, "Por enviar", "");
 
@@ -97,8 +101,14 @@ lv_obj_t* DiagnosticsScreen::create(lv_obj_t* parent) {
     }, nullptr);
     lv_obj_set_height(restart, 64);
 
+    // El canvas dice "Firmware 0.1 · encendida hace 3 días"; con la versión
+    // de git ("30c340c+") ya no cabe y va sin "Firmware" (update). Mide 500:
+    // la del canvas ocupa 499 y se pasa 9 px del margen. Si aun así no cabe,
+    // se corta con "..." en vez de salirse de la pantalla.
     about_ = label(page, &font_label_26, colors::text_disabled, "");
     lv_obj_set_pos(about_, 518, 412);
+    lv_obj_set_size(about_, 500, lv_font_get_line_height(&font_label_26));
+    lv_label_set_long_mode(about_, LV_LABEL_LONG_MODE_DOTS);
     return page;
 }
 
@@ -142,7 +152,12 @@ void DiagnosticsScreen::update(const core::SystemState& s) {
     }
     device(gt911_, s.devices.gt911);
     device(expander_, s.devices.expander);
-    device(ina_, s.devices.ina219);
+    // El INA219 vigila la bomba R: sin bomba no está conectado
+    if (s.has_mixer) {
+        device(ina_, s.devices.ina219);
+    } else {
+        future(ina_, "sin bomba");
+    }
 
     // Bomba R con lo que lee el INA219: la corriente si anda (que pase
     // corriente es que está prendida), el aviso que dejó o "sin 12 V" aunque
@@ -182,9 +197,14 @@ void DiagnosticsScreen::update(const core::SystemState& s) {
     const char* const strength[4] = {"sin señal", "señal débil", "señal regular", "señal buena"};
     set_text(wifi_, s.wifi_ok ? strength[s.wifi_bars % 4] : "sin conexión");
     set_text_color(wifi_, s.wifi_ok ? colors::text : colors::warning);
+    // Sin la URL de VictoriaMetrics no hay a dónde mandar: no es un pendiente
     const bool up_to_date = s.wifi_ok && s.pending_uploads == 0;
-    set_text(server_, up_to_date ? "al día" : "pendiente");
-    set_text_color(server_, up_to_date ? colors::ok : colors::warning);
+    if (!s.has_server) {
+        future(server_, "sin configurar");
+    } else {
+        set_text(server_, up_to_date ? "al día" : "pendiente");
+        set_text_color(server_, up_to_date ? colors::ok : colors::warning);
+    }
     fmt::thousands(buf, sizeof buf, s.pending_uploads);
     set_text(pending_, buf);
 
@@ -199,7 +219,13 @@ void DiagnosticsScreen::update(const core::SystemState& s) {
     } else {
         snprintf(since, sizeof since, "%lu min", static_cast<unsigned long>(m));
     }
-    snprintf(buf, sizeof buf, "Firmware %s · encendida hace %s", s.firmware[0] != '\0' ? s.firmware : "?", since);
+    const char* version = s.firmware[0] != '\0' ? s.firmware : "?";
+    snprintf(buf, sizeof buf, "Firmware %s · encendida hace %s", version, since);
+    lv_point_t size;
+    lv_text_get_size(&size, buf, &font_label_26, 0, 0, LV_COORD_MAX, LV_TEXT_FLAG_NONE);
+    if (size.x > lv_obj_get_width(about_)) {
+        snprintf(buf, sizeof buf, "%s · encendida hace %s", version, since);
+    }
     set_text(about_, buf);
 }
 

@@ -231,10 +231,10 @@ void SummaryScreen::create_cartridges_card(lv_obj_t* page) {
     next_name_ = label(cartridges_, &font_title_xl_48, colors::text, "");
     lv_obj_set_pos(next_name_, 16, 43);
 
-    lv_obj_t* days = column(cartridges_, 0, LV_FLEX_ALIGN_END);
-    lv_obj_align(days, LV_ALIGN_TOP_RIGHT, -16, 40);
-    label(days, &font_label_26, colors::text_secondary, "Lleva");
-    lv_obj_t* r = row(days, 6, LV_FLEX_ALIGN_END);
+    next_since_ = column(cartridges_, 0, LV_FLEX_ALIGN_END);
+    lv_obj_align(next_since_, LV_ALIGN_TOP_RIGHT, -16, 40);
+    label(next_since_, &font_label_26, colors::text_secondary, "Lleva");
+    lv_obj_t* r = row(next_since_, 6, LV_FLEX_ALIGN_END);
     next_days_ = label(r, &font_digits_44, colors::text, "");
     next_unit_ = label(r, &font_label_26, colors::text_secondary, "");
 
@@ -335,15 +335,29 @@ void SummaryScreen::update_cartridges(const core::SystemState& s) {
     }
     if (slot == 0) return;
 
-    // El que lleva más de su vida; con empate, el primero (el prefiltro)
+    // El que lleva más de su vida; con empate, el primero (el prefiltro).
+    // Uno sin fecha va antes que los que todavía no tocan, para que se
+    // registre; uno al que ya le toca, antes que todos.
     size_t next = 0;
     uint32_t most = 0;
+    int undated = -1;
     for (size_t i = 0; i < core::kFilterCount; ++i) {
-        const uint32_t pct = core::filter_wear_pct(s, static_cast<core::Filter>(i));
-        if (s.filters[i].installed && pct > most) {
+        const auto filter = static_cast<core::Filter>(i);
+        if (!s.filters[i].installed) continue;
+        if (!core::filter_dated(s, filter)) {
+            if (undated < 0) undated = static_cast<int>(i);
+            continue;
+        }
+        const uint32_t pct = core::filter_wear_pct(s, filter);
+        if (pct > most) {
             most = pct;
             next = i;
         }
+    }
+    const bool show_undated = undated >= 0 && most < 100;
+    if (show_undated) {
+        next = static_cast<size_t>(undated);
+        most = 0;
     }
     const bool prefilter = next == static_cast<size_t>(core::Filter::prefilter);
     char buf[48];
@@ -354,9 +368,10 @@ void SummaryScreen::update_cartridges(const core::SystemState& s) {
     }
     set_text(next_name_, buf);
 
-    const core::FilterStatus& f = s.filters[next];
-    const uint32_t days = s.today >= f.since_day ? s.today - f.since_day : 0;
-    snprintf(buf, sizeof buf, "%lu", static_cast<unsigned long>(days));
+    // "Lleva 12 días" a la derecha; sin fecha no va
+    lv_obj_set_hidden(next_since_, show_undated);
+    const uint32_t days = core::filter_days(s, static_cast<core::Filter>(next));
+    fmt::thousands(buf, sizeof buf, days);
     set_text(next_days_, buf);
     set_text(next_unit_, days == 1 ? "día" : "días");
 
@@ -366,7 +381,9 @@ void SummaryScreen::update_cartridges(const core::SystemState& s) {
     fill(next_bar_, due ? colors::warning : colors::text_secondary);
 
     // Ya toca: la palabra en ámbar, no solo la barra
-    if (due) {
+    if (show_undated) {
+        snprintf(buf, sizeof buf, "Sin fecha: regístralo en Cartuchos");
+    } else if (due) {
         snprintf(buf, sizeof buf, prefilter ? "Ya toca purgarlo" : "Ya toca cambiarlo");
     } else if (prefilter) {
         snprintf(buf, sizeof buf, "Se purga %s", fmt::filter_every(static_cast<unsigned>(next)));

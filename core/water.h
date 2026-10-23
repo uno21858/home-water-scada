@@ -34,7 +34,8 @@ void set_pressures(SystemState& s, float p1_volts, float p2_volts);
 void pressure_zero(SystemState& s);
 
 // "Lo cambié", "Lo puse" o "Ya purgué": el filtro vuelve a contar desde hoy
-// y, si es cartucho, baja uno de los repuestos
+// y, si es cartucho, baja uno de los repuestos. Antes de la primera hora
+// del NTP (today en 0) queda sin fecha.
 void register_filter(SystemState& s, Filter filter);
 
 }  // namespace core

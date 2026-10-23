@@ -142,7 +142,9 @@ void Header::set_time(uint8_t hour, uint8_t minute) {
 }
 
 void Header::set_network(bool ok, uint32_t pending) {
-    if (!ok) {
+    if (!ok && pending == 0) {
+        set_text(offline_text_, "Sin red");  // sin servidor no hay nada por enviar
+    } else if (!ok) {
         char count[16];
         fmt::thousands(count, sizeof count, pending);  // un día sin red son 8,640 lecturas
         char buf[40];

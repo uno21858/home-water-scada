@@ -61,7 +61,7 @@ inline constexpr uint16_t kFilterLifeDays[kFilterCount] = {7, 75, 135, 135, 180,
 
 // Cómo va cada filtro desde que se purgó o se cambió
 struct FilterStatus {
-    uint32_t since_day = 0;  // mismo conteo que SystemState::today
+    uint32_t since_day = 0;  // mismo conteo que SystemState::today; 0 = sin fecha (nunca se registró)
     uint32_t liters = 0;     // litros que han pasado desde entonces
     bool installed = true;   // el vaso del sarro puede estar vacío
 };
@@ -201,6 +201,7 @@ struct SystemState {
     uint8_t wifi_bars = 0;        // señal de 0 a 3
     uint16_t last_upload_at = 0;  // minuto del día del último envío de datos
     uint32_t pending_uploads = 0; // lecturas y eventos que faltan por enviar (core::Outbox)
+    bool has_server = false;      // hay a dónde mandarlos (la URL de VictoriaMetrics)
 
     // Flujo
     uint16_t flow_pulses_per_liter = kFactoryPulsesPerLiter;  // factor del sensor F
@@ -366,13 +367,25 @@ inline Level overall_level(const SystemState& s) {
     return worst;
 }
 
-// Lo que lleva un cartucho de su vida, en %: puede pasar de 100 si ya toca
+// Si se sabe desde cuándo trae ese cartucho. Recién instalada la pantalla
+// ninguno tiene fecha: se pone con "Lo cambié" o "Ya purgué".
+inline bool filter_dated(const SystemState& s, Filter filter) {
+    return s.filters[static_cast<std::size_t>(filter)].since_day != 0;
+}
+
+// Días desde que se purgó o se cambió; 0 si no tiene fecha
+inline uint32_t filter_days(const SystemState& s, Filter filter) {
+    const FilterStatus& f = s.filters[static_cast<std::size_t>(filter)];
+    if (f.since_day == 0 || s.today < f.since_day) return 0;
+    return s.today - f.since_day;
+}
+
+// Lo que lleva un cartucho de su vida, en %: puede pasar de 100 si ya toca.
+// Sin cartucho o sin fecha, 0.
 inline uint32_t filter_wear_pct(const SystemState& s, Filter filter) {
     const auto i = static_cast<std::size_t>(filter);
-    const FilterStatus& f = s.filters[i];
-    if (!f.installed) return 0;
-    const uint32_t days = s.today >= f.since_day ? s.today - f.since_day : 0;
-    return (days * 100 + kFilterLifeDays[i] / 2) / kFilterLifeDays[i];
+    if (!s.filters[i].installed) return 0;
+    return (filter_days(s, filter) * 100 + kFilterLifeDays[i] / 2) / kFilterLifeDays[i];
 }
 
 inline uint16_t minute_of_day(const SystemState& s) {

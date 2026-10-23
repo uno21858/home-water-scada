@@ -56,7 +56,9 @@ Mientras llega el hardware, se desarrolla en el simulador con SDL (Mac y Fedora)
     = un día sin red) la lectura y los eventos nuevos (`Event::seq` mayor que
     `last_event_seq`); `format_batch` arma el body del POST con los más
     viejos y `mark_sent` los saca cuando el servidor contesta. "Por enviar"
-    es `pending_uploads`, lo que hay en la cola.
+    es `pending_uploads`, lo que hay en la cola. Sin la URL de
+    VictoriaMetrics (`has_server` en falso) el firmware no encola nada y la
+    interfaz dice "Sin servidor" en lugar de "Por enviar".
   - `test/core_test.cpp`: pruebas en la compu (`ctest --test-dir build`).
 - `ui/`: la interfaz. No sabe nada de SDL ni del ESP32.
   - `ui.h/.cpp`: `init()`, `update()`, `show()` y las `Actions` que regresan a la
@@ -309,8 +311,16 @@ Pendiente, en este orden:
 - La curva de "nuevos" en DetalleCaida se puntea a mano: LVGL solo puntea
   líneas horizontales o verticales.
 - Textos que en el canvas tampoco caben y se quedaron igual, para arreglar en el
-  diseño: en Cartuchos "vaso vacío" queda abajo de la barra y "Lo cambié" toca
-  el borde de su botón.
+  diseño: en Cartuchos "Lo cambié" toca el borde de su botón.
+- En Cartuchos los litros van en etiqueta (26 Medium, texto-2) justo detrás de
+  los días y la barra mide 120 desde x 520 (el canvas: litros a 32 px fijos en
+  x 340 y la barra de 140 desde x 500). "31 días" ya tocaba los litros y con
+  100 días o más se encimaban; así caben "365 días" y "999,999 L".
+- Recién instalada la pantalla ningún cartucho tiene fecha (`since_day` en 0,
+  `core::filter_dated`): Cartuchos dice "Sin fecha" sin días ni litros (antes
+  salían los días desde 1970) y Resumen pone ese antes de los que todavía no
+  tocan, con "Sin fecha: regístralo en Cartuchos". "Lo cambié" o "Ya purgué"
+  le pone fecha. No está en el canvas.
 - En DetalleCaida los textos que no cabían se acortaron: "con 12.4 L/min",
   "Mismo caudal: 12.4 L/min" y "Subió 1.4 psi desde 2 sep" (de 10 psi para
   arriba sin decimal). "Si llega a Revisar" se leía como verbo: dice "Si sube
@@ -326,7 +336,7 @@ Pendiente, en este orden:
 - En la lista de Historial las alarmas van con su título corto
   (`fmt::alarm_short`): "Sin flujo mientras dosifica" no cabe en 358 px.
 - Sin red, el encabezado esconde su enlace para que quepa el chip (el canvas lo
-  hace en Flujo; aquí en todas).
+  hace en Flujo; aquí en todas). Sin nada por enviar el chip dice solo "Sin red".
 - La alarma sale mientras haya una activa sin reconocer (`SystemState::alarms`).
   Entendido la quita y avisa por `Actions::alarm_acknowledged`; la pastilla
   sigue en Alarma hasta que la alarma deje de estar activa.
@@ -344,7 +354,10 @@ Pendiente, en este orden:
   el brillo lo lleva el LDR del firmware (de noche baja solo) y el Pasillo ya
   se traga el primer toque, así que no hace falta apagarla. "Hacer cero"
   pide confirmación (el DS lo pide para lo que reinicia algo) y el envío de
-  datos dice "Por enviar" en ámbar si hay pendientes.
+  datos dice "Por enviar" en ámbar si hay pendientes, o "Sin servidor" en
+  texto-2 con el ícono de info si no hay URL de VictoriaMetrics. Los
+  resúmenes de las pestañas de la izquierda se cortan con "..." (un nombre
+  de red largo se salía) y Cartuchos sin cambios dice "Sin cambios todavía".
 - En Mezcla, los renglones del programa Auto abren el teclado en minutos (de 1
   a 99) y sin bomba R la pantalla se ve bloqueada. El selector marca la opción
   al tocarla y el estado la confirma en el siguiente `update()`. "Cada 4
@@ -387,7 +400,11 @@ Pendiente, en este orden:
   expansor dice CH32V003 y no CH422G: la 7B trae un CH32V003, que también
   lleva el PWM del backlight
   (https://github.com/esphome/feature-requests/issues/3202). A3 es el LDR del
-  brillo (`has_ldr`, `ldr_volts`).
+  brillo (`has_ldr`, `ldr_volts`). Sin bomba R el INA219 dice "sin bomba" y
+  no "No responde". El nombre de la red se corta con "..." antes de la señal,
+  "Servidor de la casa" dice "sin configurar" sin la URL de VictoriaMetrics,
+  y el pie pierde "Firmware" si no cabe en 500 px (el del canvas mide 499),
+  como con la versión de git ("30c340c+ · encendida hace 12 min").
 - En Prueba de cubeta el demo cuenta como si F diera 387.2 pulsos por litro y
   se para en 3,872 (la marca), para que proponga 387 como el canvas.
 - Prueba de cubeta: el canvas da los pasos 1 y 2 por hechos y cuenta desde
