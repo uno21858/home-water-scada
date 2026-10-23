@@ -21,6 +21,7 @@ namespace {
 constexpr const char* kTag = "net";
 constexpr uint64_t kRetryUs = 5ULL * 1000 * 1000;  // espera entre intentos de conexión
 constexpr std::time_t kYear2026 = 1767225600;       // 1 ene 2026 en UTC: antes, el NTP no ha llegado
+constexpr const char* kHostname = "hmi-agua";
 
 std::atomic<bool> connected{false};
 esp_timer_handle_t retry = nullptr;
@@ -51,7 +52,9 @@ void on_event(void*, esp_event_base_t base, int32_t id, void*) {
 void start(const char* ssid, const char* password) {
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
-    esp_netif_create_default_wifi_sta();
+    esp_netif_t* netif = esp_netif_create_default_wifi_sta();
+    // Así sale en la lista de equipos de los Deco, en vez de "espressif"
+    esp_netif_set_hostname(netif, kHostname);
 
     esp_timer_create_args_t timer = {};
     timer.callback = reconnect;
