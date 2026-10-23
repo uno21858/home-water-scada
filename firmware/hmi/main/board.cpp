@@ -78,7 +78,7 @@ void set_output(uint8_t bit, bool high) {
 void reset_touch() {
     gpio_config_t config = {};
     config.pin_bit_mask = 1ULL << kTouchInt;
-    config.mode = GPIO_MODE_INPUT_OUTPUT;  // con la entrada prendida, al soltarlo el driver no avisa conflicto
+    config.mode = GPIO_MODE_OUTPUT;
     gpio_config(&config);
     set_output(kTouchReset, false);
     vTaskDelay(pdMS_TO_TICKS(100));
@@ -86,7 +86,10 @@ void reset_touch() {
     vTaskDelay(pdMS_TO_TICKS(100));
     set_output(kTouchReset, true);
     vTaskDelay(pdMS_TO_TICKS(200));
-    config.mode = GPIO_MODE_INPUT;  // ya arrancó: INT es del GT911
+    // Ya arrancó: INT es del GT911. Primero se suelta el pin (gpio_config lo
+    // apartó como salida y si no, avisa "conflict found") y luego entrada.
+    gpio_reset_pin(kTouchInt);
+    config.mode = GPIO_MODE_INPUT;
     gpio_config(&config);
 }
 
