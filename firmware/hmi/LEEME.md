@@ -104,7 +104,8 @@ que va a correr. Un `.bin` que ya falló una vez no se vuelve a instalar.
 
 ## Para afinar con la placa en la mano
 
-- `HMI_LCD_PCLK_MHZ` (24, el del demo de Waveshare): si la imagen se recorre,
+- `HMI_LCD_PCLK_MHZ`: 30 (~33 refrescos por segundo) se probó en la 7B sin
+  rayas; el demo de Waveshare usa 24 y parpadea. Si la imagen se recorre,
   bajarlo. La PSRAM va a 80 MHz; el demo usa 120, que en IDF es experimental.
 - El brillo con el LDR (`adjust_brightness` en `main/app.cpp`) y las rayitas
   de señal del WiFi son a ojo.
