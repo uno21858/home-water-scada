@@ -160,28 +160,44 @@ void init(const core::SystemState& s, const Actions& a) {
     lv_obj_set_scrollable(screen, false);
 
     lv_obj_t* content = box(screen, 0, kHeaderHeight, 1024, kContentHeight);
-    pages[index_of(Screen::home)] = home.create(content);
-    pages[index_of(Screen::summary)] = summary.create(content);
-    pages[index_of(Screen::flow)] = flow.create(content);
-    pages[index_of(Screen::cistern)] = cistern.create(content);
-    pages[index_of(Screen::dose)] = dose.create(content);
-    pages[index_of(Screen::history)] = history.create(content);
-    pages[index_of(Screen::settings)] = settings.create(content);
-    pages[index_of(Screen::mixer)] = mixer.create(content);
-    pages[index_of(Screen::flow_sensor)] = flow_sensor.create(content);
-    pages[index_of(Screen::pressure)] = pressure.create(content);
-    pages[index_of(Screen::pressure_drop)] = pressure_drop.create(content);
-    pages[index_of(Screen::filters)] = filters.create(content);
-    pages[index_of(Screen::injection)] = injection.create(content);
-    pages[index_of(Screen::events)] = events.create(content);
-    pages[index_of(Screen::diagnostics)] = diagnostics.create(content);
-    pages[index_of(Screen::bucket_test)] = bucket.create(content);
-    pages[index_of(Screen::legend)] = legend.create(content);
-    pages[index_of(Screen::overview)] = overview.create(content);
-    pages[index_of(Screen::spares)] = spares.create(content);
-    pages[index_of(Screen::service)] = service.create(content);
-    pages[index_of(Screen::level)] = level.create(content);
-    pages[index_of(Screen::level_calibration)] = level_calibration.create(content);
+
+    // Cada pantalla se arma en una screen aparte (staging) y al terminar pasa
+    // al contenido. Cada label de LVGL 9.6 se cuelga del display hasta el
+    // siguiente cálculo de layout, y cada cambio de tamaño recorre esa lista:
+    // armando las 22 de golpe llegaba a 371 y en la 7B tardaba 18 s. Así el
+    // layout de cada una solo recorre sus objetos y descuelga sus labels.
+    // staging lleva el mismo estilo que screen para que hereden lo mismo.
+    lv_obj_t* staging = lv_obj_create(nullptr);
+    lv_obj_add_style(staging, &styles::screen, 0);
+    lv_obj_t* bench = box(staging, 0, kHeaderHeight, 1024, kContentHeight);
+    const auto add = [staging, content](Screen which, lv_obj_t* page) {
+        lv_obj_update_layout(staging);
+        lv_obj_set_parent(page, content);
+        pages[index_of(which)] = page;
+    };
+    add(Screen::home, home.create(bench));
+    add(Screen::summary, summary.create(bench));
+    add(Screen::flow, flow.create(bench));
+    add(Screen::cistern, cistern.create(bench));
+    add(Screen::dose, dose.create(bench));
+    add(Screen::history, history.create(bench));
+    add(Screen::settings, settings.create(bench));
+    add(Screen::mixer, mixer.create(bench));
+    add(Screen::flow_sensor, flow_sensor.create(bench));
+    add(Screen::pressure, pressure.create(bench));
+    add(Screen::pressure_drop, pressure_drop.create(bench));
+    add(Screen::filters, filters.create(bench));
+    add(Screen::injection, injection.create(bench));
+    add(Screen::events, events.create(bench));
+    add(Screen::diagnostics, diagnostics.create(bench));
+    add(Screen::bucket_test, bucket.create(bench));
+    add(Screen::legend, legend.create(bench));
+    add(Screen::overview, overview.create(bench));
+    add(Screen::spares, spares.create(bench));
+    add(Screen::service, service.create(bench));
+    add(Screen::level, level.create(bench));
+    add(Screen::level_calibration, level_calibration.create(bench));
+    lv_obj_delete(staging);
 
     header.create(screen);
     nav.create(screen);
@@ -189,6 +205,8 @@ void init(const core::SystemState& s, const Actions& a) {
     keypad.create(lv_layer_top());
     idle.create(lv_layer_top(), [] { show(Screen::home); });  // encima de los diálogos
     alarm.create(lv_layer_top());                                // y la alarma encima de todo
+    lv_obj_update_layout(screen);
+    lv_obj_update_layout(lv_layer_top());
 
     update(s);
     show(Screen::home);  // Tren es la de inicio

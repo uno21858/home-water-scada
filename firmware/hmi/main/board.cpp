@@ -78,7 +78,7 @@ void set_output(uint8_t bit, bool high) {
 void reset_touch() {
     gpio_config_t config = {};
     config.pin_bit_mask = 1ULL << kTouchInt;
-    config.mode = GPIO_MODE_OUTPUT;
+    config.mode = GPIO_MODE_INPUT_OUTPUT;  // con la entrada prendida, al soltarlo el driver no avisa conflicto
     gpio_config(&config);
     set_output(kTouchReset, false);
     vTaskDelay(pdMS_TO_TICKS(100));
@@ -212,19 +212,21 @@ i2c_master_bus_handle_t i2c() { return bus; }
 
 bool probe(uint8_t address) { return bus != nullptr && i2c_master_probe(bus, address, kTimeoutMs) == ESP_OK; }
 
-lv_display_t* start_display() {
-    lvgl_task = xTaskGetCurrentTaskHandle();
-    ESP_ERROR_CHECK(start_panel());
-
+lv_display_t* create_display() {
     lv_display_t* display = lv_display_create(kWidth, kHeight);
     lv_display_set_color_format(display, LV_COLOR_FORMAT_RGB565);
+    return display;
+}
+
+void start_display(lv_display_t* display) {
+    lvgl_task = xTaskGetCurrentTaskHandle();
+    ESP_ERROR_CHECK(start_panel());
     void* first = nullptr;
     void* second = nullptr;
     ESP_ERROR_CHECK(esp_lcd_rgb_panel_get_frame_buffer(panel, 2, &first, &second));
     lv_display_set_buffers(display, first, second, kWidth * kHeight * 2, LV_DISPLAY_RENDER_MODE_DIRECT);
     lv_display_set_flush_cb(display, flush);
     lv_display_set_flush_wait_cb(display, flush_wait);
-    return display;
 }
 
 void start_touch(lv_display_t* display) {

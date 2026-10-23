@@ -219,6 +219,14 @@ En Mac, SDL2 viene de Homebrew (`brew install sdl2`). Si CMake no lo encuentra:
 - Línea punteada: `lv_line` con `line_dash_width` y `line_dash_gap`. Solo sale
   en líneas horizontales o verticales, y el patrón va pegado a la x de la
   pantalla: no se anima.
+- Cada label que cambia de texto o de estilo se cuelga del display hasta el
+  siguiente cálculo de layout, y cada cambio de tamaño de cualquier objeto
+  recorre esa lista. Armando las 22 pantallas de golpe llegaban a 371 y en la
+  7B `ui::init` tardaba 18 s. Por eso `ui::init` arma cada pantalla en una
+  screen aparte (`staging`, con el mismo estilo que la de verdad), calcula su
+  layout y la pasa al contenido con `lv_obj_set_parent`, que no cambia cómo
+  se ve (comparado pixel por pixel). Se puede armar todo antes de darle
+  framebuffers al display.
 
 ## ESP-IDF: lo que ya mordió
 
@@ -231,6 +239,10 @@ En Mac, SDL2 viene de Homebrew (`brew install sdl2`). Si CMake no lo encuentra:
 - LVGL usa `%lu` con `int32_t`: solo a LVGL se le quita `-Wformat`.
 - La definición `LV_CONF_PATH` con comillas no aguanta `idf_build_set_property`:
   va con `target_compile_definitions` en el target de LVGL, PUBLIC.
+- La pantalla RGB, en cuanto arranca, lee la PSRAM todo el tiempo y le quita
+  ancho de banda a LVGL: se prende después de armar la interfaz
+  (`board::create_display` y luego `start_display`). Caché de instrucciones de
+  32 KB, como el demo de Waveshare (la de fábrica es de 16).
 - QEMU (`idf.py qemu`) lee mal la flash desde la app con QIO y trae 32 MB de
   PSRAM: para probar ahí, otra build con DIO, PSRAM quad, consola en UART0 y
   `qemu-system-xtensa -m 8M`. Sin eso la app no encuentra su firma y aborta.

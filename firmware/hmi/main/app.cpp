@@ -295,12 +295,13 @@ ui::Actions actions() {
 void lvgl_task(void*) {
     lv_init();
     lv_tick_set_cb([]() { return static_cast<uint32_t>(esp_timer_get_time() / 1000); });
-    lv_display_t* display = board::start_display();
+    lv_display_t* display = board::create_display();
     {
         Locked locked;
         ui::init(s, actions());
         ESP_LOGI(kTag, "Pantallas armadas a los %lu ms", ms_since_boot());
         lv_timer_create(every_second, 1000, nullptr);
+        board::start_display(display);
         lv_refr_now(display);  // el primer cuadro antes del backlight: que no se vea basura
     }
     board::set_brightness(static_cast<uint8_t>(brightness));
