@@ -16,6 +16,14 @@ IDF_DIR="${IDF_PATH:-$HOME/esp/esp-idf}"
 cd "$(dirname "$0")"
 idf.py build
 
+# Sin URL de OTA, la placa que instale este .bin ya no busca versiones nuevas
+# y la siguiente tendría que ir por cable (pasa si se borra sdkconfig)
+if ! grep -qE '^CONFIG_HMI_OTA_URL=".+"' sdkconfig; then
+    echo "Este .bin no trae URL de OTA (menuconfig > Casa > Red y servidor):" >&2
+    echo "la placa ya no se podría actualizar por WiFi. No lo sirvo." >&2
+    exit 1
+fi
+
 # Una carpeta aparte con solo el .bin; se borra al salir
 served="$(mktemp -d)"
 trap 'rm -rf "$served"' EXIT

@@ -79,10 +79,16 @@ idf.py -D SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.mesa" build
 idf.py -p /dev/ttyACM0 flash monitor
 ```
 
-Del monitor se sale con `Ctrl+]`. Los mensajes dicen a cuántos ms quedaron
-armadas las pantallas y a cuántos se prendió la pantalla.
+Ese `rm -f sdkconfig` borra también lo de `menuconfig` > Casa (la URL de la
+OTA): solo para la primera vez. Del monitor se sale con `Ctrl+]`. Los
+mensajes dicen a cuántos ms quedaron armadas las pantallas y a cuántos se
+prendió la pantalla.
 
-Para regresar a la consola por el USB nativo: `rm -f sdkconfig` y `idf.py build`.
+Para regresar a la consola por el USB nativo sin perder lo de Casa:
+`idf.py menuconfig` > Component config > ESP-STDIO > Channel for console
+output > USB Serial/JTAG Controller. No borres `sdkconfig`: sin la URL de la
+OTA, la placa que instale ese `.bin` ya no busca versiones nuevas y la
+siguiente va por cable (`servir-ota.sh` no sirve un `.bin` sin URL).
 
 ## Desde CLion
 
@@ -131,9 +137,10 @@ CMake solo, para que la versión sea la del commit nuevo.
 
 ## Conectar los sensores
 
-Uno a la vez y con la placa apagada al conectar. Cada uno se prende en
-`idf.py menuconfig` > Casa > Qué está instalado, se carga y se revisa en
-Ajustes > Diagnóstico antes de pasar al siguiente.
+Uno a la vez y con la placa apagada al conectar. No salen solos: cada uno se
+prende en `idf.py menuconfig` > Casa > Qué está instalado, se manda por WiFi
+con `./servir-ota.sh` y se revisa en Ajustes > Diagnóstico antes de pasar al
+siguiente.
 
 | Qué | En `menuconfig` | En Diagnóstico | Luego |
 |---|---|---|---|
@@ -146,7 +153,8 @@ Ajustes > Diagnóstico antes de pasar al siguiente.
 - P1 y P2 entran por su divisor 10k/10k. Sin él, los 4.5 V del sensor pasan
   el máximo del ADS1115 a 3.3 V (VDD + 0.3 V, hoja de datos de TI).
 - La bomba R al final: su pin es el RX de UART0, así que antes se sale del
-  modo mesa (`rm -f sdkconfig` y `idf.py build`) y el switch va en UART2.
+  modo mesa (la consola al USB nativo en `menuconfig`, ver "En la mesa, sin
+  bomba R") y el switch va en UART2.
 
 ## Para afinar con la placa en la mano
 
