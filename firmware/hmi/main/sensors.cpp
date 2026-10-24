@@ -135,8 +135,10 @@ void task(void*) {
         portENTER_CRITICAL(&lock);
         shared.ads_ok = ads_ok;
         if (ads_ok) {
-            shared.p1_volts = volts[0] * 2.0f;  // divisor 10k/10k
-            shared.p2_volts = volts[1] * 2.0f;
+            // Sin divisor: R2 y R3 de 10k con C2 y C3 de 100 nF son un filtro,
+            // el A0 y el A1 ven la salida del sensor (perforada, 23 oct 2026)
+            shared.p1_volts = volts[0];
+            shared.p2_volts = volts[1];
             shared.level_volts = volts[2];
             shared.ldr_volts = volts[3];
         }

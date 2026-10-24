@@ -144,7 +144,7 @@ imprime cómo quedó, para revisarla desde arriba sin ir a verla:
 ✓ WiFi 192.168.1.112 · -63 dBm
 ✓ Hora del NTP 2026-10-24 23:41
 ✓ Memoria: leyó 52 datos guardados
-✓ ADS1115 · P1 0.501 V, P2 0.498 V, nivel 0.132 V, LDR 0.880 V
+✓ ADS1115 · P1 0.441 V, P2 0.438 V, nivel 0.591 V, LDR 0.880 V
 · Detectados: presión sí, nivel sí, LDR sí
 · Bomba R: no está en menuconfig
 · Servidor: sin configurar
@@ -183,8 +183,8 @@ gris lo que lee cada entrada. La bomba R no se detecta: va en `menuconfig`.
 | Qué | Aparece cuando | En Diagnóstico | Luego |
 |---|---|---|---|
 | F (GPIO6) | siempre | Hz con agua corriendo | Prueba de cubeta |
-| P1 y P2 (A0, A1) | los dos pasan de 0.3 V | ~0.500 V cada uno sin presión | Hacer cero con V1 cerrada |
-| Nivel (A2) | pasa de 0.10 V | 0.132 V en el aire (4 mA) | Calibrar nivel |
+| P1 y P2 (A0, A1) | los dos pasan de 0.3 V | ~0.44 V cada uno sin presión | Hacer cero con V1 cerrada |
+| Nivel (A2) | pasa de 0.10 V | ~0.600 V en el aire (4 mA; medido 0.591) | Calibrar nivel |
 | LDR (A3) | pasa de 0.15 V (con luz) | cambia al taparlo | |
 | Bomba R (GPIO44, INA219) | `menuconfig` > Casa > Bomba R | la corriente al prenderla | umbrales de la prueba 9b |
 
@@ -194,8 +194,22 @@ gris lo que lee cada entrada. La bomba R no se detecta: va en `menuconfig`.
   cable"). Mientras, no da avisos falsos: P1 suelto lee 0 psi, igual que si
   se fuera el agua, y no sale "Sin agua"; el nivel suelto no apaga la bomba
   R. Con 5 s de lectura buena regresa solo. `/estado` lo lista con ✗.
-- P1 y P2 entran por su divisor 10k/10k. Sin él, los 4.5 V del sensor pasan
-  el máximo del ADS1115 a 3.3 V (VDD + 0.3 V, hoja de datos de TI).
+- Antes de conectar el ADS1115 a la 7B: un pull-down de 100k de P1 y de P2
+  a tierra. Sin él, P1 y P2 sueltos flotan entre 0.4 y 0.6 V, arriba de los
+  0.3 V: la placa los daría por instalados a los 5 s y lo guarda (desde la
+  pantalla no se puede olvidar un sensor). Va del lado del sensor, antes de
+  R2 y R3: del lado del A0, con la de 10k hace un divisor y lee 9 % menos
+  (100k / 110k), y eso Hacer cero no lo quita.
+- P1 y P2 llegan directo al A0 y A1: R2 y R3 de 10k con C2 y C3 de 100 nF a
+  tierra son un filtro, no un divisor (medido el 23 oct 2026). Sin presión
+  marcan ~0.44 V (el de fábrica dice 0.5: Hacer cero lo corrige). A la
+  presión de la casa (35 a 65 psi) dan de 1.1 a 1.6 V; arriba de ~160 psi
+  pasarían los 3.3 V del ADS1115 y la lectura se queda topada, con la de 10k
+  limitando la corriente.
+- El nivel cierra por R8, de 150 Ω 1 % (el documento decía 33 Ω): 4 mA son
+  0.60 V y 20 mA 3.00 V, y entra al A2 por R9 de 10k con C6 de 100 nF. Sin
+  lazo, R8 lo deja en 0 V. Un cero guardado por un firmware de antes (0.132
+  V, de 33 Ω) no se cree: regresa a 0.600 hasta que hagas cero en el aire.
 - La bomba R al final: su pin es el RX de UART0, así que antes se sale del
   modo mesa (la consola al USB nativo en `menuconfig`, ver "En la mesa, sin
   bomba R") y el switch va en UART2.
@@ -207,5 +221,11 @@ gris lo que lee cada entrada. La bomba R no se detecta: va en `menuconfig`.
   bajarlo. La PSRAM va a 80 MHz; el demo usa 120, que en IDF es experimental.
 - El brillo con el LDR (`adjust_brightness` en `main/app.cpp`) y las rayitas
   de señal del WiFi son a ojo.
+- F en reposo: con la interrupción de la ESPDuino, sin filtro, salía a veces
+  un pulso suelto con el agua parada. El PCNT ya filtra lo de menos de 10 µs
+  (el máximo del S3 es ~12.8 µs). Para ver si con eso basta, con el agua
+  parada: `curl http://192.168.1.112/estado` dos veces con unos minutos de
+  diferencia; si "F: N pulsos" sube, sí se cuelan y hay que filtrarlos en
+  el código.
 - Los umbrales de la bomba R (sin 12 V, nivel bajo, atorada) salen de la
   prueba 9b; los de `menuconfig` son para arrancar.

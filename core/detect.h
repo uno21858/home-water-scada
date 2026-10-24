@@ -2,8 +2,11 @@
 // Los sensores del ADS1115 se descubren solos: lo que se conecta aparece sin
 // tocar menuconfig. Cada uno da una lectura que sin él no sale (sin nada, la
 // entrada queda en 0 V por su resistencia a tierra):
-// - P1 y P2: 0.5 V en 0 psi (documento, pág. 39); los dos arriba de 0.3 V
-// - nivel: 4 mA en la de 33 Ω son 0.132 V; arriba de 0.10 V (3 mA)
+// - P1 y P2: 0.5 V en 0 psi (documento, pág. 39; medidos 0.44 V); los dos
+//   arriba de 0.3 V. Sueltos flotan entre 0.4 y 0.6 V: necesitan su pull-down
+//   de 100k (LEEME, Conectar los sensores)
+// - nivel: 4 mA en R8 de 150 Ω son 0.60 V; arriba de 0.10 V (sin lazo, R8
+//   lo deja en 0 V)
 // - LDR: 0.88 V con luz de cuarto; arriba de 0.15 V (de día lo agarra)
 // Con 5 s seguidos queda instalado y el firmware lo guarda (persist): un
 // sensor que ya se vio y luego no contesta sigue instalado, no desaparece.

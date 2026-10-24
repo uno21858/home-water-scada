@@ -142,11 +142,15 @@ Mientras llega el hardware, se desarrolla en el simulador con SDL (Mac y Fedora)
   2026) hay un solo micro, la 7B. F entra al GPIO6 (PCNT) y la bomba R sale
   por un MOSFET en el GPIO44, vigilada por un INA219 (0x40). En la caja
   Hammond, junto a la pantalla y por I2C, va el ADS1115 (0x48: A0 P1, A1 P2,
-  A2 libre para un sensor de nivel, A3 el LDR). P1 y P2 entran por un divisor
-  10k/10k (Erick lo dejó así, octubre 2026; el documento lo trae como opción):
-  el firmware multiplica por 2 y `p1_volts` es la salida del sensor. El
-  nivel es un transmisor hidrostático 4-20 mA en A2 por una de 33 Ω
-  (0.132 a 0.660 V; documento pág. 30): `level_volts` es lo que lee el A2. El
+  A2 libre para un sensor de nivel, A3 el LDR). Medido en la perforada el 23
+  oct 2026: P1 y P2 entran directo, sin divisor (R2 y R3 de 10k con 100 nF a
+  tierra son un filtro): `p1_volts` es lo que lee el A0, ~0.44 V en 0 psi y
+  1.1 a 1.6 V a la presión de la casa. Sueltos flotan entre 0.4 y 0.6 V:
+  llevan un pull-down de 100k del lado del sensor (del lado del A0 haría
+  divisor con la de 10k). El nivel es un transmisor hidrostático 4-20 mA en
+  A2 sobre R8 de 150 Ω 1 % (0.60 a 3.00 V; el documento, pág. 30, decía 33
+  Ω), por R9 de 10k con 100 nF: `level_volts` es lo que lee el A2, y `load`
+  solo se cree un cero en el aire de 3 a 5 mA. El
   INA219 apaga la bomba R y deja `mixer_fault` (sin 12 V, nivel bajo,
   atorada); el firmware lo quita cuando se arregla. El RS485 de la 7B es solo para
   el EZO-ORP de la fase 2, y las bombas A y B (fase 3) van por un PCF8574

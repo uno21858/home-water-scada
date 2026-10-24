@@ -4,6 +4,8 @@
 #include <cstring>
 #include <type_traits>
 
+#include "level.h"
+
 namespace core {
 namespace {
 
@@ -113,7 +115,8 @@ void sanitize(SystemState& s) {
     if (!in<uint8_t>(s.mixer_every_liters_min, 1, 99)) s.mixer_every_liters_min = f.mixer_every_liters_min;
     // Documento: la bomba R nunca más de 60 minutos seguidos
     if (!in<uint8_t>(s.mixer_manual_max_min, 1, 60)) s.mixer_manual_max_min = f.mixer_manual_max_min;
-    if (!finite_in(s.level_zero_volts, 0.05f, 0.3f)) s.level_zero_volts = f.level_zero_volts;
+    // De 3 a 5 mA: el 0.132 que guardaba el firmware de 33 Ω regresa a fábrica
+    if (!finite_in(s.level_zero_volts, kLevelZeroMinVolts, kLevelZeroMaxVolts)) s.level_zero_volts = f.level_zero_volts;
     if (!in<uint16_t>(s.level_range_cm, 10, 2000)) s.level_range_cm = f.level_range_cm;
     if (s.level_sensor_cm > 50) s.level_sensor_cm = f.level_sensor_cm;
     if (static_cast<uint8_t>(s.last_cartridge) >= kFilterCount) s.last_cartridge = f.last_cartridge;

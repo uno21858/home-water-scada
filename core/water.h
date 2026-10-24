@@ -26,8 +26,9 @@ void register_dose(SystemState& s, uint32_t ml, bool typed);
 inline constexpr float kPressureNominalZeroVolts = 0.5f;
 inline constexpr float kPsiPerVolt = 1.6f / 4.0f * 145.0f;  // 58
 
-// Lo que leyeron A0 y A1, ya por 2 por el divisor 10k/10k: la salida de cada
-// sensor. Pone los volts y los psi con su cero (abajo de 0 queda en 0).
+// Lo que leyeron A0 y A1: la salida de cada sensor, sin divisor (R2 y R3 de
+// 10k con 100 nF son un filtro). Pone los volts y los psi con su cero (abajo
+// de 0 queda en 0).
 void set_pressures(SystemState& s, float p1_volts, float p2_volts);
 
 // Hacer cero con V1 cerrada y sin presión: lo que marcan ahorita es el 0

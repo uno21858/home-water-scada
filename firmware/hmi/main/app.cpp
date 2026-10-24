@@ -461,6 +461,8 @@ std::size_t status_text(char* buf, std::size_t size) {
             break;
     }
     out.add(kOk, "Encendida hace %lu s", static_cast<unsigned long>(seconds));
+    // Con el agua parada no debe subir: si sube entre dos /estado, F mete pulsos sueltos
+    out.add(kOff, "F: %lu pulsos desde que arrancó", static_cast<unsigned long>(last_pulses));
     out.add(mark(s.devices.gt911), "Táctil GT911%s", s.devices.gt911 ? "" : ": no responde");
     out.add(mark(s.devices.expander), "Expansor CH32V003%s", s.devices.expander ? "" : ": no responde");
     out.add(mark(s.wifi_ok), "WiFi %s · %d dBm", s.wifi_ok ? s.wifi_ip : "sin red", net::rssi());

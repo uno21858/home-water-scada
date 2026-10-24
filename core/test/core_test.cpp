@@ -177,18 +177,18 @@ void level_from_the_bottom() {
     s.level_range_cm = 200;
     s.level_sensor_cm = 3;
     s.level_intake_cm = 45;
-    s.level_volts = 0.140f;
-    core::level_zero(s);  // en el aire marca 0.140 V y no los 0.132 de fábrica
+    s.level_volts = 0.591f;
+    core::level_zero(s);  // en el aire marca 0.591 V (medido) y no los 0.600 de fábrica
     CHECK(std::fabs(core::level_cm(s) - 3.0f) < 0.01f);  // en el aire: solo la altura del sensor
     CHECK(core::level_pct(s) == -1);                      // falta marcar llena
-    s.level_volts = 0.140f + core::kLevelSpanVolts * 0.9f;  // 180 cm encima
+    s.level_volts = 0.591f + core::kLevelSpanVolts * 0.9f;  // 180 cm encima
     CHECK(std::fabs(core::level_cm(s) - 183.0f) < 0.01f);
     core::level_mark_full(s);
     CHECK(s.level_full_cm == 183);
     CHECK(core::level_pct(s) == 100);
-    s.level_volts = 0.140f + core::kLevelSpanVolts * (114.0f - 3.0f) / 200.0f;  // a 114 cm: a la mitad útil
+    s.level_volts = 0.591f + core::kLevelSpanVolts * (114.0f - 3.0f) / 200.0f;  // a 114 cm: a la mitad útil
     CHECK(core::level_pct(s) == 50);
-    s.level_volts = 0.140f;  // abajo de la rejilla: 0 %, no negativo
+    s.level_volts = 0.591f;  // abajo de la rejilla: 0 %, no negativo
     CHECK(core::level_pct(s) == 0);
 }
 
@@ -624,7 +624,7 @@ void sensors_detect() {
     CHECK(!s.has_pressure && !s.has_level && !s.has_ldr);
 
     r.p1_volts = 0.52f;     // P1 sin P2 todavía no cuenta
-    r.level_volts = 0.132f; // el nivel en 4 mA
+    r.level_volts = 0.60f;  // el nivel en 4 mA
     for (int i = 0; i < 4; ++i) CHECK(!core::detect_sensors(s, d, r));
     CHECK(core::detect_sensors(s, d, r));  // al quinto segundo
     CHECK(s.has_level && !s.has_pressure);
@@ -651,6 +651,26 @@ void sensors_detect() {
     core::SystemState back;
     core::load(back, store);
     CHECK(back.has_pressure && back.has_level && !back.has_ldr);
+}
+
+// El cero del nivel que guardó el firmware de 33 Ω (0.132 V) no sirve con R8
+// de 150 Ω: al cargar regresa al de fábrica. Uno medido en el aire se queda.
+void level_zero_from_old_shunt() {
+    MemoryStore store;
+    core::SystemState old;
+    old.level_zero_volts = 0.132f;
+    core::save(old, store, core::SaveGroup::settings);
+    core::SystemState back;
+    core::load(back, store);
+    CHECK(std::fabs(back.level_zero_volts - 0.600f) < 0.001f);
+
+    core::SystemState measured;
+    measured.level_zero_volts = 0.591f;
+    MemoryStore store2;
+    core::save(measured, store2, core::SaveGroup::settings);
+    core::SystemState back2;
+    core::load(back2, store2);
+    CHECK(std::fabs(back2.level_zero_volts - 0.591f) < 0.001f);
 }
 
 // Un sensor instalado que se suelta: Sin señal a los 5 s, sin avisos falsos
@@ -745,6 +765,7 @@ int main() {
     filters_without_date();
     sensors_detect();
     sensors_lose_signal();
+    level_zero_from_old_shunt();
     if (failures == 0) std::printf("core: todo bien\n");
     return failures == 0 ? 0 : 1;
 }

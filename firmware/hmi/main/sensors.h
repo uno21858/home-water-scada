@@ -12,9 +12,9 @@ struct Readings {
     uint32_t pulses = 0;  // pulsos de F desde que arrancó (cuenta del hardware; da la vuelta)
 
     bool ads_ok = false;      // el ADS1115 contestó la última vuelta
-    float p1_volts = 0.0f;    // salida de cada sensor: lo que leyó A0 y A1 por 2 (divisor 10k/10k)
+    float p1_volts = 0.0f;    // salida de cada sensor: lo que leyó A0 y A1 (sin divisor)
     float p2_volts = 0.0f;
-    float level_volts = 0.0f; // A2: el 4-20 mA sobre la de 33 Ω
+    float level_volts = 0.0f; // A2: el 4-20 mA sobre R8 de 150 Ω (0.60 a 3.00 V)
     float ldr_volts = 0.0f;   // A3
 
     bool ina_ok = false;      // el INA219 contestó la última vuelta

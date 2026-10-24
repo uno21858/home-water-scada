@@ -253,10 +253,10 @@ struct SystemState {
     int p2_psi = 0;
     float p1_zero_psi = 0.0f;  // corrimiento del cero guardado con Hacer cero
     float p2_zero_psi = 0.0f;
-    float p1_volts = 0.0f;     // salida de P1 y P2: el ADS1115 lee la mitad por el divisor 10k/10k
+    float p1_volts = 0.0f;     // salida de P1 y P2 (A0 y A1, sin divisor: 0.44 V en 0 psi)
     float p2_volts = 0.0f;
     float ldr_volts = 0.0f;    // A3: la luz que le llega a la pantalla
-    float level_volts = 0.0f;  // A2: el lazo 4-20 mA del nivel sobre la de 33 Ω
+    float level_volts = 0.0f;  // A2: el lazo 4-20 mA del nivel sobre R8 de 150 Ω
     float mixer_volts = 0.0f;  // INA219 en la rama de la bomba R: 0 V es apagón o fusible
     float mixer_amps = 0.0f;   // ~1.6 A sumergida; menos es en seco, más es atorada
     MixerFault mixer_fault = MixerFault::none;
@@ -321,7 +321,7 @@ struct SystemState {
     uint8_t mixer_manual_max_min = 60;    // a mano se apaga sola
 
     // Calibración del sensor de nivel (Cisterna > Calibrar nivel), en cm
-    float level_zero_volts = 0.132f;  // lo que marca en el aire; de fábrica 4 mA x 33 Ω
+    float level_zero_volts = 0.600f;  // lo que marca en el aire; de fábrica 4 mA x 150 Ω (core/level.h)
     uint16_t level_range_cm = 200;    // rango de la etiqueta: 0 a 2 m es 200
     uint8_t level_sensor_cm = 3;      // a cuánto del fondo quedó el sensor
     uint8_t level_intake_cm = 60;     // el 0 %: la rejilla de la bomba de pozo (documento: ~45)
