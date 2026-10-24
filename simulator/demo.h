@@ -27,7 +27,7 @@ const core::SystemState& state();
 //   actualizando  una versión nueva llegando por WiFi: sube, "Lista", y luego
 //              una que no se instala (firma de otra llave); y otra vez
 //   a-prueba   recién actualizada: arranca en Diagnóstico con la cuenta de la
-//              prueba (60 s) y luego "quedó como buena"
+//              prueba (30 s) y luego "quedó como buena"
 // Regresa false si el nombre no existe.
 bool set_scenario(const char* name);
 

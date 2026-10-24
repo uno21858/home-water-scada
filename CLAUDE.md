@@ -284,9 +284,10 @@ casa (23 oct) ya conecta al WiFi del módem (RSSI −63, IP por DHCP), la hora
 del NTP sale bien y la OTA firmada jala de las dos formas: con la URL y
 `servir-ota.sh`, y empujando el `.bin` a `/ota` con `subir-ota.sh` desde la
 laptop o la Mac (24 oct; la Mac lleva la misma llave y el mismo `sdkconfig`).
-El checklist de después (`/estado`, Diagnóstico solo) se probó contra una
-placa de mentira y falta en la 7B.
-Falta probar la NVS después de un reinicio y los sensores (se detectan solos;
+El checklist de después (`/estado`, Diagnóstico solo) ya salió en la 7B (24
+oct, c1a275f): táctil, expansor, WiFi, NTP y la NVS después del reinicio
+(leyó 62 llaves). La prueba de la versión nueva bajó de 60 a 30 s.
+Faltan los sensores (se detectan solos;
 las 22 pantallas quedan igual detectándolos en vivo que arrancando con ellos,
 comparado pixel por pixel). La red de la casa es una sola, 192.168.1.x (los Deco en modo AP, las
 IPs las da el módem); el NAS es 192.168.1.68.
@@ -428,7 +429,7 @@ Pendiente, en este orden:
   renglón del WiFi dice la IP ("WiFi 192.168.1.120", a dónde manda
   `subir-ota.sh`) y no el nombre de la red, que ya sale en Ajustes. Después
   de una actualización la placa arranca en Diagnóstico y el pie dice "a
-  prueba: buena en 45 s" (o "sin red") en ámbar y luego "quedó como buena" en
+  prueba: buena en 25 s" (o "sin red") en ámbar y luego "quedó como buena" en
   verde 10 min (`SystemState::trial`); nadie tiene que picarle.
 - En Prueba de cubeta el demo cuenta como si F diera 387.2 pulsos por litro y
   se para en 3,872 (la marca), para que proponga 387 como el canvas.

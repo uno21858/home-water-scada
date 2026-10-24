@@ -3,7 +3,7 @@
 # casa que tenga ESP-IDF y la llave de las OTA (secretos/firma_ota.pem). La
 # placa lo recibe, revisa la firma y contesta al momento; si quedó, se
 # reinicia sola (si la bomba R está corriendo, cuando acabe). Luego espera a
-# que regrese con la nueva y pase la prueba (~1 min) e imprime cómo quedó
+# que regrese con la nueva y pase la prueba (30 s) e imprime cómo quedó
 # (GET /estado): táctil, WiFi, hora, memoria y sensores.
 # Desde CLion: Shell Script, como flashear.sh.
 #
@@ -72,17 +72,17 @@ if [ "$down" = 0 ] || [ -z "$now" ] || [ "$now" = "$running" ]; then
     exit 1
 fi
 
-# A prueba: con red, al minuto queda como buena
+# A prueba: con red, a los 30 s queda como buena
 echo "Arrancó con la $now. A prueba..."
 state=""
-for _ in $(seq 75); do  # 5 s x 75: 6 min, más que los 5 de la prueba
+for _ in $(seq 120); do  # 3 s x 120: 6 min, más que los 5 de la prueba
     state="$(curl -sf --max-time 5 "http://$HMI/estado" || true)"
     case "${state%%$'\n'*}" in
         *"a prueba"*) ;;
         "") ;;
         *) break ;;
     esac
-    sleep 5
+    sleep 3
 done
 echo
 echo "$state"

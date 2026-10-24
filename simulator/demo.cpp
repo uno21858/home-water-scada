@@ -360,7 +360,7 @@ bool set_scenario(const char* name) {
         updating = true;
     } else if (std::strcmp(name, "a-prueba") == 0) {
         s.trial = core::FirmwareTrial::testing;
-        s.trial_seconds = 60;  // ota::kHealthySeconds
+        s.trial_seconds = 30;  // ota::kHealthySeconds
     } else if (std::strcmp(name, "revisar") == 0) {
         drop(8);  // 5.4 psi más que los 2.6 de nuevos a 12.4 L/min
     } else if (std::strcmp(name, "tapados") == 0) {

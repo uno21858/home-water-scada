@@ -20,7 +20,8 @@
 
 namespace ota {
 
-inline constexpr uint32_t kHealthySeconds = 60;         // tiene que aguantar al menos esto
+// 30 s: para entonces ya arrancó, armó la pantalla y se conectó (~10 s)
+inline constexpr uint32_t kHealthySeconds = 30;         // tiene que aguantar al menos esto
 inline constexpr uint32_t kHealthTimeoutSeconds = 300;  // y conectarse antes de esto
 
 // can_install: ¿se puede reiniciar ahorita? restart: guarda todo y reinicia.

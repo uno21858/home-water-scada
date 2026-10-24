@@ -284,11 +284,11 @@ esp_err_t handle_upload(httpd_req_t* req) {
                                                     : "Ya está bajando o recibiendo otra versión");
     }
     // Recién actualizada, la que corre está a prueba (ota.h) y ESP-IDF no deja
-    // escribir la otra hasta que quede como buena: al minuto con red
+    // escribir la otra hasta que quede como buena: a los 30 s con red
     esp_ota_img_states_t state = ESP_OTA_IMG_UNDEFINED;
     if (esp_ota_get_state_partition(esp_ota_get_running_partition(), &state) == ESP_OK &&
         state == ESP_OTA_IMG_PENDING_VERIFY) {
-        return reply(req, "409 Conflict", "Acaba de actualizarse y sigue a prueba: intenta en un minuto");
+        return reply(req, "409 Conflict", "Acaba de actualizarse y sigue a prueba: intenta en 30 s");
     }
     const esp_partition_t* partition = esp_ota_get_next_update_partition(nullptr);
     if (partition == nullptr) return reply(req, "500 Internal Server Error", "No hay partición para la OTA");

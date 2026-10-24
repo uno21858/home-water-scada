@@ -129,16 +129,16 @@ git pull; ./firmware/hmi/subir-ota.sh
   la toca; solo hace falta para la primera carga por cable.
 
 La versión nueva arranca a prueba: si en 5 min no se conecta a la red, regresa
-sola a la anterior. Si se conecta, al minuto queda como buena. Ya probado en
+sola a la anterior. Si se conecta, a los 30 s queda como buena. Ya probado en
 la 7B (23 oct 2026, con la otra forma).
 
 Después de "Instalada" el script no se sale: espera a que la placa se
-reinicie con la nueva (hasta 3 min), a que pase la prueba (~1 min) y luego
+reinicie con la nueva (hasta 3 min), a que pase la prueba (30 s) y luego
 imprime cómo quedó, para revisarla desde arriba sin ir a verla:
 
 ```text
 ✓ Versión 1a2b3c4+: quedó como buena
-✓ Encendida hace 64 s
+✓ Encendida hace 31 s
 ✓ Táctil GT911
 ✓ Expansor CH32V003
 ✓ WiFi 192.168.1.112 · -63 dBm
@@ -152,7 +152,7 @@ imprime cómo quedó, para revisarla desde arriba sin ir a verla:
 
 ✗ es para revisar (el script sale con error); · solo dice. Si la nueva no
 arranca y el bootloader regresa a la anterior, lo dice. La placa, mientras,
-abre Diagnóstico sola y el pie dice "a prueba: buena en 45 s" en ámbar y luego
+abre Diagnóstico sola y el pie dice "a prueba: buena en 25 s" en ámbar y luego
 "quedó como buena" en verde (10 min). Lo mismo cuando sea:
 `curl http://192.168.1.112/estado`.
 
