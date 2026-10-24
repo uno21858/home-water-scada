@@ -266,8 +266,9 @@ el encabezado, el diálogo de confirmar y el teclado (Registrar otra cantidad, C
 minutos de la bomba R).
 
 Firmware en la 7B (octubre 2026): pantalla, táctil y arranque probados en la
-placa (pantalla prendida a ~1.4 s, reloj de píxel de 30 MHz sin rayas). Falta
-probar en la casa: WiFi y NTP, la OTA, la NVS después de un reinicio y los
+placa (pantalla prendida a ~1.4 s, reloj de píxel de 30 MHz sin rayas). En la
+casa (23 oct) ya conecta al WiFi del módem (RSSI −63, IP por DHCP) y la hora
+del NTP sale bien. Falta probar la OTA, la NVS después de un reinicio y los
 sensores. La red de la casa es una sola, 192.168.1.x (los Deco en modo AP, las
 IPs las da el módem); el NAS es 192.168.1.68.
 
