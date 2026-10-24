@@ -1,4 +1,4 @@
-#include "screens/flow_sensor_screen.h"
+#include "screens/flow/flow_sensor_screen.h"
 
 #include <algorithm>
 #include <cmath>

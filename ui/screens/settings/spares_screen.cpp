@@ -1,4 +1,4 @@
-#include "screens/spares_screen.h"
+#include "screens/settings/spares_screen.h"
 
 #include <cstdio>
 

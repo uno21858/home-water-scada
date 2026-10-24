@@ -1,4 +1,4 @@
-#include "screens/pressure_screen.h"
+#include "screens/home/pressure_screen.h"
 
 #include <algorithm>
 #include <cstdio>

@@ -1,4 +1,4 @@
-#include "screens/cistern_screen.h"
+#include "screens/cistern/cistern_screen.h"
 
 #include <algorithm>
 #include <cstdio>

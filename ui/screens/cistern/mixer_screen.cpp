@@ -1,4 +1,4 @@
-#include "screens/mixer_screen.h"
+#include "screens/cistern/mixer_screen.h"
 
 #include <cstdio>
 

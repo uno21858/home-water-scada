@@ -1,4 +1,4 @@
-#include "screens/idle_screen.h"
+#include "screens/overlays/idle_screen.h"
 
 #include <cmath>
 #include <cstdio>

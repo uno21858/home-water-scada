@@ -1,4 +1,4 @@
-#include "screens/diagnostics_screen.h"
+#include "screens/settings/diagnostics_screen.h"
 
 #include <cctype>
 #include <cstdio>

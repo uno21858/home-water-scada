@@ -1,4 +1,4 @@
-#include "screens/flow_screen.h"
+#include "screens/flow/flow_screen.h"
 
 #include <algorithm>
 #include <cmath>

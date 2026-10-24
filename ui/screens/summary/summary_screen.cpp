@@ -1,4 +1,4 @@
-#include "screens/summary_screen.h"
+#include "screens/summary/summary_screen.h"
 
 #include <algorithm>
 #include <cmath>

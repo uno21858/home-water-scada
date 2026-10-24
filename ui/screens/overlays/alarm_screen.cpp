@@ -1,4 +1,4 @@
-#include "screens/alarm_screen.h"
+#include "screens/overlays/alarm_screen.h"
 
 #include <cstdio>
 

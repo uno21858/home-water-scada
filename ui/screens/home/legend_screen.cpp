@@ -1,4 +1,4 @@
-#include "screens/legend_screen.h"
+#include "screens/home/legend_screen.h"
 
 #include "components/primitives.h"
 #include "theme/colors.h"

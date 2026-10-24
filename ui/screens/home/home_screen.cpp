@@ -1,4 +1,4 @@
-#include "screens/home_screen.h"
+#include "screens/home/home_screen.h"
 
 #include <algorithm>
 #include <cmath>

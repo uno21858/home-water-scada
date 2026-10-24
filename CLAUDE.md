@@ -83,7 +83,15 @@ Mientras llega el hardware, se desarrolla en el simulador con SDL (Mac y Fedora)
   - Pantallas de detalle: van en el enum `Screen` después de las 7 pestañas.
     `kPages` en `ui.cpp` dice el encabezado de cada una y qué pestaña marca la
     barra.
-  - `screens/`: `home_screen` (Tren), `summary_screen` (Resumen), `flow_screen`
+  - `screens/`: una carpeta por pestaña, y cada pantalla va en la de la
+    pestaña que marca la barra (`kPages`): `home/` (Tren, DetalleP,
+    DetalleCaida, Cartuchos, Cambio de cartuchos, Leyenda y Panorama),
+    `summary/`, `flow/` (y DetalleF), `cistern/` (Mezcla, Nivel y Calibrar
+    nivel), `dose/` (Inyección), `history/` (Alarmas) y `settings/`
+    (Diagnóstico, Prueba de cubeta y Repuestos). Las que van en
+    `lv_layer_top()`, encima de todo, en `overlays/` (Pasillo, la alarma y
+    Actualizando). Una pantalla nueva va donde la ponga su `kPages`.
+    `home_screen` (Tren), `summary_screen` (Resumen), `flow_screen`
     (Flujo), `cistern_screen` (Cisterna), `mixer_screen` (Mezcla),
     `dose_screen` (Dosis), `history_screen` (Historial), `settings_screen`
     (Ajustes) e `idle_screen` (Pasillo: va en `lv_layer_top()`, encima de los

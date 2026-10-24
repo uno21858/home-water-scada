@@ -1,4 +1,4 @@
-#include "screens/history_screen.h"
+#include "screens/history/history_screen.h"
 
 #include <algorithm>
 #include <cmath>
