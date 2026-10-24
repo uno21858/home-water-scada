@@ -104,16 +104,16 @@ cable con la URL ya puesta. Después ya no hace falta el cable.
    OTA: `http://IP-de-esa-compu:8070/hmi.bin`. Para probar, "Cada cuántos
    minutos" en 1.
 3. Flashéala por cable (`./flashear.sh`) y regresa el switch a UART2.
-4. Cada actualización: cambia el código, `idf.py build` y sirve la carpeta
-   `build`:
-
-   ```bash
-   python3 -m http.server 8070 --directory build
-   ```
+4. Cada actualización: cambia el código y corre `./servir-ota.sh` (en CLion,
+   una configuración Shell Script como la de `flashear.sh`). Compila y sirve
+   solo `hmi.bin` en el puerto 8070 con el `http.server` de Python hasta el
+   `Ctrl+C`. No sirve la carpeta `build` entera: ahí está `wifi.bin`, con la
+   contraseña de la red en texto plano.
 
    La compu puede estar por cable o por WiFi. La 7B revisa al minuto de
    arrancar y luego cada los minutos de `menuconfig`: lo baja, revisa la
-   firma y reinicia. Si la bomba R está corriendo, espera a que acabe.
+   firma y reinicia. Si la bomba R está corriendo, espera a que acabe. Ya
+   probado en la 7B (23 oct 2026).
 
 La URL también se cambia por OTA: el firmware nuevo trae la suya. Para pasar
 de la laptop al NAS, se compila con la URL del NAS y se sirve una última vez
