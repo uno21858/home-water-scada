@@ -7,3 +7,5 @@ sdkconfig.old
 wifi.csv
 secretos/
 log/
+# La llave de las OTA, aunque quede fuera de secretos/ por error
+*.pem
