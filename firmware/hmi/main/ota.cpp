@@ -38,12 +38,20 @@ void (*restart)() = nullptr;
 std::atomic<bool> busy{false};
 std::atomic<bool> installed{false};
 
-// Toma la partición para escribir; se suelta sola al salir del bloque
+// Toma la partición para escribir; se suelta sola al salir del bloque. Si la
+// tiene la otra, espera hasta wait_ms a que la suelte.
 class Writer {
 public:
-    Writer() {
-        bool expected = false;
-        owned_ = !installed && busy.compare_exchange_strong(expected, true);
+    explicit Writer(uint32_t wait_ms = 0) {
+        for (uint32_t waited = 0; !installed; waited += kRetryMs) {
+            bool expected = false;
+            if (busy.compare_exchange_strong(expected, true)) {
+                owned_ = true;
+                return;
+            }
+            if (waited >= wait_ms) return;
+            vTaskDelay(pdMS_TO_TICKS(kRetryMs));
+        }
     }
     ~Writer() {
         if (owned_) busy = false;
@@ -53,6 +61,7 @@ public:
     bool owned() const { return owned_; }
 
 private:
+    static constexpr uint32_t kRetryMs = 100;
     bool owned_ = false;
 };
 
@@ -136,9 +145,7 @@ void restart_when_free(void*) {
 
 void check() {
     const char* url = CONFIG_HMI_OTA_URL;
-    if (url[0] == '\0' || !net::online() || !can_install()) return;
-    Writer writer;
-    if (!writer.owned()) return;  // hay una subida en curso, o ya se instaló una
+    if (url[0] == '\0' || !net::online() || !can_install() || installed) return;
 
     esp_http_client_config_t http = {};
     http.url = url;
@@ -182,6 +189,13 @@ void check() {
         return;
     }
 
+    // La partición se aparta hasta aquí: conectarse y leer la cabecera no la
+    // tocan, y con la laptop apagada eso tarda hasta 10 s cada minuto
+    Writer writer;
+    if (!writer.owned()) {  // hay una subida en curso, o ya se instaló una
+        esp_https_ota_abort(handle);
+        return;
+    }
     ESP_LOGI(kTag, "Bajando %.32s", incoming.version);
     report_start(incoming.version);
     const int total = esp_https_ota_get_image_size(handle);
@@ -255,7 +269,7 @@ esp_err_t handle_version(httpd_req_t* req) {
 // conforme llega; esp_ota_end revisa la firma con la llave de la casa.
 esp_err_t handle_upload(httpd_req_t* req) {
     char text[96];
-    Writer writer;
+    Writer writer(20 * 1000);  // si la URL está bajando, espera a que acabe
     if (!writer.owned()) {
         return reply(req, "409 Conflict", installed ? "Ya se instaló una versión: espera a que reinicie"
                                                     : "Ya está bajando o recibiendo otra versión");

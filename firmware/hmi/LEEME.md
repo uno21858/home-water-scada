@@ -114,7 +114,8 @@ git pull; ./firmware/hmi/subir-ota.sh
   argumento: `./subir-ota.sh 192.168.1.110`. Diagnóstico la dice en el
   renglón del WiFi. Los Deco van en modo AP: las IPs las da el módem.
 - Lo que contesta: "Instalada ...", "Ya tiene ...: nada que instalar", "La
-  firma no es de la llave de la casa" o "... ya falló una vez". Antes de
+  firma no es de la llave de la casa" o "... ya falló una vez". Si justo está
+  bajando de la URL, espera hasta 20 s a que acabe. Antes de
   compilar pregunta qué versión trae (`/version`); si no contesta, ni compila.
 - La placa compara el hash del binario, no la versión. Un `.bin` que ya falló
   una vez no se vuelve a instalar. Después de un `git pull` o un commit,
