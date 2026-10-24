@@ -195,6 +195,7 @@ void watch_mixer(const sensors::Readings& r) {
 
 void read_network() {
     core::network_tick(s, net::online());
+    net::ip_address(s.wifi_ip, sizeof s.wifi_ip);
     const int rssi = net::rssi();  // a ojo: -60 dBm o más es buena señal
     s.wifi_bars = rssi == 0 ? 0 : rssi > -60 ? 3 : rssi > -70 ? 2 : rssi > -80 ? 1 : 0;
 }
@@ -434,7 +435,7 @@ void start() {
         ESP_LOGE(kTag, "Sin red: falta grabar wifi.csv (idf.py flash)");
     }
     xTaskCreate(upload_task, "upload", 6 * 1024, nullptr, 2, nullptr);
-    ota::start(can_install, restart_for_update);
+    if (has_wifi) ota::start(can_install, restart_for_update);  // sin red no hay a quién oír
 }
 
 }  // namespace app

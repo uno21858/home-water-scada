@@ -1,11 +1,14 @@
 #pragma once
-// Actualización por WiFi (documento, pág. 41: dos particiones y rollback).
-//
-// Cada CONFIG_HMI_OTA_CHECK_MINUTES la placa lee el encabezado del .bin de
-// CONFIG_HMI_OTA_URL y lo baja solo si es otro binario (se compara el hash,
-// no la versión), del mismo proyecto y no es uno que ya falló. ESP-IDF revisa
-// que venga firmado con la llave de la casa; si no, no lo instala. Con la
-// bomba R andando espera a que acabe para reiniciar.
+// Actualización por WiFi (documento, pág. 41: dos particiones y rollback),
+// de dos formas:
+// - La compu empuja: subir-ota.sh manda el .bin a POST /ota (puerto 80) y
+//   pregunta la versión en GET /version. La placa contesta al momento.
+// - La placa jala: cada CONFIG_HMI_OTA_CHECK_MINUTES lee el encabezado del .bin
+//   de CONFIG_HMI_OTA_URL (si hay) y lo baja (servir-ota.sh, o el NAS).
+// Las dos instalan solo si es otro binario (se compara el hash, no la
+// versión), del mismo proyecto y no es uno que ya falló. ESP-IDF revisa que
+// venga firmado con la llave de la casa; si no, no lo instala. Con la bomba R
+// andando espera a que acabe para reiniciar.
 //
 // La versión nueva arranca "a prueba": si en kHealthTimeoutSeconds no se
 // conecta a la red (sin red ya no llegaría otra OTA), regresa a la anterior.

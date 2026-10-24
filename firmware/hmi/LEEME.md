@@ -86,9 +86,9 @@ prendió la pantalla.
 
 Para regresar a la consola por el USB nativo sin perder lo de Casa:
 `idf.py menuconfig` > Component config > ESP-STDIO > Channel for console
-output > USB Serial/JTAG Controller. No borres `sdkconfig`: sin la URL de la
-OTA, la placa que instale ese `.bin` ya no busca versiones nuevas y la
-siguiente va por cable (`servir-ota.sh` no sirve un `.bin` sin URL).
+output > USB Serial/JTAG Controller. No borres `sdkconfig`: se pierden la URL
+de la OTA y la bomba R (con `subir-ota.sh` se sigue pudiendo actualizar,
+pero la placa ya no revisa la URL).
 
 ## Desde CLion
 
@@ -99,44 +99,46 @@ USB-serial de la placa; si no lo encuentra, se le pasa como argumento.
 
 ## Actualizar por WiFi
 
-La URL de la OTA va dentro del firmware, así que la primera vez se carga por
-cable con la URL ya puesta. Después ya no hace falta el cable.
+La compu le manda el `.bin` a la placa (como ESPHome): `./subir-ota.sh`
+desde la laptop o la Mac, con la placa en la red de la casa. La placa lo
+recibe, revisa que sea de este proyecto y que venga firmado con la llave de
+la casa, contesta al momento y se reinicia sola (si la bomba R está
+corriendo, cuando acabe). No hay server que dejar prendido.
 
-1. Elige la compu que va a servir el `.bin` y apártale su IP en el DHCP del
-   módem, para que la URL no cambie. Los Deco van en modo AP: toda la casa,
-   cable y WiFi, es una sola red 192.168.1.x y las IPs las da el módem. Para
-   siempre conviene el NAS (192.168.1.68), que ya tiene la suya fija.
-2. `idf.py menuconfig` > Casa > Red y servidor > URL del firmware para la
-   OTA: `http://IP-de-esa-compu:8070/hmi.bin`.
-3. Flashéala por cable (`./flashear.sh`) y regresa el switch a UART2.
-4. Cada actualización: `git pull` y `./servir-ota.sh` (en CLion, una
-   configuración Shell Script como la de `flashear.sh`). Compila, espera a
-   que la placa venga por el `.bin` y se sale solo cuando lo bajó completo, o
-   cuando ve que ya tenía esa versión. No hay que dejar nada prendido: la
-   placa revisa cada minuto, y si no hay nadie sirviendo no pasa nada.
+```fish
+git pull; ./firmware/hmi/subir-ota.sh
+```
 
-   Sirve solo `hmi.bin` (`servir_ota.py`), no la carpeta `build`: ahí está
-   `wifi.bin`, con la contraseña de la red en texto plano. Tampoco sirve un
-   `.bin` sin URL de OTA, ni si la IP de la URL ya no es de esta compu.
+- La IP de la placa: apártala en el DHCP del módem para su MAC
+  (`14:c1:9f:5d:5d:10`); el script trae la 192.168.1.120. Si es otra, va de
+  argumento: `./subir-ota.sh 192.168.1.110`. Diagnóstico la dice en el
+  renglón del WiFi. Los Deco van en modo AP: las IPs las da el módem.
+- Lo que contesta: "Instalada ...", "Ya tiene ...: nada que instalar", "La
+  firma no es de la llave de la casa" o "... ya falló una vez". Antes de
+  compilar pregunta qué versión trae (`/version`); si no contesta, ni compila.
+- La placa compara el hash del binario, no la versión. Un `.bin` que ya falló
+  una vez no se vuelve a instalar. Después de un `git pull` o un commit,
+  `idf.py build` vuelve a configurar CMake solo, para que la versión sea la del
+  commit nuevo.
+- En otra compu (la Mac): ESP-IDF v6.1 (arriba) y dos archivos que no van en
+  git, copiados de la laptop: `secretos/firma_ota.pem` (con otra llave la
+  placa no acepta nada) y `sdkconfig` (así las dos compilan igual: modo mesa,
+  bomba R, URL).
 
-   La compu puede estar por cable o por WiFi. La 7B lo baja, revisa la firma y
-   reinicia; si la bomba R está corriendo, espera a que acabe. Ya probado en
-   la 7B (23 oct 2026).
+La versión nueva arranca a prueba: si en 5 min no se conecta a la red, regresa
+sola a la anterior. Si se conecta, al minuto queda como buena. Ya probado en
+la 7B (23 oct 2026, con la otra forma).
 
-La URL también se cambia por OTA: el firmware nuevo trae la suya. Para pasar
-de la laptop al NAS, se compila con la URL del NAS y se sirve una última vez
-desde la laptop.
+### La otra forma: que la placa venga por él
 
-Si compilas en otra compu (la Mac), lleva la misma llave
-`secretos/firma_ota.pem`: con otra llave la placa no acepta la OTA.
-
-La placa compara el hash del binario, no la versión: lo que esté en la URL es lo
-que va a correr. Un `.bin` que ya falló una vez no se vuelve a instalar. Si es
-el mismo que ya corre, la placa lo deja después de la cabecera ("es la que ya
-corre" en el monitor, una vez) y no borra nada de la flash: ESP-IDF solo borra
+Si `menuconfig` > Casa > Red y servidor tiene una URL, la placa también revisa
+ahí cada minuto (para el NAS, o una placa que todavía no tiene `/ota`). Con la
+URL de la laptop, `./servir-ota.sh` compila, sirve solo `hmi.bin` hasta que la
+placa lo baja y se sale. No sirve la carpeta `build` (ahí está `wifi.bin`, con
+la contraseña de la red en texto plano), ni un `.bin` sin URL, ni si la IP de
+la URL ya no es de esta compu. Revisar no gasta la flash: ESP-IDF solo borra
 la partición cuando de verdad empieza a bajar. Sin nadie sirviendo, el monitor
-dice una vez "Nadie sirve ..." y sigue revisando callado. Después de un `git pull` o un commit, `idf.py build`
-vuelve a configurar CMake solo, para que la versión sea la del commit nuevo.
+dice una vez "Nadie sirve ..." y sigue callado.
 
 ## Conectar los sensores
 

@@ -198,6 +198,7 @@ struct SystemState {
     bool flow_sensor_ok = true;   // llegan pulsos de F cuando debe
     std::array<Alarm, kAlarmKinds> alarms{};  // una por AlarmKind
     char wifi_ssid[33] = "";      // nombre de la red, hasta 32 letras
+    char wifi_ip[16] = "";        // "192.168.1.120": a dónde manda subir-ota.sh
     uint8_t wifi_bars = 0;        // señal de 0 a 3
     uint16_t last_upload_at = 0;  // minuto del día del último envío de datos
     uint32_t pending_uploads = 0; // lecturas y eventos que faltan por enviar (core::Outbox)

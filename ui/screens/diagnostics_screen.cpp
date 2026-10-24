@@ -187,7 +187,13 @@ void DiagnosticsScreen::update(const core::SystemState& s) {
         future(orp_, "fase 2");
     }
 
-    snprintf(buf, sizeof buf, "WiFi %s", s.wifi_ssid[0] != '\0' ? s.wifi_ssid : "sin configurar");
+    // Con red, la IP (a dónde manda subir-ota.sh); el nombre de la red ya
+    // sale en Ajustes > Conexión. Sin red, el nombre.
+    if (s.wifi_ok && s.wifi_ip[0] != '\0') {
+        snprintf(buf, sizeof buf, "WiFi %s", s.wifi_ip);
+    } else {
+        snprintf(buf, sizeof buf, "WiFi %s", s.wifi_ssid[0] != '\0' ? s.wifi_ssid : "sin configurar");
+    }
     set_text(wifi_name_, buf);
     const char* const strength[4] = {"sin señal", "señal débil", "señal regular", "señal buena"};
     set_text(wifi_, s.wifi_ok ? strength[s.wifi_bars % 4] : "sin conexión");

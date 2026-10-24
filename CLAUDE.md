@@ -110,7 +110,10 @@ Mientras llega el hardware, se desarrolla en el simulador con SDL (Mac y Fedora)
   con la memoria en PSRAM y sin SDL). `main/`: `board` (pantalla, GT911 y el
   expansor CH32V003, pines del demo de Waveshare), `sensors` (PCNT, ADS1115,
   INA219 y GPIO44, en su propia tarea), `storage` (la NVS como
-  `core::Store`), `net` (WiFi, NTP y POST), `ota` y `app`, que junta todo
+  `core::Store`), `net` (WiFi, NTP, POST y la IP), `ota` (la placa recibe el
+  `.bin` en `POST /ota` y dice su versión en `GET /version`, lo que usa
+  `subir-ota.sh` desde cualquier compu; o lo baja de la URL de `menuconfig`,
+  `servir-ota.sh`) y `app`, que junta todo
   como `simulator/main.cpp` y `demo.cpp`. La bomba R y las URLs van en
   `menuconfig` > Casa (P1 y P2, el nivel y el LDR se detectan solos); la red en `wifi.csv` y la llave de las OTA en
   `secretos/`, los dos fuera de git. Sin bomba R el GPIO44 no se toca y
@@ -273,8 +276,9 @@ minutos de la bomba R).
 Firmware en la 7B (octubre 2026): pantalla, táctil y arranque probados en la
 placa (pantalla prendida a ~1.4 s, reloj de píxel de 30 MHz sin rayas). En la
 casa (23 oct) ya conecta al WiFi del módem (RSSI −63, IP por DHCP), la hora
-del NTP sale bien y la OTA firmada jala: `servir-ota.sh` en la laptop compila,
-sirve solo `hmi.bin` (`servir_ota.py`) y se sale cuando la placa lo bajó.
+del NTP sale bien y la OTA firmada jala (probada con la URL y `servir-ota.sh`;
+`subir-ota.sh`, que empuja el `.bin` a `/ota`, se probó contra una placa de
+mentira y falta en la 7B).
 Falta probar la NVS después de un reinicio y los sensores (se detectan solos;
 las 22 pantallas quedan igual detectándolos en vivo que arrancando con ellos,
 comparado pixel por pixel). La red de la casa es una sola, 192.168.1.x (los Deco en modo AP, las
@@ -413,7 +417,9 @@ Pendiente, en este orden:
   no "No responde", salvo que conteste (llegó antes que la bomba). El nombre de la red se corta con "..." antes de la señal,
   "Servidor de la casa" dice "sin configurar" sin la URL de VictoriaMetrics,
   y el pie pierde "Firmware" si no cabe en 500 px (el del canvas mide 499),
-  como con la versión de git ("30c340c+ · encendida hace 12 min").
+  como con la versión de git ("30c340c+ · encendida hace 12 min"). Con red, el
+  renglón del WiFi dice la IP ("WiFi 192.168.1.120", a dónde manda
+  `subir-ota.sh`) y no el nombre de la red, que ya sale en Ajustes.
 - En Prueba de cubeta el demo cuenta como si F diera 387.2 pulsos por litro y
   se para en 3,872 (la marca), para que proponga 387 como el canvas.
 - Prueba de cubeta: el canvas da los pasos 1 y 2 por hechos y cuenta desde

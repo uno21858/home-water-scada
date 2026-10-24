@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
@@ -26,6 +27,7 @@ constexpr const char* kHostname = "hmi-agua";
 
 std::atomic<bool> connected{false};
 esp_timer_handle_t retry = nullptr;
+esp_netif_t* station = nullptr;
 
 void reconnect(void*) { esp_wifi_connect(); }
 
@@ -59,9 +61,9 @@ void start(const char* ssid, const char* password) {
 
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
-    esp_netif_t* netif = esp_netif_create_default_wifi_sta();
+    station = esp_netif_create_default_wifi_sta();
     // Así sale en la lista de equipos del módem (el DHCP), en vez de "espressif"
-    esp_netif_set_hostname(netif, kHostname);
+    esp_netif_set_hostname(station, kHostname);
 
     esp_timer_create_args_t timer = {};
     timer.callback = reconnect;
@@ -91,6 +93,14 @@ void start(const char* ssid, const char* password) {
 }
 
 bool online() { return connected; }
+
+void ip_address(char* out, std::size_t size) {
+    if (size == 0) return;
+    out[0] = '\0';
+    esp_netif_ip_info_t info = {};
+    if (!connected || station == nullptr || esp_netif_get_ip_info(station, &info) != ESP_OK) return;
+    std::snprintf(out, size, IPSTR, IP2STR(&info.ip));
+}
 
 int rssi() {
     int value = 0;

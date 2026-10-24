@@ -49,6 +49,7 @@ core::SystemState make() {
     s.minute = 42;
     s.wifi_ok = true;
     s.has_server = true;
+    std::snprintf(s.wifi_ip, sizeof s.wifi_ip, "192.168.1.120");
     std::snprintf(s.wifi_ssid, sizeof s.wifi_ssid, "Casa-2.4G");
     s.devices.ezo_orp = false;
     s.has_ldr = true;
