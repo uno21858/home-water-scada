@@ -13,6 +13,29 @@ execute_process(
     OUTPUT_STRIP_TRAILING_WHITESPACE
     ERROR_QUIET)
 
+# Eso solo corre cuando CMake se configura: tras un git pull o un commit que
+# no toca el código, la versión se quedaba en la anterior y salía el mismo
+# binario (la OTA lo ve igual y no instala nada). CMake se vuelve a configurar
+# cuando cambia el commit: HEAD (otra rama), la rama (pull, commit) o
+# packed-refs (donde queda la rama después de un git gc).
+execute_process(
+    COMMAND git symbolic-ref -q HEAD
+    WORKING_DIRECTORY ${REPO_DIR}
+    OUTPUT_VARIABLE git_branch
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    ERROR_QUIET)
+foreach(ref HEAD ${git_branch} packed-refs)
+    execute_process(
+        COMMAND git rev-parse --path-format=absolute --git-path ${ref}
+        WORKING_DIRECTORY ${REPO_DIR}
+        OUTPUT_VARIABLE ref_file
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_QUIET)
+    if(EXISTS "${ref_file}")
+        set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${ref_file}")
+    endif()
+endforeach()
+
 # LVGL es un componente de ESP-IDF tal cual (simulator/lvgl/env_support/cmake/esp.cmake)
 set(EXTRA_COMPONENT_DIRS ${REPO_DIR}/simulator/lvgl)
 

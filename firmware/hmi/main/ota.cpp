@@ -30,7 +30,9 @@ bool wanted(const esp_app_desc_t& incoming) {
         return false;
     }
     if (std::memcmp(incoming.app_elf_sha256, running->app_elf_sha256, sizeof incoming.app_elf_sha256) == 0) {
-        return false;  // es el que ya corre
+        // Cuelga después de la cabecera: en http.server sale un ConnectionResetError
+        ESP_LOGI(kTag, "%.32s es la que ya corre: nada que instalar", incoming.version);
+        return false;
     }
     const esp_partition_t* failed = esp_ota_get_last_invalid_partition();
     esp_app_desc_t failed_desc = {};
