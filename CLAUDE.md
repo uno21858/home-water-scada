@@ -278,9 +278,9 @@ minutos de la bomba R).
 Firmware en la 7B (octubre 2026): pantalla, táctil y arranque probados en la
 placa (pantalla prendida a ~1.4 s, reloj de píxel de 30 MHz sin rayas). En la
 casa (23 oct) ya conecta al WiFi del módem (RSSI −63, IP por DHCP), la hora
-del NTP sale bien y la OTA firmada jala (probada con la URL y `servir-ota.sh`;
-`subir-ota.sh`, que empuja el `.bin` a `/ota`, se probó contra una placa de
-mentira y falta en la 7B).
+del NTP sale bien y la OTA firmada jala de las dos formas: con la URL y
+`servir-ota.sh`, y empujando el `.bin` a `/ota` con `subir-ota.sh` desde la
+laptop o la Mac (24 oct; la Mac lleva la misma llave y el mismo `sdkconfig`).
 Falta probar la NVS después de un reinicio y los sensores (se detectan solos;
 las 22 pantallas quedan igual detectándolos en vivo que arrancando con ellos,
 comparado pixel por pixel). La red de la casa es una sola, 192.168.1.x (los Deco en modo AP, las
