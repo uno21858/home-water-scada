@@ -1,5 +1,6 @@
 #include "components/header.h"
 
+#include <algorithm>
 #include <cstdio>
 
 #include "components/primitives.h"
@@ -141,7 +142,7 @@ void Header::set_time(uint8_t hour, uint8_t minute) {
     set_text(clock_, buf);
 }
 
-void Header::set_network(bool ok, uint32_t pending) {
+void Header::set_network(bool ok, uint8_t bars, uint32_t pending) {
     if (!ok && pending == 0) {
         set_text(offline_text_, "Sin red");  // sin servidor no hay nada por enviar
     } else if (!ok) {
@@ -151,12 +152,19 @@ void Header::set_network(bool ok, uint32_t pending) {
         snprintf(buf, sizeof buf, "Sin red · %s por enviar", count);
         set_text(offline_text_, buf);
     }
+    // DS: 3, 2 o 1 arcos o tachado. Conectada con la señal que sea lleva
+    // por lo menos uno: el tachado es solo sin red.
+    const int arcs = ok ? std::clamp<int>(bars, 1, 3) : 0;
+    if (arcs != wifi_icon_) {
+        wifi_icon_ = arcs;
+        static const lv_image_dsc_t* const kIcons[4] = {&icon_wifi_off_32, &icon_wifi_1_32, &icon_wifi_2_32, &icon_wifi_32};
+        lv_image_set_src(wifi_, kIcons[arcs]);
+        set_icon_color(wifi_, ok ? colors::text_secondary : colors::warning);
+    }
     if (static_cast<int>(ok) == wifi_ok_) return;
     wifi_ok_ = ok;
     lv_obj_set_hidden(offline_, ok);
     lv_obj_set_hidden(link_, !has_link_ || !ok);
-    lv_image_set_src(wifi_, ok ? &icon_wifi_32 : &icon_wifi_off_32);
-    set_icon_color(wifi_, ok ? colors::text_secondary : colors::warning);
 }
 
 }  // namespace ui

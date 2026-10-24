@@ -30,8 +30,9 @@ public:
     void set_status(const core::SystemState& s);
     void set_time(uint8_t hour, uint8_t minute);
     // Sin red sale el chip ámbar "Sin red · 24 por enviar" y el enlace se
-    // esconde para que quepa (así lo hace Flujo en el canvas)
-    void set_network(bool ok, uint32_t pending);
+    // esconde para que quepa (así lo hace Flujo en el canvas). Con red, el
+    // WiFi lleva 3, 2 o 1 arcos según la señal (bars, como Diagnóstico).
+    void set_network(bool ok, uint8_t bars, uint32_t pending);
 
 private:
     static void handle_back(lv_event_t* e);
@@ -59,6 +60,7 @@ private:
     lv_obj_t* clock_ = nullptr;
     int level_ = -1;    // PillLook::Kind de lo pintado; -1 = todavía no se pinta
     int wifi_ok_ = -1;
+    int wifi_icon_ = -1;  // arcos pintados (1 a 3) o 0 tachado; -1 = todavía no se pinta
 };
 
 }  // namespace ui

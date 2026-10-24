@@ -200,8 +200,10 @@ void watch_mixer(const sensors::Readings& r) {
 void read_network() {
     core::network_tick(s, net::online());
     net::ip_address(s.wifi_ip, sizeof s.wifi_ip);
-    const int rssi = net::rssi();  // a ojo: -60 dBm o más es buena señal
-    s.wifi_bars = rssi == 0 ? 0 : rssi > -60 ? 3 : rssi > -70 ? 2 : rssi > -80 ? 1 : 0;
+    // A ojo: arriba de -60 dBm buena, de -70 regular, abajo débil (el
+    // encabezado con 3, 2 o 1 arcos). 0 es que no se pudo leer.
+    const int rssi = net::rssi();
+    s.wifi_bars = rssi == 0 ? 0 : rssi > -60 ? 3 : rssi > -70 ? 2 : 1;
 }
 
 // Con LDR, de noche baja solo: 0.88 V es luz de cuarto (prueba del 11 oct).

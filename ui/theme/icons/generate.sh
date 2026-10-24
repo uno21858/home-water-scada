@@ -15,7 +15,7 @@ trap 'rm -rf "$TMP"' EXIT
 # nombre del svg y tamaño en px
 ICONS=(
   "tren 32" "resumen 32" "flujo 32" "cisterna 32" "dosis 32" "historial 32" "ajustes 32"
-  "ok 32" "advertencia 32" "alarma 32" "wifi 32" "wifi_off 32"
+  "ok 32" "advertencia 32" "alarma 32" "wifi 32" "wifi_2 32" "wifi_1 32" "wifi_off 32"
   "ok 28" "advertencia 28" "alarma 28"
   "chevron 28" "chevron 32" "check 32" "candado 32" "candado 28" "candado 24"
   "editar 24" "borrar 48" "calendario 32" "reloj 32" "bomba 28" "info 28" "info 32" "atras 32" "flecha 32" "gota 28" "gota 32" "cartucho 32" "medidor 32" "sol 32" "cubeta 32" "editar 32"

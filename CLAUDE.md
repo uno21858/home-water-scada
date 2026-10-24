@@ -74,7 +74,8 @@ Mientras llega el hardware, se desarrolla en el simulador con SDL (Mac y Fedora)
     generados), `pid/` (símbolos del P&ID en ARGB8888, generados), `styles`,
     `format` (números al formato de México).
   - `components/`: `primitives` (box, label, icon, card, link_to, botones),
-    `header` (atrás, título, enlace y "?" según la pantalla), `status_pill`
+    `header` (atrás, título, enlace y "?" según la pantalla; el WiFi con 3, 2 o
+    1 arcos según `wifi_bars`, como dice el DS), `status_pill`
     (OK, Advertencia, Alarma o Mantenimiento; la usan encabezado y Pasillo), `nav_bar`,
     `confirm_dialog`, `keypad_dialog` (unidad y decimales con `KeypadSpec`),
     `segmented` (selector de 2 a 4 opciones), `mixer` (impulsor que gira y el

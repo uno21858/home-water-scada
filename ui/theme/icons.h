@@ -29,6 +29,8 @@ LV_IMAGE_DECLARE(icon_ok_56);             // Sin alarmas activas
 LV_IMAGE_DECLARE(icon_info_28);         // aviso neutro: Sin flujo
 LV_IMAGE_DECLARE(icon_info_32);         // "?" del encabezado: Leyenda
 LV_IMAGE_DECLARE(icon_wifi_32);
+LV_IMAGE_DECLARE(icon_wifi_2_32);
+LV_IMAGE_DECLARE(icon_wifi_1_32);
 LV_IMAGE_DECLARE(icon_wifi_off_32);
 
 // Controles

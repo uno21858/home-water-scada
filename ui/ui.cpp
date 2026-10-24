@@ -219,7 +219,7 @@ void update(const core::SystemState& s) {
     state = s;
     header.set_status(s);
     header.set_time(s.hour, s.minute);
-    header.set_network(s.wifi_ok, s.pending_uploads);
+    header.set_network(s.wifi_ok, s.wifi_bars, s.pending_uploads);
     nav.set_tab_visible(Screen::cistern, available(Screen::cistern));
     home.update(s);
     summary.update(s);
