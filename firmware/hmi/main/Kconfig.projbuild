@@ -1,8 +1,9 @@
 menu "Casa (home-water-scada)"
 
     menu "Qué está instalado"
-        # Arranca todo apagado: la 7B sola en la mesa. Se prende cada cosa
-        # conforme se conecta (documento: nada se conecta de golpe).
+        # P1 y P2, el nivel y el LDR se detectan solos al conectarlos
+        # (core/detect.h); aquí solo se dan por instalados desde el arranque.
+        # La bomba R no se detecta: su GPIO44 es el RX de la consola de la mesa.
 
         config HMI_HAS_MIXER
             bool "Bomba R de mezcla (GPIO44 y el INA219)"
@@ -42,7 +43,10 @@ menu "Casa (home-water-scada)"
         config HMI_OTA_CHECK_MINUTES
             int "Cada cuántos minutos revisa si hay firmware nuevo"
             range 1 1440
-            default 10
+            default 1
+            help
+                Sin nadie sirviendo, la revisada es un intento de conexión que
+                falla: no cuesta nada. Con 1, servir-ota.sh no espera.
     endmenu
 
     menu "Bomba R (INA219)"

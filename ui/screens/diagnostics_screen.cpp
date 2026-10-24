@@ -49,6 +49,20 @@ void future(lv_obj_t* value, const char* text) {
     set_text_color(value, colors::text_disabled);
 }
 
+// Una entrada del ADS1115: con su sensor, los volts; sin él pero con el
+// ADS1115 contestando, los volts en texto-3 (se ven mientras se conecta, y
+// a los 5 s se detecta: core/detect.h); sin ADS1115, lo de la fase
+void analog(lv_obj_t* value, bool installed, bool ads_ok, float volts, const char* missing) {
+    if (!installed && !ads_ok) {
+        future(value, missing);
+        return;
+    }
+    char buf[16];
+    snprintf(buf, sizeof buf, "%.3f V", static_cast<double>(volts));
+    set_text(value, buf);
+    set_text_color(value, installed ? colors::text : colors::text_disabled);
+}
+
 }  // namespace
 
 lv_obj_t* DiagnosticsScreen::create(lv_obj_t* parent) {
@@ -118,38 +132,18 @@ void DiagnosticsScreen::update(const core::SystemState& s) {
     snprintf(buf, sizeof buf, "%.1f Hz", static_cast<double>(hz));
     set_text(flow_, buf);
     // P1 y P2 entran por el ADS1115, que llega en la fase 1.5
-    if (s.has_pressure) {
-        snprintf(buf, sizeof buf, "%.3f V", static_cast<double>(s.p1_volts));
-        set_text(a0_, buf);
-        set_text_color(a0_, colors::text);
-        snprintf(buf, sizeof buf, "%.3f V", static_cast<double>(s.p2_volts));
-        set_text(a1_, buf);
-        set_text_color(a1_, colors::text);
-    } else {
-        future(a0_, "fase 1.5");
-        future(a1_, "fase 1.5");
-    }
+    const bool ads = s.devices.ads1115;
+    analog(a0_, s.has_pressure, ads, s.p1_volts, "fase 1.5");
+    analog(a1_, s.has_pressure, ads, s.p2_volts, "fase 1.5");
     // El ADS1115 llega con P1 y P2, o antes si ya está el LDR o el nivel
-    if (s.has_pressure || s.has_ldr || s.has_level) {
-        device(ads_, s.devices.ads1115);
+    if (s.has_pressure || s.has_ldr || s.has_level || ads) {
+        device(ads_, ads);
     } else {
         future(ads_, "fase 1.5");
     }
     set_text(a3_name_, s.has_ldr ? "A3 · luz (LDR)" : "A3");
-    if (s.has_ldr) {
-        snprintf(buf, sizeof buf, "%.3f V", static_cast<double>(s.ldr_volts));
-        set_text(a3_, buf);
-        set_text_color(a3_, colors::text);
-    } else {
-        future(a3_, "libre");
-    }
-    if (s.has_level) {
-        snprintf(buf, sizeof buf, "%.3f V", static_cast<double>(s.level_volts));
-        set_text(a2_, buf);
-        set_text_color(a2_, colors::text);
-    } else {
-        future(a2_, "libre");
-    }
+    analog(a3_, s.has_ldr, ads, s.ldr_volts, "libre");
+    analog(a2_, s.has_level, ads, s.level_volts, "libre");
     device(gt911_, s.devices.gt911);
     device(expander_, s.devices.expander);
     // El INA219 vigila la bomba R: sin bomba no está conectado

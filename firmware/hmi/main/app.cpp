@@ -8,6 +8,7 @@
 
 #include "board.h"
 #include "calendar.h"
+#include "detect.h"
 #include "esp_app_desc.h"
 #include "esp_heap_caps.h"
 #include "esp_log.h"
@@ -36,7 +37,9 @@ namespace {
 
 constexpr const char* kTag = "app";
 
-// Qué está instalado (menuconfig > Casa > Qué está instalado)
+// Qué está instalado desde el arranque (menuconfig > Casa > Qué está
+// instalado). P1 y P2, el nivel y el LDR además se detectan solos
+// (core/detect.h); la bomba R solo con menuconfig.
 #ifdef CONFIG_HMI_HAS_MIXER
 constexpr bool kHasMixer = true;
 #else
@@ -95,6 +98,7 @@ bool settings_changed = false;  // un ajuste o un registro: se guarda al siguien
 uint32_t seconds = 0;           // desde que arrancó
 uint32_t last_pulses = 0;       // la cuenta de F del segundo pasado
 uint32_t pulse_remainder = 0;   // pulsos que todavía no hacen un litro
+core::Detection detection;      // segundos que lleva viéndose cada sensor nuevo
 uint32_t mixer_seconds = 0;     // cuánto lleva prendida la bomba R
 uint32_t minutes_since_save = 0;
 int last_minute = -1;
@@ -140,9 +144,21 @@ void read_analog(const sensors::Readings& r) {
     s.devices.ads1115 = r.ads_ok;
     s.devices.ina219 = r.ina_ok;
     if (r.ads_ok) {
-        if (s.has_pressure) core::set_pressures(s, r.p1_volts, r.p2_volts);
-        if (s.has_level) s.level_volts = r.level_volts;
-        if (s.has_ldr) s.ldr_volts = r.ldr_volts;
+        // Los volts van siempre: Diagnóstico los enseña mientras se conecta
+        s.level_volts = r.level_volts;
+        s.ldr_volts = r.ldr_volts;
+        if (s.has_pressure) {
+            core::set_pressures(s, r.p1_volts, r.p2_volts);
+        } else {
+            s.p1_volts = r.p1_volts;
+            s.p2_volts = r.p2_volts;
+        }
+    }
+    // Lo que se conecta aparece solo y se guarda con los ajustes
+    const core::AnalogReadings analog{r.ads_ok, r.p1_volts, r.p2_volts, r.level_volts, r.ldr_volts};
+    if (core::detect_sensors(s, detection, analog)) {
+        ESP_LOGI(kTag, "Sensores: presión %d, nivel %d, LDR %d", s.has_pressure, s.has_level, s.has_ldr);
+        settings_changed = true;
     }
     if (r.ina_ok) {
         s.mixer_volts = r.mixer_volts;
@@ -383,10 +399,11 @@ void start() {
     nvs.open();
     core::load(s, nvs);
     core::mixer_after_restart(s);
+    // Los sensores que ya se vieron vienen de la NVS; menuconfig solo agrega
     s.has_mixer = kHasMixer;
-    s.has_pressure = kHasPressure;
-    s.has_level = kHasLevel;
-    s.has_ldr = kHasLdr;
+    s.has_pressure = s.has_pressure || kHasPressure;
+    s.has_level = s.has_level || kHasLevel;
+    s.has_ldr = s.has_ldr || kHasLdr;
     s.has_server = kMetricsUrl[0] != '\0';
     s.devices.pcf8574 = false;  // fase 3
     s.devices.ezo_orp = false;  // fase 2

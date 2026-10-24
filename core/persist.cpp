@@ -34,6 +34,10 @@ void each(SaveGroup group, S& s, F&& f) {
             f("spares", s.spares);
             f("last_cart", s.last_cartridge);
             f("last_cart_day", s.last_cartridge_day);
+            // Los sensores que ya se vieron (core/detect.h)
+            f("has_pressure", s.has_pressure);
+            f("has_level", s.has_level);
+            f("has_ldr", s.has_ldr);
             return;
         case SaveGroup::counters:
             f("today", s.today);
@@ -162,8 +166,15 @@ void load(SystemState& s, Store& store) {
         each(group, s, [&store](const char* key, auto& field) {
             using T = std::remove_reference_t<decltype(field)>;
             static_assert(std::is_trivially_copyable_v<T>, "solo campos que se copian byte por byte");
-            T value{};
-            if (store.read(key, &value, sizeof value)) field = value;
+            if constexpr (std::is_same_v<T, bool>) {
+                // Un bool con otro byte que 0 o 1 no es válido: se lee el byte
+                uint8_t byte = 0;
+                static_assert(sizeof(bool) == sizeof byte, "un bool ocupa un byte");
+                if (store.read(key, &byte, sizeof byte)) field = byte == 1;
+            } else {
+                T value{};
+                if (store.read(key, &value, sizeof value)) field = value;
+            }
         });
     }
     sanitize(s);

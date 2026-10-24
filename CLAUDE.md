@@ -50,6 +50,11 @@ Mientras llega el hardware, se desarrolla en el simulador con SDL (Mac y Fedora)
   - `level`: el sensor de nivel 4-20 mA del A2 (`level_cm` desde el fondo y
     `level_pct`, lo útil de la rejilla de la bomba de pozo a llena) y su
     calibración (`level_zero` en el aire, `level_mark_full`).
+  - `detect`: los sensores del ADS1115 se detectan solos (`detect_sensors`
+    cada segundo): con 5 s seguidos de una lectura que solo da un sensor
+    conectado (P1 y P2 arriba de 0.3 V, nivel de 0.10, LDR de 0.15) su
+    `has_*` queda en verdadero y `persist` lo guarda; ya visto no
+    desaparece aunque se suelte. La bomba R no: va en `menuconfig`.
   - `telemetry`: lo que va al servidor de la casa (VictoriaMetrics en el NAS,
     formato de línea de Influx). `queue_reading` mete a la cola (`Outbox`, un
     anillo sobre memoria del que llama: en la 7B la PSRAM, 8,640 de 48 bytes
@@ -106,8 +111,8 @@ Mientras llega el hardware, se desarrolla en el simulador con SDL (Mac y Fedora)
   expansor CH32V003, pines del demo de Waveshare), `sensors` (PCNT, ADS1115,
   INA219 y GPIO44, en su propia tarea), `storage` (la NVS como
   `core::Store`), `net` (WiFi, NTP y POST), `ota` y `app`, que junta todo
-  como `simulator/main.cpp` y `demo.cpp`. Lo que está instalado y las URLs
-  van en `menuconfig` > Casa; la red en `wifi.csv` y la llave de las OTA en
+  como `simulator/main.cpp` y `demo.cpp`. La bomba R y las URLs van en
+  `menuconfig` > Casa (P1 y P2, el nivel y el LDR se detectan solos); la red en `wifi.csv` y la llave de las OTA en
   `secretos/`, los dos fuera de git. Sin bomba R el GPIO44 no se toca y
   `sdkconfig.mesa` saca la consola por UART0 (switch en UART1: flashear y ver
   los mensajes por el mismo USB-C); con bomba R eso no compila (`#error`). Según el documento de proyecto (15 oct
@@ -268,8 +273,11 @@ minutos de la bomba R).
 Firmware en la 7B (octubre 2026): pantalla, táctil y arranque probados en la
 placa (pantalla prendida a ~1.4 s, reloj de píxel de 30 MHz sin rayas). En la
 casa (23 oct) ya conecta al WiFi del módem (RSSI −63, IP por DHCP), la hora
-del NTP sale bien y la OTA firmada jala (`servir-ota.sh` en la laptop). Falta
-probar la NVS después de un reinicio y los sensores. La red de la casa es una sola, 192.168.1.x (los Deco en modo AP, las
+del NTP sale bien y la OTA firmada jala: `servir-ota.sh` en la laptop compila,
+sirve solo `hmi.bin` (`servir_ota.py`) y se sale cuando la placa lo bajó.
+Falta probar la NVS después de un reinicio y los sensores (se detectan solos;
+las 22 pantallas quedan igual detectándolos en vivo que arrancando con ellos,
+comparado pixel por pixel). La red de la casa es una sola, 192.168.1.x (los Deco en modo AP, las
 IPs las da el módem); el NAS es 192.168.1.68.
 
 Pendiente, en este orden:

@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "calendar.h"
+#include "detect.h"
 #include "events.h"
 #include "level.h"
 #include "mixing.h"
@@ -576,6 +577,7 @@ void persist_ignores_bad_data() {
     store.put("month", uint8_t{13});
     store.put("today", uint32_t{1000});
     store.put("mix_on", true);               // prendida, pero sin vueltas en la lista
+    store.put("has_level", uint8_t{7});      // un bool que no es 0 ni 1
     core::SystemState s;
     core::load(s, store);
     CHECK(s.flow_pulses_per_liter == core::kFactoryPulsesPerLiter);
@@ -584,12 +586,11 @@ void persist_ignores_bad_data() {
     CHECK(s.recent_event_count == 0);
     CHECK(s.today == 0);  // reloj raro: espera al NTP
     CHECK(!s.mixer_on);
+    CHECK(!s.has_level);
 
     store.broken = true;  // la flash no deja escribir: se avisa
     CHECK(core::save(house(), store, core::SaveGroup::settings) == -1);
 }
-
-}  // namespace
 
 // Recién instalada la pantalla los cartuchos no tienen fecha: no cuentan
 // los días desde 1970 (20,748 en la 7B) ni le ganan a los demás
@@ -611,6 +612,48 @@ void filters_without_date() {
     CHECK(core::filter_wear_pct(s, core::Filter::prefilter) == 114);  // 8 de 7 días
     CHECK(core::filter_wear_pct(s, core::Filter::pp10) == 0);
 }
+
+// Lo que se conecta aparece solo: 5 s seguidos con la lectura de un sensor
+// conectado. Ya visto, sigue instalado aunque luego lea 0.
+void sensors_detect() {
+    core::SystemState s;
+    core::Detection d;
+    core::AnalogReadings r;
+    r.ads_ok = true;  // el ADS1115 sin nada conectado: todo en 0 V
+    for (int i = 0; i < 10; ++i) CHECK(!core::detect_sensors(s, d, r));
+    CHECK(!s.has_pressure && !s.has_level && !s.has_ldr);
+
+    r.p1_volts = 0.52f;     // P1 sin P2 todavía no cuenta
+    r.level_volts = 0.132f; // el nivel en 4 mA
+    for (int i = 0; i < 4; ++i) CHECK(!core::detect_sensors(s, d, r));
+    CHECK(core::detect_sensors(s, d, r));  // al quinto segundo
+    CHECK(s.has_level && !s.has_pressure);
+
+    r.p2_volts = 0.51f;
+    r.level_volts = 0.0f;
+    core::detect_sensors(s, d, r);
+    core::detect_sensors(s, d, r);
+    r.p2_volts = 0.0f;  // se soltó un cable: vuelve a contar desde 0
+    core::detect_sensors(s, d, r);
+    r.p2_volts = 0.51f;
+    for (int i = 0; i < 4; ++i) CHECK(!core::detect_sensors(s, d, r));
+    CHECK(core::detect_sensors(s, d, r));
+    CHECK(s.has_pressure && s.has_level);  // el nivel ya visto sigue aunque lea 0
+
+    r.ads_ok = false;  // sin ADS1115 no cuenta nada
+    r.ldr_volts = 0.88f;
+    for (int i = 0; i < 10; ++i) CHECK(!core::detect_sensors(s, d, r));
+    CHECK(!s.has_ldr);
+
+    // Se guarda con los ajustes y regresa después de un reinicio
+    MemoryStore store;
+    CHECK(core::save(s, store, core::SaveGroup::settings) > 0);
+    core::SystemState back;
+    core::load(back, store);
+    CHECK(back.has_pressure && back.has_level && !back.has_ldr);
+}
+
+}  // namespace
 
 int main() {
     auto_by_liters();
@@ -637,6 +680,7 @@ int main() {
     persist_round_trip();
     persist_ignores_bad_data();
     filters_without_date();
+    sensors_detect();
     if (failures == 0) std::printf("core: todo bien\n");
     return failures == 0 ? 0 : 1;
 }

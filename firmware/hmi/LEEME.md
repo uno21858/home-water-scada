@@ -107,19 +107,21 @@ cable con la URL ya puesta. Después ya no hace falta el cable.
    cable y WiFi, es una sola red 192.168.1.x y las IPs las da el módem. Para
    siempre conviene el NAS (192.168.1.68), que ya tiene la suya fija.
 2. `idf.py menuconfig` > Casa > Red y servidor > URL del firmware para la
-   OTA: `http://IP-de-esa-compu:8070/hmi.bin`. Para probar, "Cada cuántos
-   minutos" en 1.
+   OTA: `http://IP-de-esa-compu:8070/hmi.bin`.
 3. Flashéala por cable (`./flashear.sh`) y regresa el switch a UART2.
-4. Cada actualización: cambia el código y corre `./servir-ota.sh` (en CLion,
-   una configuración Shell Script como la de `flashear.sh`). Compila y sirve
-   solo `hmi.bin` en el puerto 8070 con el `http.server` de Python hasta el
-   `Ctrl+C`. No sirve la carpeta `build` entera: ahí está `wifi.bin`, con la
-   contraseña de la red en texto plano.
+4. Cada actualización: `git pull` y `./servir-ota.sh` (en CLion, una
+   configuración Shell Script como la de `flashear.sh`). Compila, espera a
+   que la placa venga por el `.bin` y se sale solo cuando lo bajó completo, o
+   cuando ve que ya tenía esa versión. No hay que dejar nada prendido: la
+   placa revisa cada minuto, y si no hay nadie sirviendo no pasa nada.
 
-   La compu puede estar por cable o por WiFi. La 7B revisa al minuto de
-   arrancar y luego cada los minutos de `menuconfig`: lo baja, revisa la
-   firma y reinicia. Si la bomba R está corriendo, espera a que acabe. Ya
-   probado en la 7B (23 oct 2026).
+   Sirve solo `hmi.bin` (`servir_ota.py`), no la carpeta `build`: ahí está
+   `wifi.bin`, con la contraseña de la red en texto plano. Tampoco sirve un
+   `.bin` sin URL de OTA, ni si la IP de la URL ya no es de esta compu.
+
+   La compu puede estar por cable o por WiFi. La 7B lo baja, revisa la firma y
+   reinicia; si la bomba R está corriendo, espera a que acabe. Ya probado en
+   la 7B (23 oct 2026).
 
 La URL también se cambia por OTA: el firmware nuevo trae la suya. Para pasar
 de la laptop al NAS, se compila con la URL del NAS y se sirve una última vez
@@ -131,24 +133,24 @@ Si compilas en otra compu (la Mac), lleva la misma llave
 La placa compara el hash del binario, no la versión: lo que esté en la URL es lo
 que va a correr. Un `.bin` que ya falló una vez no se vuelve a instalar. Si es
 el mismo que ya corre, la placa lo deja después de la cabecera ("es la que ya
-corre" en el monitor) y `http.server` saca un `ConnectionResetError`: no es
-error. Después de un `git pull` o un commit, `idf.py build` vuelve a configurar
-CMake solo, para que la versión sea la del commit nuevo.
+corre" en el monitor). Después de un `git pull` o un commit, `idf.py build`
+vuelve a configurar CMake solo, para que la versión sea la del commit nuevo.
 
 ## Conectar los sensores
 
-Uno a la vez y con la placa apagada al conectar. No salen solos: cada uno se
-prende en `idf.py menuconfig` > Casa > Qué está instalado, se manda por WiFi
-con `./servir-ota.sh` y se revisa en Ajustes > Diagnóstico antes de pasar al
-siguiente.
+Con la placa apagada al conectar (el ADS1115 y el INA219 se buscan al
+arrancar). Los del ADS1115 se detectan solos (`core/detect.h`): a los 5 s de
+dar una lectura de sensor conectado salen en las pantallas y se quedan
+guardados, aunque luego se suelte un cable. Mientras, Diagnóstico enseña en
+gris lo que lee cada entrada. La bomba R no se detecta: va en `menuconfig`.
 
-| Qué | En `menuconfig` | En Diagnóstico | Luego |
+| Qué | Aparece cuando | En Diagnóstico | Luego |
 |---|---|---|---|
-| F (GPIO6) | siempre prendido | Hz con agua corriendo | Prueba de cubeta |
-| P1 y P2 (A0, A1) | Sensores de presión | ~0.500 V cada uno sin presión | Hacer cero con V1 cerrada |
-| Nivel (A2) | Sensor de nivel | 0.132 V en el aire (4 mA) | Calibrar nivel |
-| LDR (A3) | LDR | cambia al taparlo | |
-| Bomba R (GPIO44, INA219) | Bomba R | la corriente al prenderla | umbrales de la prueba 9b |
+| F (GPIO6) | siempre | Hz con agua corriendo | Prueba de cubeta |
+| P1 y P2 (A0, A1) | los dos pasan de 0.3 V | ~0.500 V cada uno sin presión | Hacer cero con V1 cerrada |
+| Nivel (A2) | pasa de 0.10 V | 0.132 V en el aire (4 mA) | Calibrar nivel |
+| LDR (A3) | pasa de 0.15 V (con luz) | cambia al taparlo | |
+| Bomba R (GPIO44, INA219) | `menuconfig` > Casa > Bomba R | la corriente al prenderla | umbrales de la prueba 9b |
 
 - P1 y P2 entran por su divisor 10k/10k. Sin él, los 4.5 V del sensor pasan
   el máximo del ADS1115 a 3.3 V (VDD + 0.3 V, hoja de datos de TI).
