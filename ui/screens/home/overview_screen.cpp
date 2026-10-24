@@ -267,18 +267,22 @@ void OverviewScreen::update(const core::SystemState& s) {
     // Caída del tren: solo con P1 y P2
     lv_obj_set_hidden(drop_row_, !s.has_pressure);
     if (s.has_pressure) {
-        const int drop = s.p1_psi - s.p2_psi;
-        snprintf(buf, sizeof buf, "Caída %d psi", drop);
+        // Sin señal de P1 o P2 no hay caída: "Caída sin señal" (230 px de 232)
+        const bool ok = core::pressure_ok(s);
+        if (ok) {
+            snprintf(buf, sizeof buf, "Caída %d psi", s.p1_psi - s.p2_psi);
+        } else {
+            snprintf(buf, sizeof buf, "Caída sin señal");
+        }
         set_text(drop_, buf);
-        const core::Level level = core::drop_level(s);
-        if (static_cast<int>(level) != drop_level_) {
-            drop_level_ = static_cast<int>(level);
-            lv_image_set_src(drop_icon_, level == core::Level::ok        ? &icon_ok_28
-                                         : level == core::Level::warning ? &icon_advertencia_28
-                                                                         : &icon_alarma_28);
-            set_icon_color(drop_icon_, level == core::Level::ok        ? colors::ok
-                                       : level == core::Level::warning ? colors::warning
-                                                                       : colors::alarm);
+        const int level = ok ? static_cast<int>(core::drop_level(s)) : kNoSignal;
+        if (level != drop_level_) {
+            drop_level_ = level;
+            static const lv_image_dsc_t* const kIcons[4] = {&icon_ok_28, &icon_advertencia_28, &icon_alarma_28,
+                                                             &icon_advertencia_28};
+            static const uint32_t kTones[4] = {colors::ok, colors::warning, colors::alarm, colors::warning};
+            lv_image_set_src(drop_icon_, kIcons[level]);
+            set_icon_color(drop_icon_, kTones[level]);
         }
     }
 

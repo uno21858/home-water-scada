@@ -1,6 +1,7 @@
 #include "events.h"
 
 #include <algorithm>
+#include <optional>
 
 namespace core {
 namespace {
@@ -14,6 +15,30 @@ Event* alarm_event(SystemState& s, AlarmKind kind) {
     return nullptr;
 }
 
+// Un aviso de ese tipo (y de ese value, si se da) que sigue abierto
+bool is_open(const Event& e, EventKind kind, std::optional<uint16_t> value) {
+    return e.kind == kind && e.resolved_at == kNoTime && (!value || e.value == *value);
+}
+
+// El más nuevo que siga abierto se quitó ahorita
+bool resolve_open(SystemState& s, EventKind kind, std::optional<uint16_t> value) {
+    for (uint8_t i = 0; i < s.recent_event_count; ++i) {
+        Event& e = s.recent_events[i];
+        if (is_open(e, kind, value)) {
+            e.resolved_at = minute_of_day(s);
+            return true;
+        }
+    }
+    return false;
+}
+
+bool any_open(const SystemState& s, EventKind kind, std::optional<uint16_t> value) {
+    for (uint8_t i = 0; i < s.recent_event_count; ++i) {
+        if (is_open(s.recent_events[i], kind, value)) return true;
+    }
+    return false;
+}
+
 }  // namespace
 
 void add_event(SystemState& s, EventKind kind, uint16_t value) {
@@ -23,24 +48,13 @@ void add_event(SystemState& s, EventKind kind, uint16_t value) {
     s.recent_event_count = static_cast<uint8_t>(std::min<int>(s.recent_event_count + 1, kEventCount));
 }
 
-bool resolve_event(SystemState& s, EventKind kind) {
-    for (uint8_t i = 0; i < s.recent_event_count; ++i) {
-        Event& e = s.recent_events[i];
-        if (e.kind == kind && e.resolved_at == kNoTime) {
-            e.resolved_at = minute_of_day(s);
-            return true;
-        }
-    }
-    return false;
-}
+bool resolve_event(SystemState& s, EventKind kind) { return resolve_open(s, kind, std::nullopt); }
 
-bool has_open_event(const SystemState& s, EventKind kind) {
-    for (uint8_t i = 0; i < s.recent_event_count; ++i) {
-        const Event& e = s.recent_events[i];
-        if (e.kind == kind && e.resolved_at == kNoTime) return true;
-    }
-    return false;
-}
+bool has_open_event(const SystemState& s, EventKind kind) { return any_open(s, kind, std::nullopt); }
+
+bool resolve_event(SystemState& s, EventKind kind, uint16_t value) { return resolve_open(s, kind, value); }
+
+bool has_open_event(const SystemState& s, EventKind kind, uint16_t value) { return any_open(s, kind, value); }
 
 void alarm_raise(SystemState& s, AlarmKind kind) {
     Alarm& a = s.alarms[static_cast<std::size_t>(kind)];

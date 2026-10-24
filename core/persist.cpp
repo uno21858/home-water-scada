@@ -133,7 +133,7 @@ void sanitize(SystemState& s) {
     // Listas
     if (s.recent_event_count > kEventCount) s.recent_event_count = 0;
     for (uint8_t i = 0; i < s.recent_event_count; ++i) {
-        if (!enum_le(s.recent_events[i].kind, EventKind::no_supply)) s.recent_event_count = 0;
+        if (!enum_le(s.recent_events[i].kind, EventKind::no_signal)) s.recent_event_count = 0;
     }
     if (s.recent_dose_count > s.recent_doses.size()) s.recent_dose_count = 0;
     if (s.drop_sample_count > kDropSamples) s.drop_sample_count = 0;

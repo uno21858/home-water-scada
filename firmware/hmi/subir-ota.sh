@@ -8,11 +8,12 @@
 # Desde CLion: Shell Script, como flashear.sh.
 #
 # Uso: ./subir-ota.sh                 la placa en su IP de siempre (abajo)
-#      ./subir-ota.sh 192.168.1.110   otra IP (Diagnóstico la dice, en el WiFi)
+#      ./subir-ota.sh 192.168.1.120   otra IP (Diagnóstico la dice, en el WiFi)
 set -euo pipefail
 
-# La IP que le apartaste a la placa en el módem (MAC 14:c1:9f:5d:5d:10)
-HMI="${1:-${HMI:-192.168.1.120}}"
+# La IP de la placa: la que le dio el módem (MAC 14:c1:9f:5d:5d:10) y que
+# conviene apartarle en su DHCP para que no cambie
+HMI="${1:-${HMI:-192.168.1.112}}"
 
 # ESP-IDF instalado en ~/esp/esp-idf (firmware/hmi/LEEME.md)
 IDF_DIR="${IDF_PATH:-$HOME/esp/esp-idf}"

@@ -50,6 +50,8 @@ private:
     lv_obj_t* pressure_live_ = nullptr;
     lv_obj_t* p1_raw_ = nullptr;
     lv_obj_t* p2_raw_ = nullptr;
+    lv_obj_t* zero_button_ = nullptr;  // sin señal guardaría un cero falso
+    lv_obj_t* zero_note_ = nullptr;    // cómo hacer cero, o qué sensor no tiene señal
 
     // Dosis
     lv_obj_t* ratio_ = nullptr;

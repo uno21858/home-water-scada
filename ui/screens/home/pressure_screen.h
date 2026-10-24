@@ -28,11 +28,15 @@ private:
 
     lv_obj_t* p1_ = nullptr;
     lv_obj_t* p2_ = nullptr;
+    // "psi" y "Sin señal" de cada uno: sin señal, la palabra en lugar de cifra y unidad
+    std::array<lv_obj_t*, 2> units_{};
+    std::array<lv_obj_t*, 2> lost_{};
 
     lv_obj_t* drop_ = nullptr;
     lv_obj_t* drop_value_ = nullptr;
+    lv_obj_t* drop_unit_ = nullptr;
     lv_obj_t* drop_word_ = nullptr;
-    int drop_level_ = -1;  // -1 = todavía no se pinta
+    int drop_level_ = -1;  // -1 = todavía no se pinta; kNoSignal sin señal
 
     lv_obj_t* chart_ = nullptr;
     lv_chart_series_t* p1_series_ = nullptr;
@@ -48,6 +52,7 @@ private:
     lv_obj_t* a1_ = nullptr;
     lv_obj_t* zero_p1_ = nullptr;
     lv_obj_t* zero_p2_ = nullptr;
+    lv_obj_t* zero_button_ = nullptr;  // sin señal guardaría un cero falso
 };
 
 }  // namespace ui

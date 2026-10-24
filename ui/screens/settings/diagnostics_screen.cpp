@@ -51,10 +51,16 @@ void future(lv_obj_t* value, const char* text) {
 
 // Una entrada del ADS1115: con su sensor, los volts; sin él pero con el
 // ADS1115 contestando, los volts en texto-3 (se ven mientras se conecta, y
-// a los 5 s se detecta: core/detect.h); sin ADS1115, lo de la fase
-void analog(lv_obj_t* value, bool installed, bool ads_ok, float volts, const char* missing) {
+// a los 5 s se detecta: core/detect.h); sin ADS1115, lo de la fase. Ya
+// instalado y sin lectura, "sin señal" en ámbar (los volts salen en /estado).
+void analog(lv_obj_t* value, bool installed, bool ads_ok, float volts, const char* missing, bool lost = false) {
     if (!installed && !ads_ok) {
         future(value, missing);
+        return;
+    }
+    if (installed && lost) {
+        set_text(value, "sin señal");
+        set_text_color(value, colors::warning);
         return;
     }
     char buf[16];
@@ -133,8 +139,8 @@ void DiagnosticsScreen::update(const core::SystemState& s) {
     set_text(flow_, buf);
     // P1 y P2 entran por el ADS1115, que llega en la fase 1.5
     const bool ads = s.devices.ads1115;
-    analog(a0_, s.has_pressure, ads, s.p1_volts, "fase 1.5");
-    analog(a1_, s.has_pressure, ads, s.p2_volts, "fase 1.5");
+    analog(a0_, s.has_pressure, ads, s.p1_volts, "fase 1.5", s.no_signal.p1);
+    analog(a1_, s.has_pressure, ads, s.p2_volts, "fase 1.5", s.no_signal.p2);
     // El ADS1115 llega con P1 y P2, o antes si ya está el LDR o el nivel
     if (s.has_pressure || s.has_ldr || s.has_level || ads) {
         device(ads_, ads);
@@ -143,7 +149,7 @@ void DiagnosticsScreen::update(const core::SystemState& s) {
     }
     set_text(a3_name_, s.has_ldr ? "A3 · luz (LDR)" : "A3");
     analog(a3_, s.has_ldr, ads, s.ldr_volts, "libre");
-    analog(a2_, s.has_level, ads, s.level_volts, "libre");
+    analog(a2_, s.has_level, ads, s.level_volts, "libre", s.no_signal.level);
     device(gt911_, s.devices.gt911);
     device(expander_, s.devices.expander);
     // El INA219 vigila la bomba R: puede llegar antes que ella, y si contesta

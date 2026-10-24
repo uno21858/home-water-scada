@@ -67,12 +67,21 @@ void PressureScreen::create_readings(lv_obj_t* page) {
     lv_obj_set_pos(label(page, &font_body_32, colors::text_secondary, "P1 · entrada"), 24, 12);
     p1_ = label(page, &font_digits_136, colors::text, "");
     lv_obj_set_pos(p1_, 16, kValueY);
-    lv_obj_set_pos(label(page, &font_title_36, colors::text_secondary, "psi"), 214, 50);
+    units_[0] = label(page, &font_title_36, colors::text_secondary, "psi");
+    lv_obj_set_pos(units_[0], 214, 50);
 
     lv_obj_set_pos(label(page, &font_body_32, colors::text_secondary, "P2 · retorno"), 324, 12);
     p2_ = label(page, &font_digits_136, colors::text, "");
     lv_obj_set_pos(p2_, 316, kValueY);
-    lv_obj_set_pos(label(page, &font_title_36, colors::text_secondary, "psi"), 514, 50);
+    units_[1] = label(page, &font_title_36, colors::text_secondary, "psi");
+    lv_obj_set_pos(units_[1], 514, 50);
+
+    // Sin señal: la palabra a media altura de donde iría la cifra
+    for (size_t i = 0; i < lost_.size(); ++i) {
+        lost_[i] = label(page, &font_title_36, colors::warning, "Sin señal");
+        lv_obj_set_pos(lost_[i], i == 0 ? 24 : 324, 84);
+        lv_obj_set_hidden(lost_[i], true);
+    }
 }
 
 void PressureScreen::create_drop(lv_obj_t* page) {
@@ -89,7 +98,7 @@ void PressureScreen::create_drop(lv_obj_t* page) {
     link_to(drop_, Screen::pressure_drop, &styles::button_secondary_pressed);
     label(drop_, &font_label_26, colors::text_secondary, "Caída del tren");
     drop_value_ = label(drop_, &font_digits_44, colors::text, "");
-    label(drop_, &font_label_26, colors::text_secondary, "psi");
+    drop_unit_ = label(drop_, &font_label_26, colors::text_secondary, "psi");
     drop_word_ = label(drop_, &font_label_26, colors::ok, "");
     lv_obj_set_flex_grow(drop_word_, 1);
     lv_obj_set_style_margin_left(drop_word_, 4, 0);
@@ -175,8 +184,8 @@ void PressureScreen::create_side(lv_obj_t* page) {
     lv_obj_set_style_margin_left(label(r, &font_label_26, colors::text_secondary, "P2"), 16, 0);
     zero_p2_ = label(r, &font_digits_44, colors::text, "");
     label(r, &font_label_26, colors::text_secondary, "psi");
-    lv_obj_t* zero = button_secondary(z, 16, 98, 348, "Hacer cero", [](lv_event_t*) { ask_pressure_zero(); }, nullptr);
-    lv_obj_set_height(zero, 64);
+    zero_button_ = button_secondary(z, 16, 98, 348, "Hacer cero", [](lv_event_t*) { ask_pressure_zero(); }, nullptr);
+    lv_obj_set_height(zero_button_, 64);
     lv_obj_t* note2 = label(z, &font_label_26, colors::text_secondary, "Con V1 cerrada, sin presión");  // "y sin" no cabe en 348 px
     lv_obj_set_pos(note2, 16, 172);
 }
@@ -191,22 +200,34 @@ void PressureScreen::update(const core::SystemState& s) {
     set_text(p1_, buf);
     snprintf(buf, sizeof buf, "%d", s.p2_psi);
     set_text(p2_, buf);
+    const std::array<bool, 2> lost = {s.no_signal.p1, s.no_signal.p2};
+    const std::array<lv_obj_t*, 2> values = {p1_, p2_};
+    for (size_t i = 0; i < lost.size(); ++i) {
+        lv_obj_set_hidden(values[i], lost[i]);
+        lv_obj_set_hidden(units_[i], lost[i]);
+        lv_obj_set_hidden(lost_[i], !lost[i]);
+    }
+    // Sin señal el cero que se guardara sería falso; volts en ámbar
+    const bool ok = core::pressure_ok(s);
+    lv_obj_set_disabled(zero_button_, !ok);
+    set_text_color(a0_, s.no_signal.p1 ? colors::warning : colors::text);
+    set_text_color(a1_, s.no_signal.p2 ? colors::warning : colors::text);
 
+    lv_obj_set_hidden(drop_value_, !ok);
+    lv_obj_set_hidden(drop_unit_, !ok);
     const int drop = s.p1_psi - s.p2_psi;
     snprintf(buf, sizeof buf, "%d", drop);
     set_text(drop_value_, buf);
-    const core::Level level = core::drop_level(s);
-    if (static_cast<int>(level) != drop_level_) {
-        drop_level_ = static_cast<int>(level);
-        const uint32_t fg = level == core::Level::ok ? colors::ok : level == core::Level::warning ? colors::warning
-                                                                                                  : colors::alarm;
-        const uint32_t bg = level == core::Level::ok      ? colors::ok_bg
-                            : level == core::Level::warning ? colors::warning_bg
-                                                            : colors::alarm_bg;
-        lv_obj_set_style_bg_color(drop_, color(bg), 0);
-        lv_obj_set_style_border_color(drop_, color(fg), 0);
-        set_text(drop_word_, level == core::Level::ok ? "Normal" : level == core::Level::warning ? "Revisar" : "Tapados");
-        lv_obj_set_style_text_color(drop_word_, color(fg), 0);
+    const int level = ok ? static_cast<int>(core::drop_level(s)) : kNoSignal;
+    if (level != drop_level_) {
+        drop_level_ = level;
+        static const uint32_t kFg[4] = {colors::ok, colors::warning, colors::alarm, colors::warning};
+        static const uint32_t kBg[4] = {colors::ok_bg, colors::warning_bg, colors::alarm_bg, colors::warning_bg};
+        static const char* const kWords[4] = {"Normal", "Revisar", "Tapados", "Sin señal"};
+        lv_obj_set_style_bg_color(drop_, color(kBg[level]), 0);
+        lv_obj_set_style_border_color(drop_, color(kFg[level]), 0);
+        set_text(drop_word_, kWords[level]);
+        lv_obj_set_style_text_color(drop_word_, color(kFg[level]), 0);
     }
 
     update_chart(s);

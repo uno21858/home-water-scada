@@ -8,6 +8,12 @@
 // Con 5 s seguidos queda instalado y el firmware lo guarda (persist): un
 // sensor que ya se vio y luego no contesta sigue instalado, no desaparece.
 // La bomba R no: su pin choca con la consola de la mesa y va en menuconfig.
+//
+// Ya instalado, si P1, P2 o el nivel bajan de esa lectura (o el ADS1115 no
+// contesta) 5 s seguidos, quedan en Sin señal (SystemState::no_signal) y se
+// anota el evento; con 5 s seguidos de lectura buena regresan y el evento se
+// cierra. Los 5 s para los dos lados: un falso contacto no parpadea. El LDR
+// no: sin luz también lee 0 V.
 
 #include <cstdint>
 
@@ -29,15 +35,19 @@ struct AnalogReadings {
     float ldr_volts = 0.0f;
 };
 
-// Segundos seguidos que cada uno lleva viéndose; vive en el firmware
+// Segundos seguidos que cada uno lleva viéndose (o, ya instalado, llevando
+// la contraria a lo que dice no_signal); vive en el firmware
 struct Detection {
     uint8_t pressure = 0;
     uint8_t level = 0;
     uint8_t ldr = 0;
+    uint8_t p1_flip = 0;
+    uint8_t p2_flip = 0;
+    uint8_t level_flip = 0;
 };
 
 // Una vez por segundo. Regresa true si algo quedó instalado (hay que guardar
-// los ajustes).
+// los ajustes). Sin señal no se guarda: al reiniciar se vuelve a ver.
 bool detect_sensors(SystemState& s, Detection& d, const AnalogReadings& r);
 
 }  // namespace core

@@ -24,6 +24,7 @@ const core::SystemState& state();
 //              además la cisterna bajó del mínimo y la bomba R espera agua
 //   sin-12v    la bomba R sin 12 V; nivel-bajo y atorada, los otros avisos del INA219
 //   ro-cocina  el RO de la cocina por instalar (Panorama)
+//   sin-senal  se soltaron los cables de P1 y del nivel: "Sin señal" en ámbar
 //   actualizando  una versión nueva llegando por WiFi: sube, "Lista", y luego
 //              una que no se instala (firma de otra llave); y otra vez
 //   a-prueba   recién actualizada: arranca en Diagnóstico con la cuenta de la

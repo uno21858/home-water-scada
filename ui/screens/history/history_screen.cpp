@@ -552,6 +552,11 @@ void HistoryScreen::update_events(const core::SystemState& s) {
                 tone = icon_tone = colors::warning;
                 src = &icon_advertencia_32;
                 break;
+            case core::EventKind::no_signal:  // explica un hueco en Presiones
+                snprintf(title, sizeof title, "%s sin señal", fmt::sensor_name(ev.value));
+                tone = icon_tone = colors::warning;
+                src = &icon_advertencia_32;
+                break;
         }
         set_text(r.title, title);
         set_text(r.when, when);

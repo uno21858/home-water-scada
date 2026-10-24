@@ -32,12 +32,13 @@ constexpr int32_t kInner = kTankH - 4;  // adentro del borde de 2
 const lv_point_precise_t kIntakeLine[2] = {{0, 0}, {kTankW - 4, 0}};
 
 // Renglón de la tarjeta de cm: nombre a la izquierda y cifra con "cm"
-lv_obj_t* cm_row(lv_obj_t* parent, const char* name) {
+lv_obj_t* cm_row(lv_obj_t* parent, const char* name, lv_obj_t** unit = nullptr) {
     lv_obj_t* r = row(parent, 8, LV_FLEX_ALIGN_END);
     lv_obj_set_width(r, 552);
     lv_obj_set_flex_grow(label(r, &font_body_32, colors::text_secondary, name), 1);
     lv_obj_t* value = label(r, &font_body_32, colors::text, "");
-    label(r, &font_label_26, colors::text_secondary, "cm");
+    lv_obj_t* u = label(r, &font_label_26, colors::text_secondary, "cm");
+    if (unit != nullptr) *unit = u;
     return value;
 }
 
@@ -96,8 +97,8 @@ void LevelScreen::create_reading(lv_obj_t* page) {
     lv_obj_t* c = card(page, 392, 220, 616, 140);
     lv_obj_t* rows = column(c, 6, LV_FLEX_ALIGN_START);
     lv_obj_set_pos(rows, 16, 8);
-    from_bottom_ = cm_row(rows, "Agua desde el fondo");
-    above_intake_ = cm_row(rows, "Arriba de la toma");
+    from_bottom_ = cm_row(rows, "Agua desde el fondo", &cm_units_[0]);
+    above_intake_ = cm_row(rows, "Arriba de la toma", &cm_units_[1]);
     below_intake_ = cm_row(rows, "Se queda abajo de la toma");
 
     lv_obj_t* calibrate = button_secondary(page, 392, 368, 320, "Calibrar nivel", nullptr, nullptr);
@@ -112,20 +113,31 @@ void LevelScreen::update(const core::SystemState& s) {
     const int pct = core::level_pct(s);
     const float intake = static_cast<float>(s.level_intake_cm);
 
-    // Lectura: % en grande y los cm. Sin marcar llena no hay %.
+    // Lectura: % en grande y los cm. Sin marcar llena no hay %; sin señal no
+    // hay nada que medir: lo dice en ámbar y el tanque queda sin agua
+    const bool lost = s.no_signal.level;
+    const bool shown = pct >= 0 && !lost;
     char buf[24];  // un long de 64 bits en el simulador
-    lv_obj_set_hidden(pct_, pct < 0);
-    lv_obj_set_hidden(unit_, pct < 0);
-    lv_obj_set_hidden(uncalibrated_, pct >= 0);
+    lv_obj_set_hidden(pct_, !shown);
+    lv_obj_set_hidden(unit_, !shown);
+    lv_obj_set_hidden(uncalibrated_, shown);
+    set_text(uncalibrated_, lost ? "Sin señal" : "Sin calibrar");
+    set_text_color(uncalibrated_, lost ? colors::warning : colors::text_secondary);
+    for (lv_obj_t* u : cm_units_) lv_obj_set_hidden(u, lost);
+    set_text_color(from_bottom_, lost ? colors::warning : colors::text);
+    set_text_color(above_intake_, lost ? colors::warning : colors::text);
+    lv_obj_set_hidden(usable_, lost);
+    lv_obj_set_hidden(dead_, lost);
+    lv_obj_set_hidden(surface_, lost);
     snprintf(buf, sizeof buf, "%d", std::max(pct, 0));
     set_text(pct_, buf);
     lv_point_t size;
     lv_text_get_size(&size, buf, &font_digits_136, 0, 0, LV_COORD_MAX, LV_TEXT_FLAG_NONE);
     lv_obj_set_x(unit_, 400 + size.x + 13);
     snprintf(buf, sizeof buf, "%ld", std::lround(level));
-    set_text(from_bottom_, buf);
+    set_text(from_bottom_, lost ? "sin señal" : buf);
     snprintf(buf, sizeof buf, "%ld", std::lround(std::max(0.0f, level - intake)));
-    set_text(above_intake_, buf);
+    set_text(above_intake_, lost ? "sin señal" : buf);
     snprintf(buf, sizeof buf, "%u", static_cast<unsigned>(s.level_intake_cm));
     set_text(below_intake_, buf);
 

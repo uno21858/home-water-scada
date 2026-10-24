@@ -653,6 +653,69 @@ void sensors_detect() {
     CHECK(back.has_pressure && back.has_level && !back.has_ldr);
 }
 
+// Un sensor instalado que se suelta: Sin señal a los 5 s, sin avisos falsos
+void sensors_lose_signal() {
+    core::SystemState s;
+    s.has_pressure = s.has_level = true;
+    s.level_full_cm = 183;
+    s.level_intake_cm = 60;
+    core::Detection d;
+    core::AnalogReadings r;
+    r.ads_ok = true;
+    r.p1_volts = 0.5f;  // 0 psi: el SIAPA sin agua, pero el sensor sí contesta
+    r.p2_volts = 0.5f;
+    r.level_volts = 0.30f;
+    for (int i = 0; i < 10; ++i) core::detect_sensors(s, d, r);
+    CHECK(!s.no_signal.p1 && !s.no_signal.p2 && !s.no_signal.level);
+
+    r.p1_volts = 0.0f;  // se soltó el cable de P1
+    for (int i = 0; i < 4; ++i) core::detect_sensors(s, d, r);
+    CHECK(!s.no_signal.p1);  // un brinco de 4 s no cuenta
+    core::detect_sensors(s, d, r);
+    CHECK(s.no_signal.p1 && !s.no_signal.p2);
+    CHECK(s.recent_event_count == 1 && s.recent_events[0].kind == core::EventKind::no_signal);
+    CHECK(s.recent_events[0].value == static_cast<uint16_t>(core::Sensor::p1));
+    CHECK(!core::pressure_ok(s) && core::signal_lost(s));
+    CHECK(core::overall_level(s) == core::Level::warning);
+
+    // Sin flujo y P1 en 0 psi sería "Sin agua"; sin señal no se sabe
+    core::set_pressures(s, r.p1_volts, r.p2_volts);
+    s.flow_lpm = 0.0f;
+    CHECK(!core::supply_lost(s));
+    core::check_supply(s);
+    CHECK(!core::has_open_event(s, core::EventKind::no_supply));
+
+    // El ADS1115 deja de contestar: los tres sin señal, cada uno con su evento
+    r.ads_ok = false;
+    for (int i = 0; i < 5; ++i) core::detect_sensors(s, d, r);
+    CHECK(s.no_signal.p1 && s.no_signal.p2 && s.no_signal.level);
+    CHECK(s.recent_event_count == 3);
+    CHECK(!core::level_ok(s) && !core::mixer_low_water(s));  // la bomba R no espera agua por eso
+
+    // Regresa: 5 s de lectura buena y se cierran los tres
+    r.ads_ok = true;
+    r.p1_volts = 0.5f;
+    for (int i = 0; i < 5; ++i) core::detect_sensors(s, d, r);
+    CHECK(!s.no_signal.p1 && !s.no_signal.p2 && !s.no_signal.level);
+    for (uint8_t i = 0; i < s.recent_event_count; ++i) CHECK(s.recent_events[i].resolved_at != core::kNoTime);
+    CHECK(!core::signal_lost(s));
+
+    // Sin el sensor instalado no hay Sin señal
+    core::SystemState bare;
+    core::Detection d2;
+    r.ads_ok = false;
+    for (int i = 0; i < 10; ++i) core::detect_sensors(bare, d2, r);
+    CHECK(!bare.no_signal.p1 && !bare.no_signal.level && bare.recent_event_count == 0);
+
+    // El evento nuevo sobrevive a un reinicio
+    MemoryStore store;
+    core::save(s, store, core::SaveGroup::history);
+    core::save(s, store, core::SaveGroup::counters);
+    core::SystemState back;
+    core::load(back, store);
+    CHECK(back.recent_event_count == 3 && back.recent_events[0].kind == core::EventKind::no_signal);
+}
+
 }  // namespace
 
 int main() {
@@ -681,6 +744,7 @@ int main() {
     persist_ignores_bad_data();
     filters_without_date();
     sensors_detect();
+    sensors_lose_signal();
     if (failures == 0) std::printf("core: todo bien\n");
     return failures == 0 ? 0 : 1;
 }

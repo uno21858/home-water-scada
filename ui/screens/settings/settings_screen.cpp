@@ -18,6 +18,8 @@
 namespace ui {
 namespace {
 
+constexpr const char* kZeroHint = "Con V1 cerrada y el tren sin presión.";
+
 constexpr int32_t kCardX = 388;
 constexpr int32_t kCardW = 620;
 constexpr int32_t kCardH = 210;
@@ -163,9 +165,9 @@ lv_obj_t* SettingsScreen::create_sensors(lv_obj_t* page) {
     p2_raw_ = reading("P2", true);
     lv_obj_t* psi = label(r, &font_title_36, colors::text_secondary, "psi");
     lv_obj_set_style_pad_bottom(psi, 2, 0);
-    small_button(pressure_live_, 20, 130, 240, "Hacer cero", nullptr, false, [](lv_event_t*) { ask_pressure_zero(); },
-                 nullptr);
-    note(pressure_live_, 276, 128, 324, "Con V1 cerrada y el tren sin presión.");
+    zero_button_ = small_button(pressure_live_, 20, 130, 240, "Hacer cero", nullptr, false,
+                                [](lv_event_t*) { ask_pressure_zero(); }, nullptr);
+    zero_note_ = note(pressure_live_, 276, 128, 324, kZeroHint);
     return group;
 }
 
@@ -272,6 +274,15 @@ void SettingsScreen::update(const core::SystemState& s) {
     set_text(factor_, buf);
     lv_obj_set_hidden(pressure_live_, !s.has_pressure);
     set_text(tabs_[0].summary, s.has_pressure ? "Flujo y presión" : "Flujo");
+    // Sin señal no se deja hacer cero: guardaría el de un cable suelto
+    const bool zero_ok = core::pressure_ok(s);
+    lv_obj_set_disabled(zero_button_, !zero_ok);
+    const char* hint = s.no_signal.p1 && s.no_signal.p2 ? "P1 y P2 sin señal: revisa sus cables."
+                       : s.no_signal.p1                 ? "P1 sin señal: revisa su cable."
+                       : s.no_signal.p2                 ? "P2 sin señal: revisa su cable."
+                                                        : kZeroHint;
+    set_text(zero_note_, hint);
+    set_text_color(zero_note_, zero_ok ? colors::text_secondary : colors::warning);
     lv_obj_set_hidden(cap_card_, !s.has_pumps);
     snprintf(buf, sizeof buf, "%.1f", static_cast<double>(s.p1_zero_psi));
     set_text(p1_raw_, buf);

@@ -28,6 +28,8 @@ private:
     void create_scale(lv_obj_t* page);
     void create_chart(lv_obj_t* page);
     void create_side(lv_obj_t* page);
+    void show_no_signal(const core::SystemState& s);
+    float update_baseline(const core::SystemState& s);
     void update_chart(const core::SystemState& s);
     static void draw_plot(lv_event_t* e);
 
@@ -45,7 +47,7 @@ private:
     std::array<lv_obj_t*, 3> zones_{};
     std::array<lv_obj_t*, 3> zone_names_{};
     lv_obj_t* marker_ = nullptr;
-    int level_ = -1;  // -1 = todavía no se pinta
+    int level_ = -1;  // -1 = todavía no se pinta; kNoSignal sin P1 o P2
 
     // Gráfica: lo que dibuja draw_plot, en coordenadas de la tarjeta
     lv_obj_t* plot_ = nullptr;
@@ -59,6 +61,7 @@ private:
     lv_obj_t* same_flow_title_ = nullptr;
     lv_obj_t* new_value_ = nullptr;
     lv_obj_t* now_value_ = nullptr;
+    lv_obj_t* now_unit_ = nullptr;
     lv_obj_t* rise_ = nullptr;
 };
 

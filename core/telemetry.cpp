@@ -23,6 +23,7 @@ const char* event_name(EventKind kind) {
         case EventKind::offline: return "offline";
         case EventKind::mixer_fault: return "mixer_fault";
         case EventKind::no_supply: return "no_supply";
+        case EventKind::no_signal: return "no_signal";
     }
     return "unknown";
 }
@@ -75,12 +76,13 @@ void queue_reading(SystemState& s, Outbox& out, uint32_t utc) {
     r.time = utc;
     r.flow_lpm = s.flow_lpm;
     r.liters_today = s.liters_today;
-    r.pressure = s.has_pressure;
+    // Un sensor sin señal no manda nada: mejor un hueco en la gráfica que un 0 falso
+    r.pressure = pressure_ok(s);
     r.p1_psi = static_cast<int16_t>(s.p1_psi);
     r.p2_psi = static_cast<int16_t>(s.p2_psi);
-    r.drop_rise = s.has_pressure ? drop_rise(s) : 0.0f;
-    r.level = s.has_level;
-    if (s.has_level) {
+    r.drop_rise = r.pressure ? drop_rise(s) : 0.0f;
+    r.level = level_ok(s);
+    if (r.level) {
         r.level_cm = level_cm(s);
         r.level_pct = static_cast<int8_t>(level_pct(s));
     }

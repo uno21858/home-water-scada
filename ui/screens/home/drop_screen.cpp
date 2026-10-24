@@ -57,12 +57,13 @@ lv_obj_t* axis_label(lv_obj_t* parent, const char* text, int32_t x, int32_t y, l
     return obj;
 }
 
-lv_obj_t* psi_row(lv_obj_t* parent, const char* name) {
+lv_obj_t* psi_row(lv_obj_t* parent, const char* name, lv_obj_t** unit = nullptr) {
     lv_obj_t* r = row(parent, 8, LV_FLEX_ALIGN_END);
     lv_obj_set_width(r, 348);
     lv_obj_set_flex_grow(label(r, &font_label_26, colors::text_secondary, name), 1);
     lv_obj_t* value = label(r, &font_body_32, colors::text, "");
-    label(r, &font_label_26, colors::text_secondary, "psi");
+    lv_obj_t* u = label(r, &font_label_26, colors::text_secondary, "psi");
+    if (unit != nullptr) *unit = u;
     return value;
 }
 
@@ -161,7 +162,7 @@ void DropScreen::create_side(lv_obj_t* page) {
     lv_obj_t* rows = column(same, 8, LV_FLEX_ALIGN_START);
     lv_obj_set_pos(rows, 16, 50);
     new_value_ = psi_row(rows, "Cartuchos nuevos");
-    now_value_ = psi_row(rows, "Hoy");
+    now_value_ = psi_row(rows, "Hoy", &now_unit_);
     rise_ = label(same, &font_label_26, colors::text_secondary, "");
     lv_obj_set_pos(rise_, 16, 144);
 
@@ -181,8 +182,21 @@ void DropScreen::update(const core::SystemState& s) {
     lv_obj_set_hidden(live_, !s.has_pressure);
     lv_obj_set_hidden(locked_, s.has_pressure);
     if (!s.has_pressure) return;
+    if (!core::pressure_ok(s)) {
+        show_no_signal(s);
+        update_chart(s);
+        return;
+    }
 
     char buf[64];
+    if (level_ == kNoSignal) {  // regresó la señal: lo que show_no_signal() escondió
+        lv_obj_set_hidden(value_, false);
+        lv_obj_set_hidden(unit_, false);
+        lv_obj_set_hidden(marker_, false);
+        lv_obj_set_y(state_, 102);
+        lv_obj_set_hidden(now_unit_, false);
+        set_text_color(now_value_, colors::text);
+    }
     const int drop = s.p1_psi - s.p2_psi;
     snprintf(buf, sizeof buf, "%d", drop);
     set_text(value_, buf);
@@ -221,13 +235,7 @@ void DropScreen::update(const core::SystemState& s) {
         lv_obj_set_style_text_color(state_word_, color(z.lit), 0);
     }
 
-    // Al mismo caudal: la caída de nuevos contra la de hoy. Los textos de
-    // esta tarjeta tienen 346 px: "Al mismo caudal, 12.3 L/min" no cabía
-    snprintf(buf, sizeof buf, "Mismo caudal: %.1f L/min", static_cast<double>(s.flow_lpm));
-    set_text(same_flow_title_, buf);
-    const float fresh = core::baseline_drop(s, s.flow_lpm);
-    snprintf(buf, sizeof buf, "%.1f", static_cast<double>(fresh));
-    set_text(new_value_, buf);
+    const float fresh = update_baseline(s);
     snprintf(buf, sizeof buf, "%.1f", static_cast<double>(drop));
     set_text(now_value_, buf);
     // Desde cuándo: el día que se midió con cartuchos nuevos (0 = no hay)
@@ -246,6 +254,47 @@ void DropScreen::update(const core::SystemState& s) {
     update_chart(s);
 }
 
+// Al mismo caudal: la caída de nuevos (contra la de hoy). Los textos de
+// esta tarjeta tienen 346 px: "Al mismo caudal, 12.3 L/min" no cabía.
+// Regresa la de nuevos.
+float DropScreen::update_baseline(const core::SystemState& s) {
+    char buf[40];
+    snprintf(buf, sizeof buf, "Mismo caudal: %.1f L/min", static_cast<double>(s.flow_lpm));
+    set_text(same_flow_title_, buf);
+    const float fresh = core::baseline_drop(s, s.flow_lpm);
+    snprintf(buf, sizeof buf, "%.1f", static_cast<double>(fresh));
+    set_text(new_value_, buf);
+    return fresh;
+}
+
+// Sin P1 o P2 no hay caída: "Sin señal" donde va la cifra, la barra sin
+// zona ni marca y qué sensor fue en lugar de la resta. La de nuevos sí se sabe.
+void DropScreen::show_no_signal(const core::SystemState& s) {
+    update_baseline(s);
+    lv_obj_set_hidden(value_, true);
+    lv_obj_set_hidden(unit_, true);
+    lv_obj_set_hidden(marker_, true);
+    set_text(formula_, s.no_signal.p1 && s.no_signal.p2 ? "P1 y P2 sin señal"
+                       : s.no_signal.p1                 ? "P1 sin señal"
+                                                        : "P2 sin señal");
+    set_text(flow_note_, "revisa su cable");
+    lv_obj_set_hidden(rise_, true);
+    set_text(now_value_, "sin señal");
+    set_text_color(now_value_, colors::warning);
+    lv_obj_set_hidden(now_unit_, true);
+    if (level_ == kNoSignal) return;
+    level_ = kNoSignal;
+    for (size_t i = 0; i < zones_.size(); ++i) {
+        lv_obj_set_style_border_width(zones_[i], 0, 0);
+        lv_obj_set_style_text_color(zone_names_[i], color(colors::text_secondary), 0);
+    }
+    lv_obj_set_pos(state_, 24, 64);
+    lv_image_set_src(state_icon_, &icon_advertencia_32);
+    set_icon_color(state_icon_, colors::warning);
+    lv_label_set_text(state_word_, "Sin señal");
+    lv_obj_set_style_text_color(state_word_, color(colors::warning), 0);
+}
+
 void DropScreen::update_chart(const core::SystemState& s) {
     for (size_t q = 0; q < curve_.size(); ++q) {
         curve_[q] = {static_cast<lv_value_precise_t>(chart_x(static_cast<float>(q))),
@@ -257,7 +306,7 @@ void DropScreen::update_chart(const core::SystemState& s) {
         dots_[static_cast<size_t>(i)] = {px(chart_x(d.flow_tenths / 10.0f)), px(chart_y(d.drop_tenths / 10.0f)),
                                          s.today - d.day < 3};
     }
-    today_shown_ = s.flow_lpm >= 0.05f;
+    today_shown_ = s.flow_lpm >= 0.05f && core::pressure_ok(s);  // sin señal no hay punto de hoy
     today_x_ = px(chart_x(s.flow_lpm));
     today_y_ = px(chart_y(static_cast<float>(s.p1_psi - s.p2_psi)));
     lv_obj_invalidate(plot_);

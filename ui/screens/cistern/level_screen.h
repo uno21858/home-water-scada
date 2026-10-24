@@ -5,6 +5,7 @@
 // pozo en azul, abajo en gris (esa no la saca). A la derecha el % útil en
 // grande, los cm y "Calibrar nivel".
 
+#include <array>
 #include <cstdint>
 
 #include "lvgl.h"
@@ -35,6 +36,7 @@ private:
     lv_obj_t* unit_ = nullptr;
     lv_obj_t* uncalibrated_ = nullptr;
     lv_obj_t* from_bottom_ = nullptr;
+    std::array<lv_obj_t*, 2> cm_units_{};  // "cm" de los dos que se miden: sin señal se esconden
     lv_obj_t* above_intake_ = nullptr;
     lv_obj_t* below_intake_ = nullptr;
 };

@@ -22,7 +22,8 @@ void service_start(SystemState& s) { s.service_minutes_left = kServiceMinutes; }
 void service_end(SystemState& s) { s.service_minutes_left = 0; }
 
 void check_supply(SystemState& s) {
-    if (in_service(s)) return;
+    // Con P1 sin señal no se sabe: el aviso se queda como estaba
+    if (in_service(s) || s.no_signal.p1) return;
     const bool lost = supply_lost(s);
     const bool open = has_open_event(s, EventKind::no_supply);
     if (lost && !open) add_event(s, EventKind::no_supply, 0);
@@ -30,7 +31,7 @@ void check_supply(SystemState& s) {
 }
 
 void check_drop(SystemState& s) {
-    if (!s.has_pressure || in_service(s) || s.flow_lpm < kFlowingLpm) return;
+    if (!pressure_ok(s) || in_service(s) || s.flow_lpm < kFlowingLpm) return;
     const float rise = drop_rise(s);
     const auto psi = static_cast<uint16_t>(std::max(0, s.p1_psi - s.p2_psi));
     const bool warning = has_open_event(s, EventKind::drop_warning);

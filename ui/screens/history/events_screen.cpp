@@ -31,6 +31,7 @@ Look look_of(core::EventKind kind) {
         case core::EventKind::offline:
         case core::EventKind::mixer_fault:
         case core::EventKind::no_supply:
+        case core::EventKind::no_signal:
             return {&icon_advertencia_32, colors::warning, colors::warning};
         case core::EventKind::drop_alarm:
         case core::EventKind::alarm:
@@ -155,7 +156,8 @@ void EventsScreen::refresh() {
         // Avisos y alarmas: si ya se resolvió y cuándo
         const bool notice = ev.kind == core::EventKind::drop_warning || ev.kind == core::EventKind::drop_alarm ||
                             ev.kind == core::EventKind::offline || ev.kind == core::EventKind::alarm ||
-                            ev.kind == core::EventKind::mixer_fault || ev.kind == core::EventKind::no_supply;
+                            ev.kind == core::EventKind::mixer_fault || ev.kind == core::EventKind::no_supply ||
+                            ev.kind == core::EventKind::no_signal;
         if (filter_ == Filter::active) {
             // Además de las alarmas, los avisos que siguen sin quitarse
             if (!notice || ev.kind == core::EventKind::alarm || ev.resolved_at != core::kNoTime) continue;
@@ -211,6 +213,10 @@ void EventsScreen::refresh() {
             case core::EventKind::no_supply:
                 snprintf(title, sizeof title, "Sin agua del SIAPA");
                 detail = " · sin flujo ni presión";
+                break;
+            case core::EventKind::no_signal:
+                snprintf(title, sizeof title, "%s sin señal", fmt::sensor_name(ev.value));
+                detail = " · revisa su cable";
                 break;
         }
         if (notice) {

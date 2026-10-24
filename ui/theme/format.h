@@ -41,4 +41,7 @@ const char* mixer_fault(unsigned fault);
 // Y qué pasa con la mezcla, para el renglón de abajo (caben 456 px en Resumen)
 const char* mixer_fault_hint(unsigned fault);
 
+// core::Sensor -> "P1", "P2", "Nivel": el que se quedó sin señal
+const char* sensor_name(unsigned sensor);
+
 }  // namespace ui::fmt

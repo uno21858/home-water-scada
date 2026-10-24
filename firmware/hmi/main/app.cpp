@@ -484,6 +484,10 @@ std::size_t status_text(char* buf, std::size_t size) {
                 static_cast<double>(s.p2_volts), static_cast<double>(s.level_volts), static_cast<double>(s.ldr_volts));
         out.add(kOff, "Detectados: presión %s, nivel %s, LDR %s", s.has_pressure ? "sí" : "no", s.has_level ? "sí" : "no",
                 s.has_ldr ? "sí" : "no");
+        // Instalados que dejaron de leer (core/detect.h): un cable suelto
+        if (s.has_pressure && s.no_signal.p1) out.add(kBad, "P1 sin señal: revisa su cable (A0)");
+        if (s.has_pressure && s.no_signal.p2) out.add(kBad, "P2 sin señal: revisa su cable (A1)");
+        if (s.has_level && s.no_signal.level) out.add(kBad, "Nivel sin señal: revisa su cable (A2)");
     } else {
         out.add(s.has_pressure || s.has_level || s.has_ldr ? kBad : kOff, "ADS1115: no responde");
     }

@@ -57,7 +57,8 @@ private:
     lv_obj_t* today_ = nullptr;
     lv_obj_t* drop_ = nullptr;   // grupo de la caída: se esconde sin P1 y P2
     lv_obj_t* drop_value_ = nullptr;
-    lv_obj_t* drop_word_ = nullptr;
+    lv_obj_t* drop_unit_ = nullptr;
+    lv_obj_t* drop_word_ = nullptr;  // Normal, Revisar, Tapados o Sin señal
     lv_obj_t* orp_ = nullptr;    // grupo del ORP: se esconde sin sonda
     lv_obj_t* orp_value_ = nullptr;
 
@@ -71,6 +72,8 @@ private:
     std::array<lv_point_precise_t, 1024 / 8 + 1> crest_{};  // vivos hasta que termine el dibujo
     lv_obj_t* cistern_ = nullptr;  // "Cisterna 73 %" abajo a la derecha
     lv_obj_t* cistern_value_ = nullptr;
+    lv_obj_t* cistern_unit_ = nullptr;
+    lv_obj_t* cistern_lost_ = nullptr;  // "Sin señal" en lugar de "73 %"
     int water_pct_ = -2;  // -2 = todavía no se pinta
 
     // -1 = todavía no se pinta

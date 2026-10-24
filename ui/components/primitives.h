@@ -35,6 +35,10 @@ void set_icon_color(lv_obj_t* icon, uint32_t hex);
 // dice el DS. Con red lleva por lo menos un arco. large: el de 40 de Pasillo.
 const lv_image_dsc_t* wifi_icon(bool online, uint8_t bars, bool large);
 
+// Las pantallas guardan el core::Level que pintaron (0 a 2) para no repintar;
+// este va después: lo pintado fue "Sin señal" (core::NoSignal)
+inline constexpr int kNoSignal = 3;
+
 // Tarjeta del DS: panel con borde de 1 px y radio 10
 lv_obj_t* card(lv_obj_t* parent, int32_t x, int32_t y, int32_t w, int32_t h);
 

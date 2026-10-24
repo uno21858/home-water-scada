@@ -71,6 +71,11 @@ const char* mixer_fault_hint(unsigned fault) {
     return fault < 4 ? kHints[fault] : "";
 }
 
+const char* sensor_name(unsigned sensor) {
+    static const char* const kNames[3] = {"P1", "P2", "Nivel"};
+    return sensor < 3 ? kNames[sensor] : "Sensor";
+}
+
 const char* filter_every(unsigned filter) {
     static const char* const kEvery[6] = {"cada 7 días", "2 a 3 meses", "3 a 6 meses",
                                           "3 a 6 meses", "6 meses",     "1 año"};

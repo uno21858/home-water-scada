@@ -110,8 +110,8 @@ git pull; ./firmware/hmi/subir-ota.sh
 ```
 
 - La IP de la placa: apártala en el DHCP del módem para su MAC
-  (`14:c1:9f:5d:5d:10`); el script trae la 192.168.1.120. Si es otra, va de
-  argumento: `./subir-ota.sh 192.168.1.110`. Diagnóstico la dice en el
+  (`14:c1:9f:5d:5d:10`); el script trae la 192.168.1.112. Si es otra, va de
+  argumento: `./subir-ota.sh 192.168.1.120`. Diagnóstico la dice en el
   renglón del WiFi. Los Deco van en modo AP: las IPs las da el módem.
 - Lo que contesta: "Instalada ...", "Ya tiene ...: nada que instalar", "La
   firma no es de la llave de la casa" o "... ya falló una vez". Si la bomba R
@@ -188,6 +188,12 @@ gris lo que lee cada entrada. La bomba R no se detecta: va en `menuconfig`.
 | LDR (A3) | pasa de 0.15 V (con luz) | cambia al taparlo | |
 | Bomba R (GPIO44, INA219) | `menuconfig` > Casa > Bomba R | la corriente al prenderla | umbrales de la prueba 9b |
 
+- Ya detectado, si un sensor deja de leer (cable suelto, o el ADS1115 no
+  contesta) 5 s seguidos, sale "Sin señal" en ámbar donde iba su número, la
+  pastilla en Advertencia y el evento en Alarmas ("P1 sin señal · revisa su
+  cable"). Mientras, no da avisos falsos: P1 suelto lee 0 psi, igual que si
+  se fuera el agua, y no sale "Sin agua"; el nivel suelto no apaga la bomba
+  R. Con 5 s de lectura buena regresa solo. `/estado` lo lista con ✗.
 - P1 y P2 entran por su divisor 10k/10k. Sin él, los 4.5 V del sensor pasan
   el máximo del ADS1115 a 3.3 V (VDD + 0.3 V, hoja de datos de TI).
 - La bomba R al final: su pin es el RX de UART0, así que antes se sale del

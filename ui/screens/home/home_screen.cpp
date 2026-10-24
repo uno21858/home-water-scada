@@ -277,7 +277,7 @@ void HomeScreen::create_strip(lv_obj_t* page) {
     lv_obj_set_style_pad_column(drop_live_, 8, 0);
     lv_obj_set_flex_grow(label(drop_live_, &font_label_26, colors::text_secondary, "Caída"), 1);
     drop_value_ = label(drop_live_, &font_digits_44, colors::text, "");
-    label(drop_live_, &font_label_26, colors::text_secondary, "psi");
+    drop_unit_ = label(drop_live_, &font_label_26, colors::text_secondary, "psi");
     drop_word_ = label(drop_live_, &font_label_26, colors::ok, "");
     lv_obj_set_style_margin_left(drop_word_, 8, 0);
 
@@ -373,18 +373,32 @@ void HomeScreen::update_pressure(const core::SystemState& s) {
     set_text(p2_.value, buf);
     lv_obj_set_x(p1_marker_, p1_.bar_x + range_x(s.p1_psi, p1_.bar_w) - 1);
     lv_obj_set_x(p2_marker_, p2_.bar_x + range_x(s.p2_psi, p2_.bar_w) - 1);
+    // Sin señal: ícono en lugar de la cifra y sin marca (no hay lectura)
+    p1_.set_signal(!s.no_signal.p1);
+    p2_.set_signal(!s.no_signal.p2);
+    lv_obj_set_hidden(p1_marker_, s.no_signal.p1);
+    lv_obj_set_hidden(p2_marker_, s.no_signal.p2);
 
+    // La caída necesita los dos: sin uno, "Sin señal" en lugar de la cifra
+    const bool ok = core::pressure_ok(s);
+    lv_obj_set_hidden(drop_value_, !ok);
+    lv_obj_set_hidden(drop_unit_, !ok);
     const int drop = s.p1_psi - s.p2_psi;
     snprintf(buf, sizeof buf, "%d", drop);
     set_text(drop_value_, buf);
 
-    const core::Level level = core::drop_level(s);
-    if (static_cast<int>(level) == drop_level_) return;
-    drop_level_ = static_cast<int>(level);
+    const int level_now = ok ? static_cast<int>(core::drop_level(s)) : kNoSignal;
+    if (level_now == drop_level_) return;
+    drop_level_ = level_now;
     uint32_t fg = colors::ok;
     uint32_t bg = colors::ok_bg;
     const char* word = "Normal";
-    if (level == core::Level::warning) {
+    const auto level = static_cast<core::Level>(level_now);
+    if (!ok) {
+        fg = colors::warning;
+        bg = colors::warning_bg;
+        word = "Sin señal";
+    } else if (level == core::Level::warning) {
         fg = colors::warning;
         bg = colors::warning_bg;
         word = "Revisar";
@@ -400,8 +414,9 @@ void HomeScreen::update_pressure(const core::SystemState& s) {
 }
 
 void HomeScreen::update_level(const core::SystemState& s) {
-    // Llena queda en la raya de siempre (y 294) y el fondo abajo de la tarjeta
-    const int pct = s.has_level ? core::level_pct(s) : -1;
+    // Llena queda en la raya de siempre (y 294) y el fondo abajo de la tarjeta.
+    // Sin señal tampoco hay agua que dibujar.
+    const int pct = core::level_ok(s) ? core::level_pct(s) : -1;
     const bool shown = pct >= 0;
     int32_t y = kWaterTop;
     if (shown) {
@@ -433,14 +448,15 @@ void HomeScreen::update_orp(const core::SystemState& s) {
     if (!s.has_orp) {
         // Sin sonda la palabra es el nivel; sin nada, el tamaño
         char buf[24];
-        const int pct = s.has_level ? core::level_pct(s) : -1;
+        const int pct = core::level_ok(s) ? core::level_pct(s) : -1;
+        const bool lost = s.has_level && s.no_signal.level;
         if (pct >= 0) {
             snprintf(buf, sizeof buf, "%d %% útil", pct);
         } else {
-            snprintf(buf, sizeof buf, s.has_level ? "Sin calibrar" : "10 m³");
+            snprintf(buf, sizeof buf, lost ? "Sin señal" : s.has_level ? "Sin calibrar" : "10 m³");
         }
         set_text(cistern_word_, buf);
-        set_text_color(cistern_word_, s.has_level ? colors::text : colors::text_disabled);
+        set_text_color(cistern_word_, lost ? colors::warning : s.has_level ? colors::text : colors::text_disabled);
         orp_level_ = -1;
         return;
     }

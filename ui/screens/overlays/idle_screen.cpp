@@ -40,12 +40,15 @@ constexpr uint32_t kWavePeriodMs = 80;
 constexpr float kWaveStep = 6.2832f / 40.0f;
 constexpr int32_t kWaveColumn = 8;  // la ola se rellena en columnas de 8 px
 
-// "Hoy 1,860 L": nombre, cifra de 44 y unidad en la misma línea base
-lv_obj_t* reading(lv_obj_t* parent, const char* name, const char* unit, lv_obj_t** value) {
+// "Hoy 1,860 L": nombre, cifra de 44 y unidad en la misma línea base. Con
+// unit_out, la unidad se puede esconder (sin señal no hay cifra).
+lv_obj_t* reading(lv_obj_t* parent, const char* name, const char* unit, lv_obj_t** value,
+                  lv_obj_t** unit_out = nullptr) {
     lv_obj_t* r = row(parent, 10, LV_FLEX_ALIGN_END);
     label(r, &font_body_32, colors::text_secondary, name);
     *value = label(r, &font_digits_44, colors::text, "");
-    label(r, &font_label_26, colors::text_secondary, unit);
+    lv_obj_t* u = label(r, &font_label_26, colors::text_secondary, unit);
+    if (unit_out != nullptr) *unit_out = u;
     return r;
 }
 
@@ -107,7 +110,7 @@ void IdleScreen::create(lv_obj_t* layer, Callback on_wake) {
     lv_obj_t* bottom = row(root_, 40, LV_FLEX_ALIGN_END);
     lv_obj_set_pos(bottom, 32, 410);
     reading(bottom, "Hoy", "L", &today_);
-    drop_ = reading(bottom, "Caída", "psi", &drop_value_);
+    drop_ = reading(bottom, "Caída", "psi", &drop_value_, &drop_unit_);
     drop_word_ = label(drop_, &font_label_26, colors::ok, "");
     orp_ = reading(bottom, "ORP", "mV", &orp_value_);
 
@@ -118,7 +121,9 @@ void IdleScreen::create(lv_obj_t* layer, Callback on_wake) {
 
     // Cisterna abajo a la derecha, junto a la pista: en el renglón de Hoy,
     // Caída y ORP ya no cabe cuando están los cuatro
-    cistern_ = reading(root_, "Cisterna", "%", &cistern_value_);
+    cistern_ = reading(root_, "Cisterna", "%", &cistern_value_, &cistern_unit_);
+    cistern_lost_ = label(cistern_, &font_label_26, colors::warning, "Sin señal");
+    lv_obj_set_hidden(cistern_lost_, true);
     lv_obj_align(cistern_, LV_ALIGN_BOTTOM_RIGHT, -32, -24);
 
     lv_obj_set_hidden(root_, true);
@@ -171,19 +176,20 @@ void IdleScreen::update(const core::SystemState& s) {
 
     lv_obj_set_hidden(drop_, !s.has_pressure);
     if (s.has_pressure) {
+        // Sin señal de P1 o P2: la palabra en lugar de la cifra
+        const bool ok = core::pressure_ok(s);
+        lv_obj_set_hidden(drop_value_, !ok);
+        lv_obj_set_hidden(drop_unit_, !ok);
         const int drop = s.p1_psi - s.p2_psi;
         snprintf(buf, sizeof buf, "%d", drop);
         set_text(drop_value_, buf);
-        const core::Level drop_level = core::drop_level(s);
-        if (static_cast<int>(drop_level) != drop_level_) {
-            drop_level_ = static_cast<int>(drop_level);
-            const uint32_t tone = drop_level == core::Level::ok        ? colors::ok
-                                  : drop_level == core::Level::warning ? colors::warning
-                                                                       : colors::alarm;
-            set_text(drop_word_, drop_level == core::Level::ok        ? "Normal"
-                                 : drop_level == core::Level::warning ? "Revisar"
-                                                                      : "Tapados");
-            lv_obj_set_style_text_color(drop_word_, color(tone), 0);
+        const int drop_level = ok ? static_cast<int>(core::drop_level(s)) : kNoSignal;
+        if (drop_level != drop_level_) {
+            drop_level_ = drop_level;
+            static const char* const kWords[4] = {"Normal", "Revisar", "Tapados", "Sin señal"};
+            static const uint32_t kTones[4] = {colors::ok, colors::warning, colors::alarm, colors::warning};
+            set_text(drop_word_, kWords[drop_level]);
+            lv_obj_set_style_text_color(drop_word_, color(kTones[drop_level]), 0);
         }
     }
 
@@ -193,9 +199,14 @@ void IdleScreen::update(const core::SystemState& s) {
         set_text(orp_value_, buf);
     }
 
-    // Cisterna: el número abajo y el agua de fondo. Sin marcar llena no hay %.
-    const int pct = s.has_level ? core::level_pct(s) : -1;
-    lv_obj_set_hidden(cistern_, pct < 0);
+    // Cisterna: el número abajo y el agua de fondo. Sin marcar llena no hay %;
+    // sin señal tampoco, y lo dice
+    const bool lost = s.has_level && s.no_signal.level;
+    const int pct = core::level_ok(s) ? core::level_pct(s) : -1;
+    lv_obj_set_hidden(cistern_, pct < 0 && !lost);
+    lv_obj_set_hidden(cistern_value_, lost);
+    lv_obj_set_hidden(cistern_unit_, lost);
+    lv_obj_set_hidden(cistern_lost_, !lost);
     if (pct >= 0) {
         snprintf(buf, sizeof buf, "%d", pct);
         set_text(cistern_value_, buf);

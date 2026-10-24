@@ -3,10 +3,20 @@
 #include "components/primitives.h"
 #include "theme/colors.h"
 #include "theme/fonts.h"
+#include "theme/icons.h"
 
 namespace ui {
 
 void SensorTag::set_installed(bool installed) const { lv_obj_set_hidden(live, !installed); }
+
+void SensorTag::set_signal(bool ok) {
+    if (static_cast<int8_t>(ok) == shown_signal) return;
+    shown_signal = static_cast<int8_t>(ok);
+    lv_obj_set_hidden(value, !ok);
+    lv_obj_set_hidden(unit, !ok);
+    lv_obj_set_hidden(lost, ok);
+    lv_obj_set_style_border_color(live, color(ok ? colors::border : colors::warning), 0);
+}
 
 SensorTag sensor_tag(lv_obj_t* parent, int32_t x, int32_t y, int32_t w, const char* name, const char* unit) {
     SensorTag tag;
@@ -20,9 +30,13 @@ SensorTag sensor_tag(lv_obj_t* parent, int32_t x, int32_t y, int32_t w, const ch
 
     lv_obj_t* r = row(tag.live, 8, LV_FLEX_ALIGN_END);
     lv_obj_set_pos(r, 12, 3);
+    lv_obj_set_height(r, lv_font_get_line_height(&font_digits_44));  // sin cifra no se encoge
     label(r, &font_label_26, colors::text_secondary, name);
     tag.value = label(r, &font_digits_44, colors::text, "");
-    label(r, &font_label_26, colors::text_secondary, unit);
+    tag.unit = label(r, &font_label_26, colors::text_secondary, unit);
+    tag.lost = icon(r, &icon_advertencia_28, colors::warning);
+    lv_obj_set_style_margin_bottom(tag.lost, 4, 0);  // a media altura de la cifra que reemplaza
+    lv_obj_set_hidden(tag.lost, true);
     tag.bar_w = w - 2 * 2 - 2 * 12;  // menos bordes y márgenes
     return tag;
 }

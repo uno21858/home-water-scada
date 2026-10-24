@@ -103,6 +103,19 @@ enum class EventKind : uint8_t {
     offline,       // se cayó la red; value son los minutos sin red
     mixer_fault,   // aviso de la bomba R; value es su MixerFault
     no_supply,     // se fue el agua del SIAPA
+    no_signal,     // un sensor instalado dejó de dar lectura; value es su Sensor
+};
+
+// Los del ADS1115 que pueden quedarse sin señal (core/detect.h)
+enum class Sensor : uint8_t { p1, p2, level };
+
+// Instalados que dejaron de dar lectura: cable suelto, sensor muerto o el
+// ADS1115 que no contesta. Mientras, su número no se enseña ni se usa para
+// avisos: un P1 suelto lee 0 psi, igual que si se fuera el agua.
+struct NoSignal {
+    bool p1 = false;
+    bool p2 = false;
+    bool level = false;
 };
 
 inline constexpr uint16_t kNoTime = 0xFFFF;  // "todavía no" en un minuto del día
@@ -200,6 +213,7 @@ struct SystemState {
     bool has_level = false;     // sensor de nivel 4-20 mA en A2 (core/level.h)
     bool has_pumps = false;     // fase 3: bombas A y B de cloro
     bool ro_kitchen_planned = false;  // Panorama: el RO de la cocina, por instalar
+    NoSignal no_signal{};       // instalados que dejaron de dar lectura (core/detect.h)
 
     // Fecha, hora y red
     uint32_t today = 0;   // número de día desde una fecha fija: sirve para comparar días
@@ -214,7 +228,7 @@ struct SystemState {
     bool flow_sensor_ok = true;   // llegan pulsos de F cuando debe
     std::array<Alarm, kAlarmKinds> alarms{};  // una por AlarmKind
     char wifi_ssid[33] = "";      // nombre de la red, hasta 32 letras
-    char wifi_ip[16] = "";        // "192.168.1.120": a dónde manda subir-ota.sh
+    char wifi_ip[16] = "";        // "192.168.1.112": a dónde manda subir-ota.sh
     uint8_t wifi_bars = 0;        // señal de 0 a 3
     uint16_t last_upload_at = 0;  // minuto del día del último envío de datos
     uint32_t pending_uploads = 0; // lecturas y eventos que faltan por enviar (core::Outbox)
@@ -357,12 +371,25 @@ constexpr Level drop_rise_level(float rise) {
 }
 inline Level drop_level(const SystemState& s) { return drop_rise_level(drop_rise(s)); }
 
+// P1 y P2 instalados y los dos con lectura: la caída se puede calcular
+inline bool pressure_ok(const SystemState& s) { return s.has_pressure && !s.no_signal.p1 && !s.no_signal.p2; }
+
+// El sensor de nivel instalado y con lectura
+inline bool level_ok(const SystemState& s) { return s.has_level && !s.no_signal.level; }
+
+// Algún sensor instalado sin señal: la pastilla en Advertencia
+inline bool signal_lost(const SystemState& s) {
+    return (s.has_pressure && (s.no_signal.p1 || s.no_signal.p2)) || (s.has_level && s.no_signal.level);
+}
+
 // Se fue el agua del SIAPA: sin flujo y P1 abajo de 3 psi al mismo tiempo.
 // Sin flujo pero con presión es la cisterna llena (el flotador cerró). Sin P1
-// no se sabe. El firmware pasa P1 ya promediado, así un brinco no lo prende.
+// (o con P1 sin señal) no se sabe. El firmware pasa P1 ya promediado, así un
+// brinco no lo prende.
 inline constexpr int kNoSupplyPsi = 3;
 inline bool supply_lost(const SystemState& s) {
-    return s.has_pressure && !in_service(s) && s.flow_lpm < kFlowingLpm && s.p1_psi < kNoSupplyPsi;
+    return s.has_pressure && !s.no_signal.p1 && !in_service(s) && s.flow_lpm < kFlowingLpm &&
+           s.p1_psi < kNoSupplyPsi;
 }
 
 // ORP de la cisterna con los umbrales del DS:
@@ -379,10 +406,11 @@ inline Level overall_level(const SystemState& s) {
         if (a.active) return Level::alarm;
     }
     Level worst = Level::ok;
-    if (s.has_pressure && !in_service(s)) worst = drop_level(s);
+    if (pressure_ok(s) && !in_service(s)) worst = drop_level(s);
     if (s.has_orp && orp_level(s.orp_mv) > worst) worst = orp_level(s.orp_mv);
-    // Avisos: la bomba R que no pudo mezclar y el SIAPA sin agua
-    const bool notice = (s.has_mixer && s.mixer_fault != MixerFault::none) || supply_lost(s);
+    // Avisos: la bomba R que no pudo mezclar, el SIAPA sin agua y un sensor sin señal
+    const bool notice =
+        (s.has_mixer && s.mixer_fault != MixerFault::none) || supply_lost(s) || signal_lost(s);
     if (notice && worst < Level::warning) worst = Level::warning;
     return worst;
 }

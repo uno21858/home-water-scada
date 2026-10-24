@@ -14,7 +14,7 @@ void start(const char* ssid, const char* password);
 bool online();   // con IP
 int rssi();      // dBm de la señal; 0 sin red
 
-// La IP de la placa ("192.168.1.120"); vacía sin red
+// La IP de la placa ("192.168.1.112"); vacía sin red
 void ip_address(char* out, std::size_t size);
 
 // ¿Ya llegó la hora del NTP? Antes de eso time() da 1970.

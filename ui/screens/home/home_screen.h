@@ -73,6 +73,7 @@ private:
     lv_obj_t* due_ = nullptr;
     int with_drop_ = -1;  // -1 = todavía no se acomoda
     lv_obj_t* drop_value_ = nullptr;
+    lv_obj_t* drop_unit_ = nullptr;
     lv_obj_t* drop_word_ = nullptr;
     lv_obj_t* today_value_ = nullptr;
     lv_obj_t* dose_value_ = nullptr;
@@ -80,7 +81,7 @@ private:
     // Para no repintar lo que no cambió (-1 = todavía no se pinta)
     int flowing_ = -1;
     lv_obj_t* no_supply_ = nullptr;  // "Sin agua" arriba de SIAPA: sin flujo ni presión
-    int drop_level_ = -1;
+    int drop_level_ = -1;  // core::Level pintado; kNoSignal sin señal
     int orp_level_ = -1;
     int pump_state_ = -1;
 };

@@ -104,7 +104,7 @@ void mixer_add_liters(SystemState& s, uint32_t liters) {
     run_due(s);
 }
 
-bool mixer_low_water(const SystemState& s) { return s.has_level && level_pct(s) == 0; }
+bool mixer_low_water(const SystemState& s) { return level_ok(s) && level_pct(s) == 0; }
 
 void mixer_tick_minute(SystemState& s) {
     if (!s.has_mixer) return;

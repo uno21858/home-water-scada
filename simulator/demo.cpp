@@ -7,6 +7,7 @@
 #include <cstring>
 
 #include "calendar.h"
+#include "detect.h"
 #include "events.h"
 #include "level.h"
 #include "mixing.h"
@@ -49,7 +50,7 @@ core::SystemState make() {
     s.minute = 42;
     s.wifi_ok = true;
     s.has_server = true;
-    std::snprintf(s.wifi_ip, sizeof s.wifi_ip, "192.168.1.120");
+    std::snprintf(s.wifi_ip, sizeof s.wifi_ip, "192.168.1.112");
     std::snprintf(s.wifi_ssid, sizeof s.wifi_ssid, "Casa-2.4G");
     s.devices.ezo_orp = false;
     s.has_ldr = true;
@@ -377,6 +378,14 @@ bool set_scenario(const char* name) {
         s.level_volts = level_volts_at(empty ? 58.0f : 70.0f, s);
         core::check_supply(s);  // lo anota ya, sin esperar al siguiente minuto
         if (empty) core::mixer_tick_minute(s);
+    } else if (std::strcmp(name, "sin-senal") == 0) {
+        // Se soltaron los cables de P1 y del nivel; P2 sigue leyendo. Pasa
+        // por core::detect_sensors como en el firmware: 5 s y quedan sin señal.
+        s.p1_volts = s.level_volts = 0.0f;
+        s.p1_psi = 0;
+        core::Detection d;
+        const core::AnalogReadings r{true, s.p1_volts, s.p2_volts, s.level_volts, s.ldr_volts};
+        for (uint8_t i = 0; i < core::kSeenSeconds; ++i) core::detect_sensors(s, d, r);
     } else if (std::strcmp(name, "sin-12v") == 0) {
         mixer_fault(core::MixerFault::no_power);
     } else if (std::strcmp(name, "nivel-bajo") == 0) {

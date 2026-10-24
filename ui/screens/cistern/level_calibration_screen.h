@@ -23,6 +23,7 @@ private:
     static void handle_row(lv_event_t* e);
 
     std::array<lv_obj_t*, kRows> values_{};
+    std::array<lv_obj_t*, kRows> buttons_{};  // sin señal no se deja hacer cero ni marcar llena
     lv_obj_t* note_ = nullptr;
     // Lo último que llegó, para las pistas de los diálogos (copiar todo el
     // estado sería mucho por cuatro números)

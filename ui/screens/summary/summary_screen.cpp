@@ -144,12 +144,16 @@ void SummaryScreen::create_filters_card(lv_obj_t* page) {
     chevron(filters_live_);
 
     // P1 y P2: cifra con su barrita de rango (0 a 80 psi, banda normal 20 a 50)
-    auto pressure = [this](int32_t x, const char* name, lv_obj_t** value, lv_obj_t** marker) {
+    auto pressure = [this](int32_t x, const char* name, lv_obj_t** value, lv_obj_t** marker, Lost* lost) {
         lv_obj_t* r = row(filters_live_, 8, LV_FLEX_ALIGN_END);
         lv_obj_set_pos(r, x, 42);
+        // Sin la cifra el renglón no se encoge: "Sin señal" queda en la línea de "P2"
+        lv_obj_set_height(r, lv_font_get_line_height(&font_digits_44));
         label(r, &font_label_26, colors::text_secondary, name);
         *value = label(r, &font_digits_44, colors::text, "");
-        label(r, &font_label_26, colors::text_secondary, "psi");
+        lost->unit = label(r, &font_label_26, colors::text_secondary, "psi");
+        lost->word = label(r, &font_label_26, colors::warning, "Sin señal");
+        lv_obj_set_hidden(lost->word, true);
 
         lv_obj_t* track = box(filters_live_, x, 86, kRangeW, 4);
         lv_obj_set_style_radius(track, 2, 0);
@@ -159,8 +163,8 @@ void SummaryScreen::create_filters_card(lv_obj_t* page) {
         *marker = box(filters_live_, x, 83, 3, 10);
         fill(*marker, colors::text);
     };
-    pressure(16, "P1", &p1_value_, &p1_marker_);
-    pressure(260, "P2", &p2_value_, &p2_marker_);
+    pressure(16, "P1", &p1_value_, &p1_marker_, &p1_lost_);
+    pressure(260, "P2", &p2_value_, &p2_marker_, &p2_lost_);
 
     // Caída del tren: el color y la palabra dicen si está bien
     drop_tile_ = box(filters_live_, 16, 110, 456, 56);
@@ -174,7 +178,7 @@ void SummaryScreen::create_filters_card(lv_obj_t* page) {
     lv_obj_t* name = label(drop_tile_, &font_label_26, colors::text_secondary, "Caída");
     lv_obj_set_flex_grow(name, 1);
     drop_value_ = label(drop_tile_, &font_digits_44, colors::text, "");
-    label(drop_tile_, &font_label_26, colors::text_secondary, "psi");
+    drop_unit_ = label(drop_tile_, &font_label_26, colors::text_secondary, "psi");
     lv_obj_set_size(box(drop_tile_), 8, 1);  // separa la palabra de "psi"
     lv_obj_t* state = row(drop_tile_, 6, LV_FLEX_ALIGN_CENTER);
     drop_icon_ = icon(state, &icon_ok_28, colors::ok);
@@ -405,20 +409,38 @@ void SummaryScreen::update_filters(const core::SystemState& s) {
     set_text(p2_value_, buf);
     lv_obj_set_x(p1_marker_, 16 + range_x(s.p1_psi) - 1);
     lv_obj_set_x(p2_marker_, 260 + range_x(s.p2_psi) - 1);
+    // Sin señal: la palabra en lugar de cifra y unidad, y sin marca
+    auto signal = [](lv_obj_t* value, lv_obj_t* marker, const Lost& lost, bool ok) {
+        lv_obj_set_hidden(value, !ok);
+        lv_obj_set_hidden(marker, !ok);
+        lv_obj_set_hidden(lost.unit, !ok);
+        lv_obj_set_hidden(lost.word, ok);
+    };
+    signal(p1_value_, p1_marker_, p1_lost_, !s.no_signal.p1);
+    signal(p2_value_, p2_marker_, p2_lost_, !s.no_signal.p2);
 
+    const bool ok = core::pressure_ok(s);
+    lv_obj_set_hidden(drop_value_, !ok);
+    lv_obj_set_hidden(drop_unit_, !ok);
     const int drop = s.p1_psi - s.p2_psi;
     snprintf(buf, sizeof buf, "%d", drop);
     set_text(drop_value_, buf);
 
-    const core::Level level = core::drop_level(s);
-    if (static_cast<int>(level) == drop_level_) return;
-    drop_level_ = static_cast<int>(level);
+    const int level_now = ok ? static_cast<int>(core::drop_level(s)) : kNoSignal;
+    if (level_now == drop_level_) return;
+    drop_level_ = level_now;
 
     uint32_t fg = colors::ok;
     uint32_t bg = colors::ok_bg;
     const char* word = "Normal";
     const lv_image_dsc_t* src = &icon_ok_28;
-    if (level == core::Level::warning) {
+    const auto level = static_cast<core::Level>(level_now);
+    if (!ok) {
+        fg = colors::warning;
+        bg = colors::warning_bg;
+        word = "Sin señal";
+        src = &icon_advertencia_28;
+    } else if (level == core::Level::warning) {
         fg = colors::warning;
         bg = colors::warning_bg;
         word = "Revisar";

@@ -19,6 +19,10 @@ bool resolve_event(SystemState& s, EventKind kind);
 // ¿Hay un aviso de ese tipo que todavía no se quita?
 bool has_open_event(const SystemState& s, EventKind kind);
 
+// Lo mismo, solo los de ese value (no_signal: cada Sensor lleva el suyo)
+bool resolve_event(SystemState& s, EventKind kind, uint16_t value);
+bool has_open_event(const SystemState& s, EventKind kind, uint16_t value);
+
 // Alarmas a pantalla completa (las de la fase 3; Probar alarma usa la de sin
 // flujo). Prender una la saca en pantalla y la anota; si ya estaba, nada.
 void alarm_raise(SystemState& s, AlarmKind kind);

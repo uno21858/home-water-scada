@@ -55,7 +55,13 @@ Mientras llega el hardware, se desarrolla en el simulador con SDL (Mac y Fedora)
     cada segundo): con 5 s seguidos de una lectura que solo da un sensor
     conectado (P1 y P2 arriba de 0.3 V, nivel de 0.10, LDR de 0.15) su
     `has_*` queda en verdadero y `persist` lo guarda; ya visto no
-    desaparece aunque se suelte. La bomba R no: va en `menuconfig`.
+    desaparece aunque se suelte. La bomba R no: va en `menuconfig`. Ya
+    instalado, si P1, P2 o el nivel bajan de esa lectura (o el ADS1115 no
+    contesta) 5 s seguidos quedan en `no_signal` y se anota el evento
+    `no_signal`; con 5 s de lectura buena regresan. Sin señal su número no
+    cuenta: `pressure_ok`, `level_ok` y `signal_lost` en `system_state.h`
+    (no hay "Sin agua" ni caída falsos, la bomba R no espera agua y no se
+    manda al servidor).
   - `telemetry`: lo que va al servidor de la casa (VictoriaMetrics en el NAS,
     formato de línea de Influx). `queue_reading` mete a la cola (`Outbox`, un
     anillo sobre memoria del que llama: en la 7B la PSRAM, 8,640 de 48 bytes
@@ -179,7 +185,7 @@ CLion sale en la lista de configuraciones). La lista de targets está en
 demo, va también ahí.
 Escenarios: `sin-flujo`, `sin-red`, `alarma`, `sensor`, `tope`, `fase1`,
 `revisar`, `tapados`, `sin-agua`, `cisterna-vacia`, `sin-12v`, `nivel-bajo`, `atorada`,
-`ro-cocina`, `actualizando`, `a-prueba` y `completo` (`demo::set_scenario` en `simulator/demo.h`).
+`ro-cocina`, `sin-senal`, `actualizando`, `a-prueba` y `completo` (`demo::set_scenario` en `simulator/demo.h`).
 El demo arranca como la casa de Erick, en la fase 1.5: todo menos la sonda ORP
 y las bombas A y B. `HMI_DEMO=completo` prende la sonda para comparar con el
 canvas. Dosis con 0.1 mL por litro (la prueba de jarras del documento: el
@@ -418,6 +424,15 @@ Pendiente, en este orden:
     flujo con presión es la cisterna llena). "Sin agua" arriba de SIAPA en el
     Tren, "Sin agua del SIAPA" en lugar de "Sin flujo" en Flujo, Resumen y
     Pasillo, y en Alarmas e Historial.
+  - Sin señal (P1, P2 o el nivel ya instalados que dejan de leer): "Sin
+    señal" en ámbar donde iría su número (Resumen, DetalleP, DetalleCaida,
+    Nivel, Pasillo, la caída y la cisterna del Tren; "Caída sin señal" en
+    Panorama; "sin señal" en Diagnóstico). En las etiquetas P1 y P2 del Tren
+    "P1 Sin señal" no cabe en 172 px: va el ícono de advertencia y el borde
+    ámbar. Sin señal no se deja Hacer cero ni marcar "Está llena" (guardaría
+    lo de un cable suelto). En Alarmas "P1 sin señal · revisa su cable" y en
+    Historial "P1 sin señal". Las gráficas de presión por hora sí anotan el
+    0 mientras dura (no hay hueco en la gráfica); al servidor no va nada.
 - Registrar una dosis prende la mezcla (`mixer_after_dose_min`) y la bomba R
   dice "Por la dosis de las 18:42".
 - En Diagnóstico, "Probar alarma" va sin ícono: con él no cabe en 239 px (en el
@@ -437,7 +452,7 @@ Pendiente, en este orden:
   "Servidor de la casa" dice "sin configurar" sin la URL de VictoriaMetrics,
   y el pie pierde "Firmware" si no cabe en 500 px (el del canvas mide 499),
   como con la versión de git ("30c340c+ · encendida hace 12 min"). Con red, el
-  renglón del WiFi dice la IP ("WiFi 192.168.1.120", a dónde manda
+  renglón del WiFi dice la IP ("WiFi 192.168.1.112", a dónde manda
   `subir-ota.sh`) y no el nombre de la red, que ya sale en Ajustes. Después
   de una actualización la placa arranca en Diagnóstico y el pie dice "a
   prueba: buena en 25 s" (o "sin red") en ámbar y luego "quedó como buena" en

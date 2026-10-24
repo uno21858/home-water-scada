@@ -37,6 +37,7 @@ lv_obj_t* LevelCalibrationScreen::create(lv_obj_t* parent) {
         lv_obj_t* button = button_secondary(c, 786, 1, 196, kRowText[i].button, handle_row, this);
         lv_obj_set_height(button, 56);
         lv_obj_set_user_data(button, reinterpret_cast<void*>(static_cast<uintptr_t>(i)));
+        buttons_[i] = button;
     }
     note_ = label(page, &font_label_26, colors::text_secondary, "");
     lv_obj_set_pos(note_, 16, 380);
@@ -49,7 +50,7 @@ void LevelCalibrationScreen::update(const core::SystemState& s) {
     cm_ = core::level_cm(s);
     sensor_cm_ = s.level_sensor_cm;
     intake_cm_ = s.level_intake_cm;
-    char buf[48];
+    char buf[72];  // la nota sin señal mide 52 bytes
     snprintf(buf, sizeof buf, "0 a %u cm", static_cast<unsigned>(s.level_range_cm));
     set_text(values_[range], buf);
     snprintf(buf, sizeof buf, "%.3f V", static_cast<double>(s.level_zero_volts));
@@ -65,9 +66,19 @@ void LevelCalibrationScreen::update(const core::SystemState& s) {
     }
     set_text(values_[full], buf);
 
-    snprintf(buf, sizeof buf, "Ahorita marca %ld cm desde el fondo y %.3f V.", std::lround(core::level_cm(s)),
-             static_cast<double>(s.level_volts));
+    // Sin señal lo que se guardara sería de un cable suelto: el cero y "Está
+    // llena" esperan a que regrese
+    const bool lost = s.no_signal.level;
+    lv_obj_set_disabled(buttons_[zero], lost);
+    lv_obj_set_disabled(buttons_[full], lost);
+    if (lost) {
+        snprintf(buf, sizeof buf, "Sin señal (%.3f V): revisa el cable del sensor.", static_cast<double>(s.level_volts));
+    } else {
+        snprintf(buf, sizeof buf, "Ahorita marca %ld cm desde el fondo y %.3f V.", std::lround(core::level_cm(s)),
+                 static_cast<double>(s.level_volts));
+    }
     set_text(note_, buf);
+    set_text_color(note_, lost ? colors::warning : colors::text_secondary);
 }
 
 void LevelCalibrationScreen::handle_row(lv_event_t* e) {

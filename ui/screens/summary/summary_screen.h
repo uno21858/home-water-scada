@@ -52,10 +52,18 @@ private:
     lv_obj_t* filters_live_ = nullptr;
     lv_obj_t* p1_value_ = nullptr;
     lv_obj_t* p2_value_ = nullptr;
+    // Sin señal: "Sin señal" en lugar de cifra y unidad (core::NoSignal)
+    struct Lost {
+        lv_obj_t* unit = nullptr;
+        lv_obj_t* word = nullptr;
+    };
+    Lost p1_lost_;
+    Lost p2_lost_;
     lv_obj_t* p1_marker_ = nullptr;
     lv_obj_t* p2_marker_ = nullptr;
     lv_obj_t* drop_tile_ = nullptr;
     lv_obj_t* drop_value_ = nullptr;
+    lv_obj_t* drop_unit_ = nullptr;
     lv_obj_t* drop_icon_ = nullptr;
     lv_obj_t* drop_word_ = nullptr;
     int drop_level_ = -1;
