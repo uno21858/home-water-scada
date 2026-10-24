@@ -32,6 +32,7 @@
 #include "screens/service_screen.h"
 #include "screens/spares_screen.h"
 #include "screens/summary_screen.h"
+#include "screens/update_screen.h"
 #include "theme/format.h"
 #include "theme/styles.h"
 
@@ -93,6 +94,7 @@ HistoryScreen history;
 SettingsScreen settings;
 IdleScreen idle;
 AlarmScreen alarm;
+UpdateScreen updating;  // actualización por WiFi
 FlowSensorScreen flow_sensor;
 PressureScreen pressure;
 DropScreen pressure_drop;
@@ -204,7 +206,8 @@ void init(const core::SystemState& s, const Actions& a) {
     dialog.create(lv_layer_top());
     keypad.create(lv_layer_top());
     idle.create(lv_layer_top(), [] { show(Screen::home); });  // encima de los diálogos
-    alarm.create(lv_layer_top());                                // y la alarma encima de todo
+    alarm.create(lv_layer_top());                                // la alarma encima de eso
+    updating.create(lv_layer_top());                             // y la actualización encima de todo
     lv_obj_update_layout(screen);
     lv_obj_update_layout(lv_layer_top());
 
@@ -241,6 +244,7 @@ void update(const core::SystemState& s) {
     level_calibration.update(s);
     idle.update(s);
     alarm.update(s);
+    updating.update(s);
 
     // Pasillo: nadie ha tocado la pantalla en los minutos de Ajustes
     const uint32_t idle_ms = static_cast<uint32_t>(s.idle_minutes) * 60u * 1000u;

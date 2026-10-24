@@ -257,6 +257,7 @@ void every_second(lv_timer_t*) {
         persist(true, true);
         ota::rollback();
     }
+    s.update = ota::progress();  // la pantalla de actualización
     ui::update(s);
 }
 

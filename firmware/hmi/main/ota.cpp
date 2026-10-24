@@ -12,6 +12,7 @@
 #include "esp_image_format.h"
 #include "esp_log.h"
 #include "esp_ota_ops.h"
+#include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "net.h"
@@ -55,6 +56,48 @@ private:
     bool owned_ = false;
 };
 
+// Lo que ve la pantalla de actualización (progress); lo tocan la tarea de la
+// URL y el servidor de subidas, y lo lee la de LVGL
+portMUX_TYPE status_lock = portMUX_INITIALIZER_UNLOCKED;
+core::UpdateStatus status{};
+int64_t failed_at_us = 0;
+constexpr int64_t kFailedShowUs = 15LL * 1000 * 1000;
+constexpr uint32_t kShowDoneMs = 2500;  // "Lista" en pantalla antes de reiniciar
+
+void report_start(const char* version) {
+    core::UpdateStatus fresh{};  // se arma afuera: en la sección crítica, nada de snprintf
+    fresh.stage = core::UpdateStage::receiving;
+    std::snprintf(fresh.version, sizeof fresh.version, "%.*s", static_cast<int>(sizeof fresh.version - 1), version);
+    taskENTER_CRITICAL(&status_lock);
+    status = fresh;
+    taskEXIT_CRITICAL(&status_lock);
+}
+
+void report_pct(std::size_t done, std::size_t total) {
+    if (total == 0) return;
+    const auto pct = static_cast<uint8_t>(std::min<std::size_t>(100, done * 100 / total));
+    taskENTER_CRITICAL(&status_lock);
+    status.pct = pct;
+    taskEXIT_CRITICAL(&status_lock);
+}
+
+void report_installed(bool waits_for_mixer) {
+    taskENTER_CRITICAL(&status_lock);
+    status.stage = core::UpdateStage::installed;
+    status.pct = 100;
+    status.waits_for_mixer = waits_for_mixer;
+    taskEXIT_CRITICAL(&status_lock);
+}
+
+void report_failed(core::UpdateFailure failure) {
+    const int64_t now = esp_timer_get_time();
+    taskENTER_CRITICAL(&status_lock);
+    status.stage = core::UpdateStage::failed;
+    status.failure = failure;
+    failed_at_us = now;
+    taskEXIT_CRITICAL(&status_lock);
+}
+
 // Para no llenar el monitor cada minuto: "no contesta" y "es la que ya
 // corre" se dicen una vez, hasta que cambie
 bool reachable = true;
@@ -84,7 +127,7 @@ Verdict judge(const esp_app_desc_t& incoming) {
 // Ya quedó la nueva para el siguiente arranque: reinicia cuando no esté la
 // bomba R corriendo. En su propia tarea, para no detener al que la mandó.
 void restart_when_free(void*) {
-    vTaskDelay(pdMS_TO_TICKS(1000));  // que salga la respuesta de la subida
+    vTaskDelay(pdMS_TO_TICKS(kShowDoneMs));  // que salga la respuesta y se vea "Lista"
     while (!can_install()) vTaskDelay(pdMS_TO_TICKS(kWaitMs));
     restart();
 }
@@ -140,11 +183,16 @@ void check() {
     }
 
     ESP_LOGI(kTag, "Bajando %.32s", incoming.version);
+    report_start(incoming.version);
+    const int total = esp_https_ota_get_image_size(handle);
     do {
         err = esp_https_ota_perform(handle);
+        const int read = esp_https_ota_get_image_len_read(handle);
+        if (total > 0 && read > 0) report_pct(static_cast<std::size_t>(read), static_cast<std::size_t>(total));
     } while (err == ESP_ERR_HTTPS_OTA_IN_PROGRESS);
     if (err != ESP_OK || !esp_https_ota_is_complete_data_received(handle)) {
         ESP_LOGW(kTag, "Se cortó la descarga (%s)", esp_err_to_name(err));
+        report_failed(core::UpdateFailure::cut);
         esp_https_ota_abort(handle);
         return;
     }
@@ -152,10 +200,13 @@ void check() {
     err = esp_https_ota_finish(handle);
     if (err != ESP_OK) {
         ESP_LOGE(kTag, "No se instaló %.32s (%s): ¿firmada con otra llave?", incoming.version, esp_err_to_name(err));
+        report_failed(err == ESP_ERR_OTA_VALIDATE_FAILED ? core::UpdateFailure::signature : core::UpdateFailure::other);
         return;
     }
     installed = true;
+    report_installed(!can_install());
     ESP_LOGI(kTag, "%.32s lista: reinicia en cuanto se pueda", incoming.version);
+    vTaskDelay(pdMS_TO_TICKS(kShowDoneMs));  // que se vea "Lista"
     while (!can_install()) vTaskDelay(pdMS_TO_TICKS(kWaitMs));
     restart();
 }
@@ -244,6 +295,7 @@ esp_err_t handle_upload(httpd_req_t* req) {
     }
 
     ESP_LOGI(kTag, "Recibiendo %.32s (%u KB)", incoming.version, static_cast<unsigned>(req->content_len / 1024));
+    report_start(incoming.version);
     esp_ota_handle_t ota = 0;
     esp_err_t err = esp_ota_begin(partition, req->content_len, &ota);  // borra solo lo que va a ocupar
     if (err == ESP_OK) err = esp_ota_write(ota, buf, kHeadBytes);
@@ -252,27 +304,33 @@ esp_err_t handle_upload(httpd_req_t* req) {
         if (!receive(req, buf, n)) {
             esp_ota_abort(ota);
             ESP_LOGW(kTag, "Se cortó la subida");
+            report_failed(core::UpdateFailure::cut);
             return ESP_FAIL;
         }
         err = esp_ota_write(ota, buf, n);
         left -= n;
+        report_pct(req->content_len - left, req->content_len);
     }
     if (err != ESP_OK) {
         if (ota != 0) esp_ota_abort(ota);
+        report_failed(core::UpdateFailure::other);
         std::snprintf(text, sizeof text, "No se pudo escribir (%s)", esp_err_to_name(err));
         return reply(req, "500 Internal Server Error", text);
     }
     err = esp_ota_end(ota);  // aquí se revisa la firma
     if (err == ESP_ERR_OTA_VALIDATE_FAILED) {
+        report_failed(core::UpdateFailure::signature);
         return reply(req, "422 Unprocessable Content", "La firma no es de la llave de la casa (o llegó dañado): no se instaló");
     }
     if (err == ESP_OK) err = esp_ota_set_boot_partition(partition);
     if (err != ESP_OK) {
+        report_failed(core::UpdateFailure::other);
         std::snprintf(text, sizeof text, "No se instaló (%s)", esp_err_to_name(err));
         return reply(req, "500 Internal Server Error", text);
     }
 
     installed = true;
+    report_installed(!can_install());
     xTaskCreate(restart_when_free, "ota_restart", 8192, nullptr, 2, nullptr);  // guarda la NVS: como la de la OTA
     std::snprintf(text, sizeof text, can_install() ? "Instalada %.32s: se reinicia sola"
                                                    : "Instalada %.32s: se reinicia cuando acabe la bomba R",
@@ -312,6 +370,15 @@ void start(bool (*can_install_now)(), void (*restart_now)()) {
         return;
     }
     xTaskCreate(task, "ota", 8192, nullptr, 2, nullptr);
+}
+
+core::UpdateStatus progress() {
+    const int64_t now = esp_timer_get_time();
+    taskENTER_CRITICAL(&status_lock);
+    if (status.stage == core::UpdateStage::failed && now - failed_at_us > kFailedShowUs) status = {};
+    const core::UpdateStatus copy = status;
+    taskEXIT_CRITICAL(&status_lock);
+    return copy;
 }
 
 Health check_health(uint32_t uptime_seconds, bool online) {

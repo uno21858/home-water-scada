@@ -99,7 +99,9 @@ Mientras llega el hardware, se desarrolla en el simulador con SDL (Mac y Fedora)
     `level_screen` (Nivel: la pestaña Cisterna sin sonda ORP, o el enlace
     Nivel de Cisterna con ella) y `level_calibration_screen` (Calibrar nivel).
     `alarm_screen` es la alarma a pantalla completa: va en `lv_layer_top()`
-    encima de todo, Pasillo incluido.
+    encima de todo, Pasillo incluido. `update_screen` (Actualizando) va
+    encima de la alarma mientras llega una versión por WiFi
+    (`SystemState::update`, que el firmware copia de `ota::progress()`).
   - Lo que la pantalla le pide a la app sale por `actions()`; un campo nuevo
     se captura con `open_keypad(KeypadSpec, callback)`.
 - `simulator/`: ventana SDL. `demo.cpp` llena el estado con los datos de ejemplo
@@ -165,7 +167,7 @@ CLion sale en la lista de configuraciones). La lista de targets está en
 demo, va también ahí.
 Escenarios: `sin-flujo`, `sin-red`, `alarma`, `sensor`, `tope`, `fase1`,
 `revisar`, `tapados`, `sin-agua`, `cisterna-vacia`, `sin-12v`, `nivel-bajo`, `atorada`,
-`ro-cocina` y `completo` (`demo::set_scenario` en `simulator/demo.h`).
+`ro-cocina`, `actualizando` y `completo` (`demo::set_scenario` en `simulator/demo.h`).
 El demo arranca como la casa de Erick, en la fase 1.5: todo menos la sonda ORP
 y las bombas A y B. `HMI_DEMO=completo` prende la sonda para comparar con el
 canvas. Dosis con 0.1 mL por litro (la prueba de jarras del documento: el
@@ -465,6 +467,13 @@ Pendiente, en este orden:
   espera agua ("Cisterna en 0 %: espera agua"). El demo trae un sensor de 0
   a 2 m, el mínimo en 60, lleno a 183 cm y con 150 cm (73 %); `sin-agua` lo
   baja a 70 cm y `cisterna-vacia` a 58 (0 %).
+- Actualizando no está en el canvas: pantalla completa en fondo con
+  "Actualizando", "De feb55f4+ a 1a2b3c4+", el % en la cifra de 72 con su
+  unidad de 36 y una barra de 640 en agua; al terminar "Lista" y "Reiniciando"
+  (o "Se reinicia cuando acabe la bomba R"). Si no se instala, "No se
+  actualizó" en ámbar, "Sigue la feb55f4+" y el porqué (firma de otra llave,
+  se cortó, no se pudo escribir); se quita sola a los 15 s. Se come los
+  toques mientras está.
 - Repuestos en casa no está en el canvas: Ajustes > Cartuchos lleva
   "Cambiar" junto a "Ver cartuchos" y abre un renglón por cartucho (del 20 µm
   al sarro; el prefiltro no lleva) con − y + de 0 a 99. Cada toque se ve al

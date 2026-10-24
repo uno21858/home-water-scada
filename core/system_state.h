@@ -130,6 +130,18 @@ struct Devices {
     bool ezo_orp = false;  // EZO-ORP por RS485 (fase 2)
 };
 
+// Una actualización por WiFi en curso (firmware/hmi/main/ota): la interfaz
+// la enseña encima de todo (ui/screens/update_screen.h)
+enum class UpdateStage : uint8_t { none, receiving, installed, failed };
+enum class UpdateFailure : uint8_t { cut, signature, other };
+struct UpdateStatus {
+    UpdateStage stage = UpdateStage::none;
+    UpdateFailure failure = UpdateFailure::other;
+    uint8_t pct = 0;               // lo que lleva de 0 a 100
+    bool waits_for_mixer = false;  // instalada, pero se reinicia hasta que acabe la bomba R
+    char version[12] = "";         // la que llega: "feb55f4+"
+};
+
 enum class MixerMode : uint8_t { off, on, automatic };
 
 // Por qué se prendió la bomba R
@@ -247,6 +259,7 @@ struct SystemState {
 
     // Diagnóstico
     Devices devices{};
+    UpdateStatus update{};       // actualización por WiFi en curso
     char firmware[12] = "";       // versión: "0.1"
     uint32_t uptime_minutes = 0;  // desde que se prendió
     uint32_t bucket_pulses = 0;   // pulsos de F desde que empezó la prueba de cubeta

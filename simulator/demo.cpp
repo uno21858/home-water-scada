@@ -244,6 +244,7 @@ core::SystemState make() {
 core::SystemState s = make();
 uint32_t seconds = 0;
 bool no_flow = false;  // escenario sin-flujo: el caudal se queda en 0
+bool updating = false;  // escenario actualizando: una vuelta de 40 s
 float liters_fraction = 0.0f;
 bool bucket_running = false;   // prueba de cubeta contando
 float bucket_fraction = 0.0f;
@@ -355,6 +356,8 @@ bool set_scenario(const char* name) {
         s.devices.ezo_orp = true;
     } else if (std::strcmp(name, "ro-cocina") == 0) {
         s.ro_kitchen_planned = true;
+    } else if (std::strcmp(name, "actualizando") == 0) {
+        updating = true;
     } else if (std::strcmp(name, "revisar") == 0) {
         drop(8);  // 5.4 psi más que los 2.6 de nuevos a 12.4 L/min
     } else if (std::strcmp(name, "tapados") == 0) {
@@ -400,8 +403,27 @@ void on_bucket_test_started() {
     bucket_running = true;
 }
 
+// Escenario actualizando: 20 s subiendo, 4 s "Lista", 2 s sin nada, 10 s
+// "No se actualizó" (firma de otra llave) y 4 s sin nada
+static void tick_update() {
+    const uint32_t t = seconds % 40;
+    core::UpdateStatus& u = s.update;
+    u = {};
+    std::snprintf(u.version, sizeof u.version, "feb55f4");
+    if (t < 20) {
+        u.stage = core::UpdateStage::receiving;
+        u.pct = static_cast<uint8_t>(t * 5);
+    } else if (t < 24) {
+        u.stage = core::UpdateStage::installed;
+    } else if (t >= 26 && t < 36) {
+        u.stage = core::UpdateStage::failed;
+        u.failure = core::UpdateFailure::signature;
+    }
+}
+
 void tick_1s() {
     ++seconds;
+    if (updating) tick_update();
     core::set_flow(s, no_flow ? 0.0f : 12.4f + 0.15f * std::sin(seconds / 3.0f));
 
     // Los litros enteros que contó F en este segundo, como el PCNT del firmware

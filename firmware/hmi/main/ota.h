@@ -15,6 +15,8 @@
 
 #include <cstdint>
 
+#include "system_state.h"
+
 namespace ota {
 
 inline constexpr uint32_t kHealthySeconds = 60;         // tiene que aguantar al menos esto
@@ -23,6 +25,10 @@ inline constexpr uint32_t kHealthTimeoutSeconds = 300;  // y conectarse antes de
 // can_install: ¿se puede reiniciar ahorita? restart: guarda todo y reinicia.
 // Los dos se llaman desde la tarea de la OTA.
 void start(bool (*can_install)(), void (*restart)());
+
+// Lo que va de una actualización, para la pantalla (la app lo copia a
+// SystemState::update cada segundo). Un fallo se ve 15 s y se quita.
+core::UpdateStatus progress();
 
 enum class Health : uint8_t { fine, testing, failed };
 

@@ -24,6 +24,8 @@ const core::SystemState& state();
 //              además la cisterna bajó del mínimo y la bomba R espera agua
 //   sin-12v    la bomba R sin 12 V; nivel-bajo y atorada, los otros avisos del INA219
 //   ro-cocina  el RO de la cocina por instalar (Panorama)
+//   actualizando  una versión nueva llegando por WiFi: sube, "Lista", y luego
+//              una que no se instala (firma de otra llave); y otra vez
 // Regresa false si el nombre no existe.
 bool set_scenario(const char* name);
 
