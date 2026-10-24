@@ -123,7 +123,8 @@ git pull; ./firmware/hmi/subir-ota.sh
 - En otra compu (la Mac): ESP-IDF v6.1 (arriba) y dos archivos que no van en
   git, copiados de la laptop: `secretos/firma_ota.pem` (con otra llave la
   placa no acepta nada) y `sdkconfig` (así las dos compilan igual: modo mesa,
-  bomba R, URL).
+  bomba R, URL). `wifi.csv` no: la red ya está grabada en la placa y la OTA no
+  la toca; solo hace falta para la primera carga por cable.
 
 La versión nueva arranca a prueba: si en 5 min no se conecta a la red, regresa
 sola a la anterior. Si se conecta, al minuto queda como buena. Ya probado en

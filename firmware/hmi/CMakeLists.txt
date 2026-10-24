@@ -57,5 +57,6 @@ target_compile_options(${lvgl_lib} PRIVATE -Wno-format)
 if(EXISTS ${CMAKE_CURRENT_LIST_DIR}/wifi.csv)
     nvs_create_partition_image(wifi ${CMAKE_CURRENT_LIST_DIR}/wifi.csv FLASH_IN_PROJECT)
 else()
-    message(WARNING "Falta firmware/hmi/wifi.csv (copia wifi.csv.ejemplo): la placa no se va a conectar")
+    # Para subir por WiFi no hace falta: la red ya está grabada en la placa
+    message(STATUS "Sin firmware/hmi/wifi.csv: idf.py flash no graba la red (subir-ota.sh no la necesita)")
 endif()
