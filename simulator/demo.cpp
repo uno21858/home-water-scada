@@ -358,6 +358,9 @@ bool set_scenario(const char* name) {
         s.ro_kitchen_planned = true;
     } else if (std::strcmp(name, "actualizando") == 0) {
         updating = true;
+    } else if (std::strcmp(name, "a-prueba") == 0) {
+        s.trial = core::FirmwareTrial::testing;
+        s.trial_seconds = 60;  // ota::kHealthySeconds
     } else if (std::strcmp(name, "revisar") == 0) {
         drop(8);  // 5.4 psi más que los 2.6 de nuevos a 12.4 L/min
     } else if (std::strcmp(name, "tapados") == 0) {
@@ -424,6 +427,8 @@ static void tick_update() {
 void tick_1s() {
     ++seconds;
     if (updating) tick_update();
+    // a-prueba: la cuenta baja con red y al llegar a 0 queda como buena
+    if (s.trial == core::FirmwareTrial::testing && --s.trial_seconds == 0) s.trial = core::FirmwareTrial::passed;
     core::set_flow(s, no_flow ? 0.0f : 12.4f + 0.15f * std::sin(seconds / 3.0f));
 
     // Los litros enteros que contó F en este segundo, como el PCNT del firmware

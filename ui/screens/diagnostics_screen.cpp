@@ -221,6 +221,26 @@ void DiagnosticsScreen::update(const core::SystemState& s) {
         snprintf(since, sizeof since, "%lu min", static_cast<unsigned long>(m));
     }
     const char* version = s.firmware[0] != '\0' ? s.firmware : "?";
+    // Recién actualizada: la cuenta de la prueba en lugar de cuánto lleva
+    // prendida (ota.h), en ámbar y luego en verde, con palabra
+    if (s.trial == core::FirmwareTrial::testing) {
+        // Sin red no cuenta (0): si no regresa en 5 min, vuelve a la anterior
+        if (s.trial_seconds > 0) {
+            snprintf(buf, sizeof buf, "%s · a prueba: buena en %u s", version, static_cast<unsigned>(s.trial_seconds));
+        } else {
+            snprintf(buf, sizeof buf, "%s · a prueba: sin red", version);
+        }
+        set_text(about_, buf);
+        set_text_color(about_, colors::warning);
+        return;
+    }
+    if (s.trial == core::FirmwareTrial::passed) {
+        snprintf(buf, sizeof buf, "%s · quedó como buena", version);
+        set_text(about_, buf);
+        set_text_color(about_, colors::ok);
+        return;
+    }
+    set_text_color(about_, colors::text_disabled);
     snprintf(buf, sizeof buf, "Firmware %s · encendida hace %s", version, since);
     lv_point_t size;
     lv_text_get_size(&size, buf, &font_label_26, 0, 0, LV_COORD_MAX, LV_TEXT_FLAG_NONE);

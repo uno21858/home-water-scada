@@ -113,7 +113,7 @@ void LevelScreen::update(const core::SystemState& s) {
     const float intake = static_cast<float>(s.level_intake_cm);
 
     // Lectura: % en grande y los cm. Sin marcar llena no hay %.
-    char buf[16];
+    char buf[24];  // un long de 64 bits en el simulador
     lv_obj_set_hidden(pct_, pct < 0);
     lv_obj_set_hidden(unit_, pct < 0);
     lv_obj_set_hidden(uncalibrated_, pct >= 0);

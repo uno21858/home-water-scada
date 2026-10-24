@@ -142,6 +142,10 @@ struct UpdateStatus {
     char version[12] = "";         // la que llega: "feb55f4+"
 };
 
+// Después de una actualización, la versión nueva arranca a prueba
+// (firmware/hmi/main/ota.h): Diagnóstico enseña cuánto le falta
+enum class FirmwareTrial : uint8_t { none, testing, passed };
+
 enum class MixerMode : uint8_t { off, on, automatic };
 
 // Por qué se prendió la bomba R
@@ -260,6 +264,8 @@ struct SystemState {
     // Diagnóstico
     Devices devices{};
     UpdateStatus update{};       // actualización por WiFi en curso
+    FirmwareTrial trial = FirmwareTrial::none;
+    uint16_t trial_seconds = 0;  // a prueba: lo que falta para quedar como buena
     char firmware[12] = "";       // versión: "0.1"
     uint32_t uptime_minutes = 0;  // desde que se prendió
     uint32_t bucket_pulses = 0;   // pulsos de F desde que empezó la prueba de cubeta

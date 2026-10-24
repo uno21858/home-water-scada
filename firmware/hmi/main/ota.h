@@ -13,6 +13,7 @@
 // La versión nueva arranca "a prueba": si en kHealthTimeoutSeconds no se
 // conecta a la red (sin red ya no llegaría otra OTA), regresa a la anterior.
 
+#include <cstddef>
 #include <cstdint>
 
 #include "system_state.h"
@@ -23,8 +24,13 @@ inline constexpr uint32_t kHealthySeconds = 60;         // tiene que aguantar al
 inline constexpr uint32_t kHealthTimeoutSeconds = 300;  // y conectarse antes de esto
 
 // can_install: ¿se puede reiniciar ahorita? restart: guarda todo y reinicia.
-// Los dos se llaman desde la tarea de la OTA.
-void start(bool (*can_install)(), void (*restart)());
+// status: escribe el checklist de GET /estado (lo que imprime subir-ota.sh
+// después de actualizar) y regresa cuántos bytes. Se llaman desde la tarea de
+// la OTA y desde el servidor de subidas.
+void start(bool (*can_install)(), void (*restart)(), std::size_t (*status)(char* buf, std::size_t size));
+
+// ¿Esta versión acaba de llegar y está a prueba? Se puede preguntar antes de start().
+bool on_trial();
 
 // Lo que va de una actualización, para la pantalla (la app lo copia a
 // SystemState::update cada segundo). Un fallo se ve 15 s y se quita.

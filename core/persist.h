@@ -39,8 +39,9 @@ enum class SaveGroup : uint8_t {
 inline constexpr SaveGroup kSaveGroups[] = {SaveGroup::settings, SaveGroup::counters, SaveGroup::history};
 
 // Lo guardado encima del estado de fábrica. Lo que no tenga sentido (flash
-// dañada, un campo de otra versión) regresa a su valor de fábrica.
-void load(SystemState& s, Store& store);
+// dañada, un campo de otra versión) regresa a su valor de fábrica. Regresa
+// cuántas llaves leyó: 0 es la primera vez, o que se perdió lo guardado.
+int load(SystemState& s, Store& store);
 
 // Guarda lo de ese grupo que cambió. Regresa cuántas llaves escribió, o -1 si
 // alguna no se pudo escribir.

@@ -552,7 +552,7 @@ void persist_round_trip() {
     CHECK(core::save(s, store, core::SaveGroup::counters) == 1);
 
     core::SystemState back;
-    core::load(back, store);
+    CHECK(core::load(back, store) == static_cast<int>(store.data.size()));  // leyó todas
     CHECK(back.flow_pulses_per_liter == 387);
     CHECK(back.p1_zero_psi == -3.0f);
     CHECK(back.level_full_cm == 183);

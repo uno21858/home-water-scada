@@ -32,6 +32,7 @@ constexpr std::size_t kHeadBytes = kDescOffset + sizeof(esp_app_desc_t);
 
 bool (*can_install)() = nullptr;
 void (*restart)() = nullptr;
+std::size_t (*status_text)(char* buf, std::size_t size) = nullptr;
 
 // Una sola escritura a la vez a la otra partición: la revisada de la URL o
 // una subida. Ya instalada una, ninguna más hasta reiniciar.
@@ -259,6 +260,14 @@ bool receive(httpd_req_t* req, char* buf, std::size_t n) {
     return true;
 }
 
+// GET /estado: el checklist de la app (subir-ota.sh lo imprime al terminar)
+esp_err_t handle_status(httpd_req_t* req) {
+    static char buf[1024];  // static: el servidor atiende de una en una
+    const std::size_t n = status_text != nullptr ? status_text(buf, sizeof buf) : 0;
+    httpd_resp_set_type(req, "text/plain; charset=utf-8");
+    return httpd_resp_send(req, buf, static_cast<ssize_t>(n));
+}
+
 // GET /version: lo que corre, para que el script diga si ya está al día
 esp_err_t handle_version(httpd_req_t* req) {
     httpd_resp_set_type(req, "text/plain; charset=utf-8");
@@ -368,6 +377,11 @@ void start_server() {
     version.method = HTTP_GET;
     version.handler = handle_version;
     httpd_register_uri_handler(server, &version);
+    httpd_uri_t state = {};
+    state.uri = "/estado";
+    state.method = HTTP_GET;
+    state.handler = handle_status;
+    httpd_register_uri_handler(server, &state);
     httpd_uri_t upload = {};
     upload.uri = "/ota";
     upload.method = HTTP_POST;
@@ -377,9 +391,10 @@ void start_server() {
 
 }  // namespace
 
-void start(bool (*can_install_now)(), void (*restart_now)()) {
+void start(bool (*can_install_now)(), void (*restart_now)(), std::size_t (*status_now)(char*, std::size_t)) {
     can_install = can_install_now;
     restart = restart_now;
+    status_text = status_now;
     start_server();
     if (CONFIG_HMI_OTA_URL[0] == '\0') {
         ESP_LOGI(kTag, "Sin URL de OTA: solo por subir-ota.sh");
@@ -397,12 +412,14 @@ core::UpdateStatus progress() {
     return copy;
 }
 
+bool on_trial() {
+    esp_ota_img_states_t state = ESP_OTA_IMG_UNDEFINED;
+    return esp_ota_get_state_partition(esp_ota_get_running_partition(), &state) == ESP_OK &&
+           state == ESP_OTA_IMG_PENDING_VERIFY;
+}
+
 Health check_health(uint32_t uptime_seconds, bool online) {
-    static bool testing = [] {
-        esp_ota_img_states_t state = ESP_OTA_IMG_UNDEFINED;
-        return esp_ota_get_state_partition(esp_ota_get_running_partition(), &state) == ESP_OK &&
-               state == ESP_OTA_IMG_PENDING_VERIFY;
-    }();
+    static bool testing = on_trial();
     if (!testing) return Health::fine;
     if (online && uptime_seconds >= kHealthySeconds) {
         esp_ota_mark_app_valid_cancel_rollback();

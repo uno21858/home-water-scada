@@ -114,7 +114,8 @@ git pull; ./firmware/hmi/subir-ota.sh
   argumento: `./subir-ota.sh 192.168.1.110`. Diagnóstico la dice en el
   renglón del WiFi. Los Deco van en modo AP: las IPs las da el módem.
 - Lo que contesta: "Instalada ...", "Ya tiene ...: nada que instalar", "La
-  firma no es de la llave de la casa" o "... ya falló una vez". Si justo está
+  firma no es de la llave de la casa" o "... ya falló una vez". Si la bomba R
+  está corriendo no espera: dice que se revise luego con `/estado`. Si justo está
   bajando de la URL, espera hasta 20 s a que acabe. Antes de
   compilar pregunta qué versión trae (`/version`); si no contesta, ni compila.
 - La placa compara el hash del binario, no la versión. Un `.bin` que ya falló
@@ -130,6 +131,35 @@ git pull; ./firmware/hmi/subir-ota.sh
 La versión nueva arranca a prueba: si en 5 min no se conecta a la red, regresa
 sola a la anterior. Si se conecta, al minuto queda como buena. Ya probado en
 la 7B (23 oct 2026, con la otra forma).
+
+Después de "Instalada" el script no se sale: espera a que la placa se
+reinicie con la nueva (hasta 3 min), a que pase la prueba (~1 min) y luego
+imprime cómo quedó, para revisarla desde arriba sin ir a verla:
+
+```text
+✓ Versión 1a2b3c4+: quedó como buena
+✓ Encendida hace 64 s
+✓ Táctil GT911
+✓ Expansor CH32V003
+✓ WiFi 192.168.1.112 · -63 dBm
+✓ Hora del NTP 2026-10-24 23:41
+✓ Memoria: leyó 52 datos guardados
+✓ ADS1115 · P1 0.501 V, P2 0.498 V, nivel 0.132 V, LDR 0.880 V
+· Detectados: presión sí, nivel sí, LDR sí
+· Bomba R: no está en menuconfig
+· Servidor: sin configurar
+```
+
+✗ es para revisar (el script sale con error); · solo dice. Si la nueva no
+arranca y el bootloader regresa a la anterior, lo dice. La placa, mientras,
+abre Diagnóstico sola y el pie dice "a prueba: buena en 45 s" en ámbar y luego
+"quedó como buena" en verde (10 min). Lo mismo cuando sea:
+`curl http://192.168.1.112/estado`.
+
+Si se va la luz a media actualización no pasa nada: la nueva se escribe en la
+otra partición y la placa solo cambia de partición cuando llegó completa y con
+la firma buena. Hasta ese momento sigue arrancando la de antes; se vuelve a
+mandar y ya.
 
 ### La otra forma: que la placa venga por él
 

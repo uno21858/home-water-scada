@@ -2,6 +2,8 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdarg>
+#include <cstdio>
 #include <cstring>
 #include <ctime>
 #include <new>
@@ -105,6 +107,8 @@ int last_minute = -1;
 bool was_flowing = false;
 bool test_alarm = false;        // la alarma de ahorita es la de Probar alarma
 float brightness = 100.0f;
+int loaded_keys = 0;            // lo que leyó de la NVS al arrancar (GET /estado)
+uint32_t passed_at = 0;         // el segundo en que la versión nueva quedó como buena
 
 // Desde que arrancó la app (sin contar el ROM ni el bootloader), para medir
 unsigned long ms_since_boot() { return static_cast<unsigned long>(esp_timer_get_time() / 1000); }
@@ -223,6 +227,35 @@ bool minute_passed() {
     return true;
 }
 
+// Recién actualizada, la versión nueva va a prueba (ota.h): Diagnóstico
+// enseña cuánto le falta y, ya buena, lo dice 10 min. Sin red en 5 min
+// regresa a la anterior.
+constexpr uint32_t kPassedShowSeconds = 10 * 60;
+
+void watch_trial() {
+    switch (ota::check_health(seconds, s.wifi_ok)) {
+        case ota::Health::failed:
+            persist(true, true);
+            ota::rollback();
+            break;
+        case ota::Health::testing:
+            s.trial = core::FirmwareTrial::testing;
+            // Sin red no hay cuenta: 0 es "sin red" en Diagnóstico
+            s.trial_seconds = s.wifi_ok && seconds < ota::kHealthySeconds
+                                  ? static_cast<uint16_t>(ota::kHealthySeconds - seconds)
+                                  : 0;
+            break;
+        case ota::Health::fine:
+            if (s.trial == core::FirmwareTrial::testing) {
+                s.trial = core::FirmwareTrial::passed;
+                passed_at = seconds;
+            } else if (s.trial == core::FirmwareTrial::passed && seconds - passed_at >= kPassedShowSeconds) {
+                s.trial = core::FirmwareTrial::none;
+            }
+            break;
+    }
+}
+
 // Cada segundo, dentro de la tarea de LVGL (con el lock tomado)
 void every_second(lv_timer_t*) {
     ++seconds;
@@ -253,10 +286,7 @@ void every_second(lv_timer_t*) {
     }
 
     adjust_brightness();
-    if (ota::check_health(seconds, s.wifi_ok) == ota::Health::failed) {
-        persist(true, true);
-        ota::rollback();
-    }
+    watch_trial();
     s.update = ota::progress();  // la pantalla de actualización
     ui::update(s);
 }
@@ -317,6 +347,9 @@ void lvgl_task(void*) {
     {
         Locked locked;
         ui::init(s, actions());
+        // Después de una actualización arranca en Diagnóstico: nadie tiene que
+        // picarle para ver que todo responde
+        if (ota::on_trial()) ui::show(ui::Screen::diagnostics);
         ESP_LOGI(kTag, "Pantallas armadas a los %lu ms", ms_since_boot());
         lv_timer_create(every_second, 1000, nullptr);
         board::start_display(display);
@@ -371,6 +404,100 @@ bool can_install() {
     return !s.mixer_on;
 }
 
+// Agrega un renglón al checklist sin pasarse del búfer
+class Lines {
+public:
+    Lines(char* buf, std::size_t size) : buf_(buf), size_(size) { buf_[0] = '\0'; }
+
+    // mark: ✓ bien, ✗ revisar, · solo dice (o no está instalado)
+    [[gnu::format(printf, 3, 4)]] void add(const char* mark, const char* format, ...) {
+        if (used_ + 1 >= size_) return;
+        std::va_list args;
+        va_start(args, format);
+        int n = std::snprintf(buf_ + used_, size_ - used_, "%s ", mark);
+        if (n > 0) used_ = std::min(size_ - 1, used_ + static_cast<std::size_t>(n));
+        n = std::vsnprintf(buf_ + used_, size_ - used_, format, args);
+        if (n > 0) used_ = std::min(size_ - 1, used_ + static_cast<std::size_t>(n));
+        va_end(args);
+        if (used_ + 1 < size_) {
+            buf_[used_++] = '\n';
+            buf_[used_] = '\0';
+        }
+    }
+    std::size_t size() const { return used_; }
+
+private:
+    char* buf_;
+    std::size_t size_;
+    std::size_t used_ = 0;
+};
+
+constexpr const char* kOk = "\u2713";
+constexpr const char* kBad = "\u2717";
+constexpr const char* kOff = "\u00b7";
+
+const char* mark(bool ok) { return ok ? kOk : kBad; }
+
+// GET /estado: lo que subir-ota.sh imprime al terminar, para revisar desde
+// arriba sin ir a la placa. El primer renglón dice si sigue a prueba.
+std::size_t status_text(char* buf, std::size_t size) {
+    Locked locked;
+    Lines out(buf, size);
+    switch (s.trial) {
+        case core::FirmwareTrial::testing:
+            if (s.trial_seconds > 0) {
+                out.add(kOff, "Versión %s: a prueba, buena en %u s", s.firmware, static_cast<unsigned>(s.trial_seconds));
+            } else {
+                out.add(kBad, "Versión %s: a prueba y sin red (en 5 min regresa a la anterior)", s.firmware);
+            }
+            break;
+        case core::FirmwareTrial::passed:
+            out.add(kOk, "Versión %s: quedó como buena", s.firmware);
+            break;
+        case core::FirmwareTrial::none:
+            out.add(kOk, "Versión %s", s.firmware);
+            break;
+    }
+    out.add(kOk, "Encendida hace %lu s", static_cast<unsigned long>(seconds));
+    out.add(mark(s.devices.gt911), "Táctil GT911%s", s.devices.gt911 ? "" : ": no responde");
+    out.add(mark(s.devices.expander), "Expansor CH32V003%s", s.devices.expander ? "" : ": no responde");
+    out.add(mark(s.wifi_ok), "WiFi %s · %d dBm", s.wifi_ok ? s.wifi_ip : "sin red", net::rssi());
+    if (net::time_valid()) {
+        const std::time_t now = std::time(nullptr);
+        std::tm local = {};
+        localtime_r(&now, &local);
+        char when[20];
+        std::strftime(when, sizeof when, "%Y-%m-%d %H:%M", &local);
+        out.add(kOk, "Hora del NTP %s", when);
+    } else {
+        out.add(kBad, "Sin hora del NTP todavía");
+    }
+    if (loaded_keys > 0) {
+        out.add(kOk, "Memoria: leyó %d datos guardados", loaded_keys);
+    } else {
+        out.add(kBad, "Memoria: no había nada guardado (primera vez o se borró)");
+    }
+    if (s.devices.ads1115) {
+        out.add(kOk, "ADS1115 · P1 %.3f V, P2 %.3f V, nivel %.3f V, LDR %.3f V", static_cast<double>(s.p1_volts),
+                static_cast<double>(s.p2_volts), static_cast<double>(s.level_volts), static_cast<double>(s.ldr_volts));
+        out.add(kOff, "Detectados: presión %s, nivel %s, LDR %s", s.has_pressure ? "sí" : "no", s.has_level ? "sí" : "no",
+                s.has_ldr ? "sí" : "no");
+    } else {
+        out.add(s.has_pressure || s.has_level || s.has_ldr ? kBad : kOff, "ADS1115: no responde");
+    }
+    if (s.has_mixer) {
+        out.add(mark(s.devices.ina219), "INA219 bomba R%s", s.devices.ina219 ? "" : ": no responde");
+    } else {
+        out.add(kOff, "Bomba R: no está en menuconfig");
+    }
+    if (s.has_server) {
+        out.add(mark(s.pending_uploads == 0), "Servidor: %lu por enviar", static_cast<unsigned long>(s.pending_uploads));
+    } else {
+        out.add(kOff, "Servidor: sin configurar");
+    }
+    return out.size();
+}
+
 void restart_for_update() {
     Locked locked;
     restart_locked();
@@ -399,7 +526,7 @@ void start() {
     // Lo que se guardó antes del reinicio. La bomba R arranca apagada y lo
     // que le faltaba queda pendiente.
     nvs.open();
-    core::load(s, nvs);
+    loaded_keys = core::load(s, nvs);
     core::mixer_after_restart(s);
     // Los sensores que ya se vieron vienen de la NVS; menuconfig solo agrega
     s.has_mixer = kHasMixer;
@@ -436,7 +563,7 @@ void start() {
         ESP_LOGE(kTag, "Sin red: falta grabar wifi.csv (idf.py flash)");
     }
     xTaskCreate(upload_task, "upload", 6 * 1024, nullptr, 2, nullptr);
-    if (has_wifi) ota::start(can_install, restart_for_update);  // sin red no hay a quién oír
+    if (has_wifi) ota::start(can_install, restart_for_update, status_text);  // sin red no hay a quién oír
 }
 
 }  // namespace app

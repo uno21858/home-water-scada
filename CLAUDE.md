@@ -46,7 +46,8 @@ Mientras llega el hardware, se desarrolla en el simulador con SDL (Mac y Fedora)
   - `persist`: lo que sobrevive a un reinicio. Cada campo en su llave de la
     NVS con su tamaño (si un firmware nuevo cambia uno, solo ese regresa a
     fábrica), en tres grupos: ajustes, contadores e historial. `save` solo
-    escribe lo que cambió y `load` no se cree lo que no tiene sentido.
+    escribe lo que cambió y `load` no se cree lo que no tiene sentido (y
+    dice cuántas llaves leyó: 0 es primera vez o que se perdió).
   - `level`: el sensor de nivel 4-20 mA del A2 (`level_cm` desde el fondo y
     `level_pct`, lo útil de la rejilla de la bomba de pozo a llena) y su
     calibración (`level_zero` en el aire, `level_mark_full`).
@@ -115,7 +116,9 @@ Mientras llega el hardware, se desarrolla en el simulador con SDL (Mac y Fedora)
   `core::Store`), `net` (WiFi, NTP, POST y la IP), `ota` (la placa recibe el
   `.bin` en `POST /ota` y dice su versión en `GET /version`, lo que usa
   `subir-ota.sh` desde cualquier compu; o lo baja de la URL de `menuconfig`,
-  `servir-ota.sh`) y `app`, que junta todo
+  `servir-ota.sh`. `GET /estado` es el checklist que arma `app`
+  (`status_text`) y que `subir-ota.sh` imprime cuando la nueva pasa la
+  prueba) y `app`, que junta todo
   como `simulator/main.cpp` y `demo.cpp`. La bomba R y las URLs van en
   `menuconfig` > Casa (P1 y P2, el nivel y el LDR se detectan solos); la red en `wifi.csv` y la llave de las OTA en
   `secretos/`, los dos fuera de git. Sin bomba R el GPIO44 no se toca y
@@ -167,7 +170,7 @@ CLion sale en la lista de configuraciones). La lista de targets está en
 demo, va también ahí.
 Escenarios: `sin-flujo`, `sin-red`, `alarma`, `sensor`, `tope`, `fase1`,
 `revisar`, `tapados`, `sin-agua`, `cisterna-vacia`, `sin-12v`, `nivel-bajo`, `atorada`,
-`ro-cocina`, `actualizando` y `completo` (`demo::set_scenario` en `simulator/demo.h`).
+`ro-cocina`, `actualizando`, `a-prueba` y `completo` (`demo::set_scenario` en `simulator/demo.h`).
 El demo arranca como la casa de Erick, en la fase 1.5: todo menos la sonda ORP
 y las bombas A y B. `HMI_DEMO=completo` prende la sonda para comparar con el
 canvas. Dosis con 0.1 mL por litro (la prueba de jarras del documento: el
@@ -281,6 +284,8 @@ casa (23 oct) ya conecta al WiFi del módem (RSSI −63, IP por DHCP), la hora
 del NTP sale bien y la OTA firmada jala de las dos formas: con la URL y
 `servir-ota.sh`, y empujando el `.bin` a `/ota` con `subir-ota.sh` desde la
 laptop o la Mac (24 oct; la Mac lleva la misma llave y el mismo `sdkconfig`).
+El checklist de después (`/estado`, Diagnóstico solo) se probó contra una
+placa de mentira y falta en la 7B.
 Falta probar la NVS después de un reinicio y los sensores (se detectan solos;
 las 22 pantallas quedan igual detectándolos en vivo que arrancando con ellos,
 comparado pixel por pixel). La red de la casa es una sola, 192.168.1.x (los Deco en modo AP, las
@@ -421,7 +426,10 @@ Pendiente, en este orden:
   y el pie pierde "Firmware" si no cabe en 500 px (el del canvas mide 499),
   como con la versión de git ("30c340c+ · encendida hace 12 min"). Con red, el
   renglón del WiFi dice la IP ("WiFi 192.168.1.120", a dónde manda
-  `subir-ota.sh`) y no el nombre de la red, que ya sale en Ajustes.
+  `subir-ota.sh`) y no el nombre de la red, que ya sale en Ajustes. Después
+  de una actualización la placa arranca en Diagnóstico y el pie dice "a
+  prueba: buena en 45 s" (o "sin red") en ámbar y luego "quedó como buena" en
+  verde 10 min (`SystemState::trial`); nadie tiene que picarle.
 - En Prueba de cubeta el demo cuenta como si F diera 387.2 pulsos por litro y
   se para en 3,872 (la marca), para que proponga 387 como el canvas.
 - Prueba de cubeta: el canvas da los pasos 1 y 2 por hechos y cuenta desde

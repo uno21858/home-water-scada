@@ -161,23 +161,31 @@ void sanitize(SystemState& s) {
 
 }  // namespace
 
-void load(SystemState& s, Store& store) {
+int load(SystemState& s, Store& store) {
+    int found = 0;
     for (SaveGroup group : kSaveGroups) {
-        each(group, s, [&store](const char* key, auto& field) {
+        each(group, s, [&store, &found](const char* key, auto& field) {
             using T = std::remove_reference_t<decltype(field)>;
             static_assert(std::is_trivially_copyable_v<T>, "solo campos que se copian byte por byte");
             if constexpr (std::is_same_v<T, bool>) {
                 // Un bool con otro byte que 0 o 1 no es válido: se lee el byte
                 uint8_t byte = 0;
                 static_assert(sizeof(bool) == sizeof byte, "un bool ocupa un byte");
-                if (store.read(key, &byte, sizeof byte)) field = byte == 1;
+                if (store.read(key, &byte, sizeof byte)) {
+                    field = byte == 1;
+                    ++found;
+                }
             } else {
                 T value{};
-                if (store.read(key, &value, sizeof value)) field = value;
+                if (store.read(key, &value, sizeof value)) {
+                    field = value;
+                    ++found;
+                }
             }
         });
     }
     sanitize(s);
+    return found;
 }
 
 int save(const SystemState& s, Store& store, SaveGroup group) {
