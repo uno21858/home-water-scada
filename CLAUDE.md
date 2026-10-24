@@ -410,7 +410,7 @@ Pendiente, en este orden:
   lleva el PWM del backlight
   (https://github.com/esphome/feature-requests/issues/3202). A3 es el LDR del
   brillo (`has_ldr`, `ldr_volts`). Sin bomba R el INA219 dice "sin bomba" y
-  no "No responde". El nombre de la red se corta con "..." antes de la señal,
+  no "No responde", salvo que conteste (llegó antes que la bomba). El nombre de la red se corta con "..." antes de la señal,
   "Servidor de la casa" dice "sin configurar" sin la URL de VictoriaMetrics,
   y el pie pierde "Firmware" si no cabe en 500 px (el del canvas mide 499),
   como con la versión de git ("30c340c+ · encendida hace 12 min").

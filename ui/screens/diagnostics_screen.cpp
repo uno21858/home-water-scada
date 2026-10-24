@@ -146,8 +146,9 @@ void DiagnosticsScreen::update(const core::SystemState& s) {
     analog(a2_, s.has_level, ads, s.level_volts, "libre");
     device(gt911_, s.devices.gt911);
     device(expander_, s.devices.expander);
-    // El INA219 vigila la bomba R: sin bomba no está conectado
-    if (s.has_mixer) {
+    // El INA219 vigila la bomba R: puede llegar antes que ella, y si contesta
+    // se ve aunque la bomba no esté en menuconfig
+    if (s.has_mixer || s.devices.ina219) {
         device(ina_, s.devices.ina219);
     } else {
         future(ina_, "sin bomba");
