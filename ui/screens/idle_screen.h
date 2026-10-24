@@ -45,6 +45,8 @@ private:
     lv_obj_t* pill_ = nullptr;
     lv_obj_t* pill_icon_ = nullptr;
     lv_obj_t* pill_text_ = nullptr;
+    lv_obj_t* wifi_ = nullptr;
+    const lv_image_dsc_t* wifi_src_ = nullptr;  // el ícono pintado: 3, 2 o 1 arcos o tachado
 
     lv_obj_t* flow_title_ = nullptr;
     lv_obj_t* flow_value_ = nullptr;

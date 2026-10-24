@@ -73,15 +73,19 @@ void IdleScreen::create(lv_obj_t* layer, Callback on_wake) {
     clock_ = label(root_, &font_title_xl_48, colors::text, "");
     lv_obj_set_pos(clock_, 32, 28);
 
-    // Pastilla de estado, más grande que la del encabezado
-    pill_ = row(root_, 10, LV_FLEX_ALIGN_CENTER);
+    // Arriba a la derecha el WiFi y la pastilla de estado, más grandes que en
+    // el encabezado. La pastilla queda donde la pone el canvas y el WiFi a su
+    // izquierda: crece hacia la izquierda con "Advertencia" sin encimarse.
+    lv_obj_t* corner = row(root_, 24, LV_FLEX_ALIGN_CENTER);
+    lv_obj_align(corner, LV_ALIGN_TOP_RIGHT, -32, 28);
+    wifi_ = icon(corner, &icon_wifi_40, colors::text_secondary);
+    pill_ = row(corner, 10, LV_FLEX_ALIGN_CENTER);
     lv_obj_set_height(pill_, 58);
     lv_obj_set_style_radius(pill_, LV_RADIUS_CIRCLE, 0);
     lv_obj_set_style_border_width(pill_, 2, 0);
     lv_obj_set_style_bg_opa(pill_, LV_OPA_COVER, 0);
     lv_obj_set_style_pad_left(pill_, 12, 0);
     lv_obj_set_style_pad_right(pill_, 22, 0);
-    lv_obj_align(pill_, LV_ALIGN_TOP_RIGHT, -32, 28);
     pill_icon_ = icon(pill_, &icon_ok_40, colors::ok);
     pill_text_ = label(pill_, &font_title_36, colors::ok, "");
 
@@ -124,6 +128,13 @@ void IdleScreen::update(const core::SystemState& s) {
     char buf[16];
     snprintf(buf, sizeof buf, "%02u:%02u", static_cast<unsigned>(s.hour), static_cast<unsigned>(s.minute));
     set_text(clock_, buf);
+
+    const lv_image_dsc_t* wifi = wifi_icon(s.wifi_ok, s.wifi_bars, true);
+    if (wifi != wifi_src_) {
+        wifi_src_ = wifi;
+        lv_image_set_src(wifi_, wifi);
+        set_icon_color(wifi_, s.wifi_ok ? colors::text_secondary : colors::warning);
+    }
 
     const PillLook look = pill_look(s);
     if (static_cast<int>(look.kind) != level_) {

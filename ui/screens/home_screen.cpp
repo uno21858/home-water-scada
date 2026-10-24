@@ -189,7 +189,7 @@ void HomeScreen::create_cistern(lv_obj_t* page) {
     // Abre Cisterna solo si hay qué ver ahí (sonda ORP o nivel): update() lo prende
     cistern_ = frame(page, 384, 284, 624, 92, colors::panel, colors::border_control, 10);
     link_to(cistern_, Screen::cistern);
-    // El agua: con sensor de nivel sube y baja; sin él, la raya de siempre
+    // El agua: con sensor de nivel sube y baja; sin lectura no se dibuja
     water_ = box(page, 386, kWaterTop, 620, kWaterBottom - kWaterTop);
     fill(water_, colors::water);
     lv_obj_set_style_bg_opa(water_, LV_OPA_20, 0);
@@ -408,7 +408,10 @@ void HomeScreen::update_level(const core::SystemState& s) {
         const float ratio = std::clamp(core::level_cm(s) / static_cast<float>(s.level_full_cm), 0.0f, 1.0f);
         y = kWaterBottom - static_cast<int32_t>(std::lround(ratio * static_cast<float>(kWaterBottom - kWaterTop)));
     }
+    // Sin lectura (sin sensor o sin calibrar) no hay agua que dibujar: la
+    // raya del canvas, siempre arriba, se leía como cisterna llena
     lv_obj_set_hidden(water_, !shown);
+    lv_obj_set_hidden(water_line_, !shown);
     lv_obj_set_y(water_line_, y);
     lv_obj_set_y(water_, y);
     lv_obj_set_height(water_, kWaterBottom - y);

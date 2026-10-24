@@ -371,6 +371,8 @@ Pendiente, en este orden:
   mientras el Pasillo está abierto (`kWave` en `idle_screen.cpp` la apaga si
   en la 7B pesa). "Cisterna 73 %" va abajo a la derecha, junto a la pista:
   en el renglón de Hoy, Caída y ORP no caben los cuatro. No está en el canvas.
+  Tampoco el WiFi de 40 (3, 2 o 1 arcos, o tachado en ámbar) a la izquierda
+  de la pastilla, que se queda donde la pone el canvas.
 - En Ajustes, "Cambiar red" sale deshabilitado: el canvas no tiene la vista
   que abre. Pantalla no lleva la tarjeta "Apagar la luz de noche" del canvas:
   el brillo lo lleva el LDR del firmware (de noche baja solo) y el Pasillo ya
@@ -471,7 +473,9 @@ Pendiente, en este orden:
   que se instala: rango de la etiqueta, cero en el aire, altura del sensor
   (2 o 3 cm del fondo para que no lo tape el lodo), la rejilla y Está llena.
   En el Tren el agua de la cisterna sube y baja con el nivel y dice "76 %
-  útil" (con sonda ORP, "Cisterna · 76 %"). Diagnóstico muestra el A2 en V.
+  útil" (con sonda ORP, "Cisterna · 76 %"). Sin lectura (sin sensor o sin
+  calibrar) no se dibuja agua: la raya del canvas, siempre arriba, se leía
+  como cisterna llena. Diagnóstico muestra el A2 en V.
   "Toma de la bomba de pozo" es el 0 %: Erick pone 60 cm (la rejilla anda
   en ~45 y la bomba R en ~50, así quedan cubiertas). En 0 % la bomba R
   espera agua ("Cisterna en 0 %: espera agua"). El demo trae un sensor de 0

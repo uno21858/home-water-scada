@@ -32,6 +32,10 @@ LV_IMAGE_DECLARE(icon_wifi_32);
 LV_IMAGE_DECLARE(icon_wifi_2_32);
 LV_IMAGE_DECLARE(icon_wifi_1_32);
 LV_IMAGE_DECLARE(icon_wifi_off_32);
+LV_IMAGE_DECLARE(icon_wifi_40);           // Pasillo, junto a la pastilla
+LV_IMAGE_DECLARE(icon_wifi_2_40);
+LV_IMAGE_DECLARE(icon_wifi_1_40);
+LV_IMAGE_DECLARE(icon_wifi_off_40);
 
 // Controles
 LV_IMAGE_DECLARE(icon_chevron_28);

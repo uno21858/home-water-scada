@@ -31,6 +31,9 @@ lv_obj_t* label(lv_obj_t* parent, const lv_font_t* font, uint32_t hex, const cha
 // Ícono A8: el color se lo pone image_recolor
 lv_obj_t* icon(lv_obj_t* parent, const lv_image_dsc_t* src, uint32_t hex);
 void set_icon_color(lv_obj_t* icon, uint32_t hex);
+// WiFi con 3, 2 o 1 arcos según la señal (wifi_bars) o tachado sin red, como
+// dice el DS. Con red lleva por lo menos un arco. large: el de 40 de Pasillo.
+const lv_image_dsc_t* wifi_icon(bool online, uint8_t bars, bool large);
 
 // Tarjeta del DS: panel con borde de 1 px y radio 10
 lv_obj_t* card(lv_obj_t* parent, int32_t x, int32_t y, int32_t w, int32_t h);

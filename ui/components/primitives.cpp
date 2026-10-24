@@ -1,5 +1,6 @@
 #include "components/primitives.h"
 
+#include <algorithm>
 #include <cstring>
 
 #include "theme/colors.h"
@@ -65,6 +66,14 @@ void set_text_color(lv_obj_t* label, uint32_t hex) {
 void set_icon_color(lv_obj_t* icon, uint32_t hex) {
     lv_obj_set_style_image_recolor(icon, color(hex), 0);
     lv_obj_set_style_image_recolor_opa(icon, LV_OPA_COVER, 0);
+}
+
+const lv_image_dsc_t* wifi_icon(bool online, uint8_t bars, bool large) {
+    // Por número de arcos: 0 es el tachado
+    static const lv_image_dsc_t* const kSmall[4] = {&icon_wifi_off_32, &icon_wifi_1_32, &icon_wifi_2_32, &icon_wifi_32};
+    static const lv_image_dsc_t* const kLarge[4] = {&icon_wifi_off_40, &icon_wifi_1_40, &icon_wifi_2_40, &icon_wifi_40};
+    const int arcs = online ? std::clamp<int>(bars, 1, 3) : 0;
+    return large ? kLarge[arcs] : kSmall[arcs];
 }
 
 lv_obj_t* card(lv_obj_t* parent, int32_t x, int32_t y, int32_t w, int32_t h) {

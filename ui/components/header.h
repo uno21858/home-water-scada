@@ -60,7 +60,7 @@ private:
     lv_obj_t* clock_ = nullptr;
     int level_ = -1;    // PillLook::Kind de lo pintado; -1 = todavía no se pinta
     int wifi_ok_ = -1;
-    int wifi_icon_ = -1;  // arcos pintados (1 a 3) o 0 tachado; -1 = todavía no se pinta
+    const lv_image_dsc_t* wifi_src_ = nullptr;  // el ícono pintado; nullptr = todavía no se pinta
 };
 
 }  // namespace ui
