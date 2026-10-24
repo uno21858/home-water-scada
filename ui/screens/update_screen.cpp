@@ -6,6 +6,7 @@
 #include "components/primitives.h"
 #include "theme/colors.h"
 #include "theme/fonts.h"
+#include "theme/icons.h"
 
 // No está en el canvas: centrada, con las piezas del DS (título de 48, cifra
 // de 72 con su unidad de 36 y una barra como la de Cartuchos, en agua).
@@ -35,18 +36,25 @@ void UpdateScreen::create(lv_obj_t* layer) {
     lv_obj_set_clickable(root_, true);  // se come los toques: que nadie mueva nada mientras
 
     title_ = label(root_, &font_title_xl_48, colors::text, "");
-    lv_obj_align(title_, LV_ALIGN_TOP_MID, 0, 128);
-    versions_ = label(root_, &font_body_32, colors::text_secondary, "");
-    lv_obj_align(versions_, LV_ALIGN_TOP_MID, 0, 200);
+    lv_obj_align(title_, LV_ALIGN_TOP_MID, 0, 112);
+
+    // De cuál a cuál, con flecha y aire (Erick, 24 oct): la que llega en texto
+    // y la de ahorita en texto-2
+    versions_ = row(root_, 24, LV_FLEX_ALIGN_CENTER);
+    lv_obj_align(versions_, LV_ALIGN_TOP_MID, 0, 192);
+    from_ = label(versions_, &font_title_36, colors::text_secondary, "");
+    // La → de Montserrat sale chiquita a 36 px: va el ícono, con el trazo de los demás
+    arrow_ = icon(versions_, &icon_flecha_32, colors::text_secondary);
+    to_ = label(versions_, &font_title_36, colors::text, "");
 
     // Cifra y unidad en la misma línea base (docs/diseno/ds/lvgl.md)
     amount_ = row(root_, 4, LV_FLEX_ALIGN_END);
-    lv_obj_align(amount_, LV_ALIGN_TOP_MID, 0, 262);
+    lv_obj_align(amount_, LV_ALIGN_TOP_MID, 0, 268);
     pct_ = label(amount_, &font_digits_72, colors::text, "0");
     lv_obj_t* unit = label(amount_, &font_title_36, colors::text_secondary, "%");
     lv_obj_set_style_pad_bottom(unit, 2, 0);
 
-    track_ = box(root_, (1024 - kTrackWidth) / 2, 372, kTrackWidth, 16);
+    track_ = box(root_, (1024 - kTrackWidth) / 2, 380, kTrackWidth, 16);
     lv_obj_set_style_radius(track_, 8, 0);
     lv_obj_set_style_clip_corner(track_, true, 0);
     fill(track_, colors::panel_raised);
@@ -73,10 +81,13 @@ void UpdateScreen::update(const core::SystemState& s) {
     char buf[64];
     if (failed) {
         snprintf(buf, sizeof buf, "Sigue la %s", s.firmware);
+        set_text(from_, buf);
     } else {
-        snprintf(buf, sizeof buf, "De %s a %s", s.firmware, u.version);
+        set_text(from_, s.firmware);
+        set_text(to_, u.version);
     }
-    set_text(versions_, buf);
+    lv_obj_set_hidden(arrow_, failed);
+    lv_obj_set_hidden(to_, failed);
 
     lv_obj_set_hidden(amount_, failed);
     lv_obj_set_hidden(track_, failed);
@@ -91,7 +102,7 @@ void UpdateScreen::update(const core::SystemState& s) {
     set_text(note_, note);
     set_text_color(note_, failed ? colors::text : colors::text_secondary);
     // Sin cifra ni barra, el porqué sube a donde iba la cifra
-    lv_obj_align(note_, LV_ALIGN_TOP_MID, 0, failed ? 262 : 428);
+    lv_obj_align(note_, LV_ALIGN_TOP_MID, 0, failed ? 268 : 436);
 }
 
 }  // namespace ui

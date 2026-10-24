@@ -311,7 +311,9 @@ esp_err_t handle_upload(httpd_req_t* req) {
     ESP_LOGI(kTag, "Recibiendo %.32s (%u KB)", incoming.version, static_cast<unsigned>(req->content_len / 1024));
     report_start(incoming.version);
     esp_ota_handle_t ota = 0;
-    esp_err_t err = esp_ota_begin(partition, req->content_len, &ota);  // borra solo lo que va a ocupar
+    // Borra conforme escribe (como esp_https_ota): borrar de golpe los 2.3 MB
+    // dejaba la barra en 0 % varios segundos antes de empezar
+    esp_err_t err = esp_ota_begin(partition, OTA_WITH_SEQUENTIAL_WRITES, &ota);
     if (err == ESP_OK) err = esp_ota_write(ota, buf, kHeadBytes);
     for (std::size_t left = req->content_len - kHeadBytes; err == ESP_OK && left > 0;) {
         const std::size_t n = std::min(left, sizeof buf);

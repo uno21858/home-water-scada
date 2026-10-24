@@ -468,7 +468,9 @@ Pendiente, en este orden:
   a 2 m, el mínimo en 60, lleno a 183 cm y con 150 cm (73 %); `sin-agua` lo
   baja a 70 cm y `cisterna-vacia` a 58 (0 %).
 - Actualizando no está en el canvas: pantalla completa en fondo con
-  "Actualizando", "De feb55f4+ a 1a2b3c4+", el % en la cifra de 72 con su
+  "Actualizando", "a7dc67c+ → a7bd074+" a 36 px con 24 de aire (la que corre
+  en texto-2, la que llega en texto; la flecha es el ícono `flecha`, porque
+  la → de Montserrat sale chiquita), el % en la cifra de 72 con su
   unidad de 36 y una barra de 640 en agua; al terminar "Lista" y "Reiniciando"
   (o "Se reinicia cuando acabe la bomba R"). Si no se instala, "No se
   actualizó" en ámbar, "Sigue la feb55f4+" y el porqué (firma de otra llave,

@@ -18,7 +18,10 @@ public:
 private:
     lv_obj_t* root_ = nullptr;
     lv_obj_t* title_ = nullptr;
-    lv_obj_t* versions_ = nullptr;
+    lv_obj_t* versions_ = nullptr;  // la fila "a7dc67c+ → a7bd074+"
+    lv_obj_t* from_ = nullptr;
+    lv_obj_t* arrow_ = nullptr;
+    lv_obj_t* to_ = nullptr;
     lv_obj_t* amount_ = nullptr;  // la fila "45 %"
     lv_obj_t* pct_ = nullptr;
     lv_obj_t* track_ = nullptr;
