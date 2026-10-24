@@ -22,6 +22,11 @@ constexpr uint32_t kWaitMs = 30 * 1000;        // cada cuánto vuelve a ver si y
 bool (*can_install)() = nullptr;
 void (*restart)() = nullptr;
 
+// Para no llenar el monitor cada minuto: "no contesta" y "es la que ya
+// corre" se dicen una vez, hasta que cambie
+bool reachable = true;
+uint8_t said_same[32] = {};  // app_elf_sha256 de la que ya se dijo
+
 // ¿Vale la pena bajar este binario?
 bool wanted(const esp_app_desc_t& incoming) {
     const esp_app_desc_t* running = esp_app_get_description();
@@ -30,8 +35,12 @@ bool wanted(const esp_app_desc_t& incoming) {
         return false;
     }
     if (std::memcmp(incoming.app_elf_sha256, running->app_elf_sha256, sizeof incoming.app_elf_sha256) == 0) {
-        // Cuelga después de la cabecera: en http.server sale un ConnectionResetError
-        ESP_LOGI(kTag, "%.32s es la que ya corre: nada que instalar", incoming.version);
+        // Cuelga después de la cabecera (servir_ota.py lo ve y se sale)
+        static_assert(sizeof said_same == sizeof incoming.app_elf_sha256);
+        if (std::memcmp(said_same, incoming.app_elf_sha256, sizeof said_same) != 0) {
+            ESP_LOGI(kTag, "%.32s es la que ya corre: nada que instalar", incoming.version);
+            std::memcpy(said_same, incoming.app_elf_sha256, sizeof said_same);
+        }
         return false;
     }
     const esp_partition_t* failed = esp_ota_get_last_invalid_partition();
@@ -59,9 +68,15 @@ void check() {
     esp_https_ota_handle_t handle = nullptr;
     esp_err_t err = esp_https_ota_begin(&config, &handle);
     if (err != ESP_OK) {
-        ESP_LOGW(kTag, "No se pudo leer %s (%s)", url, esp_err_to_name(err));
+        if (reachable) {
+            ESP_LOGI(kTag, "Nadie sirve %s (%s): sigo revisando cada %d min", url, esp_err_to_name(err),
+                     CONFIG_HMI_OTA_CHECK_MINUTES);
+        }
+        reachable = false;
         return;
     }
+    if (!reachable) ESP_LOGI(kTag, "%s ya contesta", url);
+    reachable = true;
     esp_app_desc_t incoming = {};
     if (esp_https_ota_get_img_desc(handle, &incoming) != ESP_OK || !wanted(incoming)) {
         esp_https_ota_abort(handle);

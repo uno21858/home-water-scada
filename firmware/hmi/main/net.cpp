@@ -5,6 +5,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
+#include <initializer_list>
 
 #include "esp_crt_bundle.h"
 #include "esp_event.h"
@@ -50,6 +51,12 @@ void on_event(void*, esp_event_base_t base, int32_t id, void*) {
 }  // namespace
 
 void start(const char* ssid, const char* password) {
+    // Cada conexión que falla (sin servidor de OTA o de datos) son 4 a 6
+    // renglones rojos de estos componentes de IDF; ota y net lo dicen en uno
+    for (const char* tag : {"esp_https_ota", "HTTP_CLIENT", "esp-tls", "transport_base", "transport"}) {
+        esp_log_level_set(tag, ESP_LOG_NONE);
+    }
+
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
     esp_netif_t* netif = esp_netif_create_default_wifi_sta();

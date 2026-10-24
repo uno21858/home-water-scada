@@ -133,7 +133,9 @@ Si compilas en otra compu (la Mac), lleva la misma llave
 La placa compara el hash del binario, no la versión: lo que esté en la URL es lo
 que va a correr. Un `.bin` que ya falló una vez no se vuelve a instalar. Si es
 el mismo que ya corre, la placa lo deja después de la cabecera ("es la que ya
-corre" en el monitor). Después de un `git pull` o un commit, `idf.py build`
+corre" en el monitor, una vez) y no borra nada de la flash: ESP-IDF solo borra
+la partición cuando de verdad empieza a bajar. Sin nadie sirviendo, el monitor
+dice una vez "Nadie sirve ..." y sigue revisando callado. Después de un `git pull` o un commit, `idf.py build`
 vuelve a configurar CMake solo, para que la versión sea la del commit nuevo.
 
 ## Conectar los sensores
