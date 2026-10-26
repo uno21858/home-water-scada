@@ -50,6 +50,8 @@ void mixer_status(char* out, size_t size, const core::SystemState& s) {
     const core::MixerReason reason = s.mixer_run_count > 0 ? s.mixer_runs[0].reason : core::MixerReason::manual;
     if (s.mixer_fault != core::MixerFault::none) {
         snprintf(out, size, "%s", fmt::mixer_fault_hint(static_cast<unsigned>(s.mixer_fault)));
+    } else if (s.mixer_bench) {
+        snprintf(out, size, "Prueba de banco: no cuida el nivel");
     } else if (!s.mixer_on && s.mixer_mode != core::MixerMode::off && core::mixer_low_water(s)) {
         snprintf(out, size, "Cisterna en 0 %%: espera agua");
     } else if (s.mixer_on && reason == core::MixerReason::dose) {
@@ -74,8 +76,14 @@ void mixer_status(char* out, size_t size, const core::SystemState& s) {
 
 void mixer_state(lv_obj_t* label, const core::SystemState& s) {
     const bool fault = s.mixer_fault != core::MixerFault::none;
-    set_text(label, fault ? fmt::mixer_fault(static_cast<unsigned>(s.mixer_fault)) : s.mixer_on ? "Prendida" : "Apagada");
-    set_text_color(label, fault ? colors::warning : colors::text);
+    // En prueba de banco dice "Banco" en lugar de Prendida o Apagada (el
+    // impulsor y los minutos dicen si anda); un aviso pesa más
+    const char* text = fault ? fmt::mixer_fault(static_cast<unsigned>(s.mixer_fault))
+                       : s.mixer_bench ? "Banco"
+                       : s.mixer_on    ? "Prendida"
+                                       : "Apagada";
+    set_text(label, text);
+    set_text_color(label, fault || s.mixer_bench ? colors::warning : colors::text);
 }
 
 }  // namespace ui

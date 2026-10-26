@@ -492,6 +492,8 @@ void on_mixer_after_dose(uint32_t minutes) { s.mixer_after_dose_min = static_cas
 
 void on_mixer_every_liters(uint32_t minutes) { s.mixer_every_liters_min = static_cast<uint8_t>(minutes); }
 
+void on_mixer_bench(bool on) { core::mixer_set_bench(s, on); }
+
 void on_level_range(uint32_t cm) {
     if (cm > 0) s.level_range_cm = static_cast<uint16_t>(cm);
 }

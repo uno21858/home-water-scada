@@ -32,7 +32,19 @@ Mientras llega el hardware, se desarrolla en el simulador con SDL (Mac y Fedora)
     60 y queda Apagada. Con un aviso del INA219 la vuelta queda pendiente, y
     con la cisterna en 0 % (el mínimo de Calibrar nivel) no arranca o se
     apaga: corre cuando sube el agua. Después de un reinicio arranca apagada
-    y lo que faltaba queda pendiente (`mixer_after_restart`).
+    y lo que faltaba queda pendiente (`mixer_after_restart`). Prueba de
+    banco (`mixer_set_bench`, `mixer_bench`): no espera a la cisterna en 0 %
+    ni la apaga el nivel bajo; atorada y sin 12 V siguen. No se guarda: se
+    quita al reiniciar, y mientras la pastilla va en Advertencia.
+  - `mixer_watch`: atorada y en seco con cada lectura del INA219 (en la 7B,
+    una cada ~50 ms en la tarea de sensores). 500 ms de ventana ciega al
+    prenderla (el arranque jala de 3 a 5 veces) y luego 500 ms seguidos
+    arriba de `stuck_amps` o abajo de `dry_amps`; un hueco de más de 200 ms
+    entre lecturas reinicia la cuenta. Con 1.90 A y una lectura suelta por
+    segundo salía Atorada recién prendida (Erick, 26 oct 2026: la ZYW680
+    jala ~1.7 A con 11.9 V; lo más probable, el rizo de las escobillas);
+    atorada quedó en 2.50. Atorada se queda hasta apagarla; en seco es lo
+    de cada momento.
   - `monitor`: `tick_minute` (cada minuto: muestras, bomba R, modo de cambio y
     el aviso de sin agua) y el modo de cambio de cartuchos (`service_start`,
     `service_end`). Cierra los avisos de caída que dejó el firmware de antes
@@ -111,7 +123,7 @@ Mientras llega el hardware, se desarrolla en el simulador con SDL (Mac y Fedora)
     DetalleCaida, Cartuchos, Cambio de cartuchos, Leyenda y Panorama),
     `summary/`, `flow/` (y DetalleF), `cistern/` (Mezcla, Nivel y Calibrar
     nivel), `dose/` (Inyección), `history/` (Alarmas) y `settings/`
-    (Diagnóstico, Prueba de cubeta y Repuestos). Las que van en
+    (Diagnóstico, Prueba de cubeta, Prueba de banco y Repuestos). Las que van en
     `lv_layer_top()`, encima de todo, en `overlays/` (Pasillo, la alarma y
     Actualizando). Una pantalla nueva va donde la ponga su `kPages`.
     `home_screen` (Tren), `summary_screen` (Resumen), `flow_screen`
@@ -128,6 +140,8 @@ Mientras llega el hardware, se desarrolla en el simulador con SDL (Mac y Fedora)
     `legend_screen` (Símbolos del diagrama, el "?" del Tren),
     `overview_screen` (Panorama de la casa, Casa en el Tren),
     `spares_screen` (Repuestos en casa, Cambiar en Ajustes > Cartuchos),
+    `bench_screen` (Prueba de banco de la bomba R, el enlace Banco de
+    Diagnóstico),
     `service_screen` (Cambio de cartuchos, el enlace Cambio de Cartuchos),
     `level_screen` (Nivel: la pestaña Cisterna sin sonda ORP, o el enlace
     Nivel de Cisterna con ella) y `level_calibration_screen` (Calibrar nivel).
@@ -171,7 +185,9 @@ Mientras llega el hardware, se desarrolla en el simulador con SDL (Mac y Fedora)
   Ω), por R9 de 10k con 100 nF: `level_volts` es lo que lee el A2, y `load`
   solo se cree un cero en el aire de 3 a 5 mA. El
   INA219 apaga la bomba R y deja `mixer_fault` (sin 12 V, nivel bajo,
-  atorada); el firmware lo quita cuando se arregla. El RS485 de la 7B es solo para
+  atorada); el firmware lo quita cuando se arregla. Sin 12 V lo revisa la
+  app a los 3 s; nivel bajo y atorada, la tarea de `sensors` con
+  `core::mixer_watch` y la app lo pasa a `core` cada segundo. El RS485 de la 7B es solo para
   el EZO-ORP de la fase 2, y las bombas A y B (fase 3) van por un PCF8574
   (0x20). Del repo de Waveshare de la 7B
   (github.com/waveshareteam/ESP32-S3-Touch-LCD-7B): el expansor está en 0x24
@@ -477,6 +493,12 @@ Pendiente, en este orden:
     0 mientras dura (no hay hueco en la gráfica); al servidor no va nada.
 - Registrar una dosis prende la mezcla (`mixer_after_dose_min`) y la bomba R
   dice "Por la dosis de las 18:42".
+- Prueba de banco no está en el canvas: el enlace "Banco" de Diagnóstico
+  (en Mezcla no cabe junto a "Mezcla de la cisterna" y la pastilla
+  Advertencia) abre los pasos con el acomodo de Cambio de cartuchos.
+  "Empezar" pide confirmación; mientras dura, la bomba R dice "Banco" en
+  ámbar en lugar de Prendida o Apagada (Mezcla, Resumen y la R del Tren),
+  abajo "Prueba de banco: no cuida el nivel" y la pastilla va en Advertencia.
 - En Diagnóstico, "Probar alarma" va sin ícono: con él no cabe en 239 px (en el
   canvas se sale del botón). El canvas es de la 5B con un nodo; aquí es el
   mapa de pines de la 7B del documento: Entradas (GPIO6, A0, A1, A3 y A2

@@ -6,6 +6,8 @@
 
 #include <cstdint>
 
+#include "system_state.h"
+
 namespace sensors {
 
 struct Readings {
@@ -20,6 +22,9 @@ struct Readings {
     bool ina_ok = false;      // el INA219 contestó la última vuelta
     float mixer_volts = 0.0f;
     float mixer_amps = 0.0f;
+    // Atorada o en seco según todas las lecturas desde que se prendió la bomba
+    // R (core/mixer_watch.h); none mientras no pase nada o si está apagada
+    core::MixerFault mixer_fault = core::MixerFault::none;
 };
 
 // El GPIO44 en bajo. Lo primero que hace app_main (documento: antes de
@@ -33,7 +38,8 @@ void start();
 // La lectura más nueva, promediada (16 muestras por canal del ADS1115)
 Readings latest();
 
-// Prende o apaga la bomba R
+// Prende o apaga la bomba R. Al prenderla empieza la vigilancia de su
+// corriente (con su ventana ciega); al apagarla se olvida la falla.
 void set_pump(bool on);
 
 }  // namespace sensors

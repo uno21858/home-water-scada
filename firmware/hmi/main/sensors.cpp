@@ -6,8 +6,10 @@
 #include "driver/gpio.h"
 #include "driver/pulse_cnt.h"
 #include "esp_log.h"
+#include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "mixer_watch.h"
 #include "sdkconfig.h"
 
 namespace sensors {
@@ -59,6 +61,18 @@ i2c_master_dev_handle_t ina = nullptr;
 // Lo que deja la tarea para latest(). Un spinlock basta: solo se copian floats.
 portMUX_TYPE lock = portMUX_INITIALIZER_UNLOCKED;
 Readings shared;
+
+// La bomba R, bajo el mismo lock: set_pump() la prende y cuenta cuántas veces
+// (cada vez que cambia, la tarea empieza otra ventana ciega)
+bool pump_on = false;
+uint32_t pump_starts = 0;
+
+// Umbrales de menuconfig > Casa > Bomba R (INA219)
+constexpr core::MixerLimits kMixerLimits{CONFIG_HMI_MIXER_MIN_VOLTS_X10 / 10.0f,
+                                         CONFIG_HMI_MIXER_DRY_AMPS_X100 / 100.0f,
+                                         CONFIG_HMI_MIXER_STUCK_AMPS_X100 / 100.0f};
+
+uint32_t now_ms() { return static_cast<uint32_t>(esp_timer_get_time() / 1000); }
 
 // Promedio de las últimas kAverage muestras de un canal
 class Average {
@@ -117,10 +131,14 @@ bool ina_read(float* volts, float* amps) {
 }
 
 // Lee el I2C sin parar: una vuelta por los 4 canales son ~45 ms, así que el
-// promedio de 16 cubre ~0.7 s
+// promedio de 16 cubre ~0.7 s. Con la bomba R prendida, cada lectura del
+// INA219 pasa por core::mixer_watch_sample: atorada o en seco solo con 500 ms
+// seguidos, no con la lectura suelta que la app ve cada segundo.
 void task(void*) {
     std::array<Average, kAdsChannels> average;
     std::array<float, kAdsChannels> volts{};
+    core::MixerWatch watch;
+    uint32_t watched_start = 0;  // la vuelta de pump_starts que vigila watch
     while (true) {
         bool ads_ok = ads != nullptr;
         for (int ch = 0; ch < kAdsChannels && ads_ok; ++ch) {
@@ -131,6 +149,20 @@ void task(void*) {
         float mixer_volts = 0.0f;
         float mixer_amps = 0.0f;
         const bool ina_ok = ina != nullptr && ina_read(&mixer_volts, &mixer_amps);
+
+        portENTER_CRITICAL(&lock);
+        const bool on = pump_on;
+        const uint32_t starts = pump_starts;
+        portEXIT_CRITICAL(&lock);
+        core::MixerFault fault = core::MixerFault::none;
+        if (on) {
+            const uint32_t now = now_ms();
+            if (starts != watched_start) {
+                watched_start = starts;
+                core::mixer_watch_start(watch, now);
+            }
+            fault = core::mixer_watch_sample(watch, kMixerLimits, now, ina_ok, mixer_volts, mixer_amps);
+        }
 
         portENTER_CRITICAL(&lock);
         shared.ads_ok = ads_ok;
@@ -146,6 +178,16 @@ void task(void*) {
         if (ina_ok) {
             shared.mixer_volts = mixer_volts;
             shared.mixer_amps = mixer_amps;
+        }
+        // La app lo lee una vez por segundo. Atorada se queda hasta que la
+        // apague, para que no se pierda entre dos lecturas; en seco es lo de
+        // ahorita: si la corriente ya regresó (en banco la sacaron un momento
+        // del agua) ya no cuenta. Si se apagó o se volvió a prender mientras,
+        // esta lectura ya no es de esa vuelta.
+        if (!pump_on || pump_starts != starts) {
+            shared.mixer_fault = core::MixerFault::none;
+        } else if (shared.mixer_fault != core::MixerFault::stuck) {
+            shared.mixer_fault = fault;
         }
         portEXIT_CRITICAL(&lock);
 
@@ -211,7 +253,13 @@ Readings latest() {
 }
 
 void set_pump(bool on) {
-    if (kHasPump) gpio_set_level(kPumpPin, on ? 1 : 0);
+    if (!kHasPump) return;
+    gpio_set_level(kPumpPin, on ? 1 : 0);
+    portENTER_CRITICAL(&lock);
+    if (on && !pump_on) ++pump_starts;  // recién prendida: otra ventana ciega
+    pump_on = on;
+    if (!on) shared.mixer_fault = core::MixerFault::none;
+    portEXIT_CRITICAL(&lock);
 }
 
 }  // namespace sensors

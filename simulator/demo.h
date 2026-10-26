@@ -49,6 +49,7 @@ void on_strip_checked(uint32_t tenths_mgl);
 void on_mixer_mode(core::MixerMode mode);
 void on_mixer_after_dose(uint32_t minutes);
 void on_mixer_every_liters(uint32_t minutes);
+void on_mixer_bench(bool on);  // Prueba de banco: Empezar o Ya terminé
 void on_service(bool on);  // empezó o terminó el cambio de cartuchos
 
 // Calibrar nivel

@@ -64,12 +64,11 @@ constexpr bool kHasLdr = true;
 constexpr bool kHasLdr = false;
 #endif
 
-// Bomba R: a los 3 s de arrancar, y luego cada segundo, se revisa el INA219
-// (documento, pág. 39). Los umbrales salen de la prueba 9b.
+// Bomba R: sin 12 V se revisa a los 3 s de prenderla y luego cada segundo
+// (documento, pág. 39). Atorada y en seco los vigila la tarea de sensores con
+// cada lectura del INA219 (core/mixer_watch.h).
 constexpr uint32_t kMixerCheckSeconds = 3;
 constexpr float kMixerMinVolts = CONFIG_HMI_MIXER_MIN_VOLTS_X10 / 10.0f;
-constexpr float kMixerDryAmps = CONFIG_HMI_MIXER_DRY_AMPS_X100 / 100.0f;
-constexpr float kMixerStuckAmps = CONFIG_HMI_MIXER_STUCK_AMPS_X100 / 100.0f;
 
 // Documento, pág. 39: los litros se guardan cuando para el agua o cada 10 min
 constexpr uint32_t kSaveEveryMinutes = 10;
@@ -180,14 +179,12 @@ void watch_mixer(const sensors::Readings& r) {
         return;
     }
     if (s.mixer_on) {
-        if (++mixer_seconds >= kMixerCheckSeconds) {
-            if (!r.ina_ok || r.mixer_volts < kMixerMinVolts) {
-                core::mixer_report_fault(s, core::MixerFault::no_power);
-            } else if (r.mixer_amps < kMixerDryAmps) {
-                core::mixer_report_fault(s, core::MixerFault::dry);
-            } else if (r.mixer_amps > kMixerStuckAmps) {
-                core::mixer_report_fault(s, core::MixerFault::stuck);
-            }
+        if (++mixer_seconds >= kMixerCheckSeconds && (!r.ina_ok || r.mixer_volts < kMixerMinVolts)) {
+            core::mixer_report_fault(s, core::MixerFault::no_power);
+        } else if (r.mixer_fault != core::MixerFault::none) {
+            // Atorada o en seco con 500 ms seguidos, no con la lectura de este
+            // segundo. En prueba de banco core no hace caso al nivel bajo.
+            core::mixer_report_fault(s, r.mixer_fault);
         }
     } else {
         mixer_seconds = 0;
@@ -313,6 +310,8 @@ ui::Actions actions() {
         changed();
     };
     a.mixer_mode_set = [](core::MixerMode mode) { core::mixer_set_mode(s, mode); changed(); };
+    // Sin changed(): la prueba de banco no se guarda, se quita al reiniciar
+    a.mixer_bench_set = [](bool on) { core::mixer_set_bench(s, on); };
     a.mixer_after_dose_set = [](uint32_t minutes) { s.mixer_after_dose_min = static_cast<uint8_t>(minutes); changed(); };
     a.mixer_every_liters_set = [](uint32_t minutes) { s.mixer_every_liters_min = static_cast<uint8_t>(minutes); changed(); };
     a.flow_factor_set = [](uint32_t k) { s.flow_pulses_per_liter = static_cast<uint16_t>(k); changed(); };

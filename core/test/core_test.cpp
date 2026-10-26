@@ -14,6 +14,7 @@
 #include "detect.h"
 #include "events.h"
 #include "level.h"
+#include "mixer_watch.h"
 #include "mixing.h"
 #include "monitor.h"
 #include "persist.h"
@@ -300,6 +301,72 @@ void mixer_waits_for_water() {
     CHECK(!s.mixer_on);
     CHECK(s.mixer_pending_min == 45);
 }
+
+// La corriente de la bomba R como la ve la 7B: una lectura cada 50 ms.
+// Regresa la primera falla que salió en esos ms, y en qué ms.
+struct Seen {
+    core::MixerFault fault = core::MixerFault::none;
+    uint32_t at_ms = 0;
+};
+Seen feed(core::MixerWatch& w, uint32_t from_ms, uint32_t to_ms, float amps, float volts = 11.9f, bool ok = true) {
+    const core::MixerLimits limits{9.0f, 1.0f, 2.5f};
+    for (uint32_t t = from_ms; t < to_ms; t += 50) {
+        const core::MixerFault f = core::mixer_watch_sample(w, limits, t, ok, volts, amps);
+        if (f != core::MixerFault::none) return {f, t};
+    }
+    return {};
+}
+
+void mixer_current() {
+    using core::MixerFault;
+    core::MixerWatch w;
+    const uint32_t on = 1000;  // se prendió en el ms 1000
+
+    // Arranque: 6 A durante 450 ms caen en la ventana ciega; luego 1.7 A normal
+    core::mixer_watch_start(w, on);
+    CHECK(feed(w, on, on + 450, 6.0f).fault == MixerFault::none);
+    CHECK(feed(w, on + 450, on + 10000, 1.7f).fault == MixerFault::none);
+
+    // Un pico suelto de 3 A o un valle suelto de 0.8 A (el rizo): nada
+    core::mixer_watch_start(w, on);
+    CHECK(feed(w, on, on + 2000, 1.7f).fault == MixerFault::none);
+    CHECK(feed(w, on + 2000, on + 2050, 3.0f).fault == MixerFault::none);
+    CHECK(feed(w, on + 2050, on + 2100, 0.8f).fault == MixerFault::none);
+    CHECK(feed(w, on + 2100, on + 4000, 1.7f).fault == MixerFault::none);
+
+    // 450 ms arriba de 2.5 A tampoco; 500 seguidos sí es atorada
+    CHECK(feed(w, on + 4000, on + 4450, 2.8f).fault == MixerFault::none);
+    CHECK(feed(w, on + 4450, on + 4500, 1.7f).fault == MixerFault::none);
+    const Seen stuck = feed(w, on + 4500, on + 6000, 2.8f);
+    CHECK(stuck.fault == MixerFault::stuck && stuck.at_ms == on + 5000);
+
+    // Justo en 2.5 A no cuenta: tiene que pasarlo
+    core::mixer_watch_start(w, on);
+    CHECK(feed(w, on, on + 5000, 2.5f).fault == MixerFault::none);
+
+    // En seco: 500 ms seguidos abajo de 1 A
+    core::mixer_watch_start(w, on);
+    const Seen dry = feed(w, on, on + 3000, 0.4f);
+    CHECK(dry.fault == MixerFault::dry && dry.at_ms == on + core::kMixerBlindMs + core::kMixerSustainMs);
+
+    // Sin 12 V la corriente es 0 pero no es nivel bajo: eso lo dice la app
+    core::mixer_watch_start(w, on);
+    CHECK(feed(w, on, on + 5000, 0.0f, 0.2f).fault == MixerFault::none);
+    CHECK(feed(w, on, on + 5000, 0.0f, 11.9f, false).fault == MixerFault::none);
+
+    // Un hueco de 300 ms entre lecturas reinicia la cuenta
+    core::mixer_watch_start(w, on);
+    CHECK(feed(w, on + 1000, on + 1400, 2.8f).fault == MixerFault::none);
+    const Seen after_gap = feed(w, on + 1700, on + 3000, 2.8f);
+    CHECK(after_gap.fault == MixerFault::stuck && after_gap.at_ms == on + 2200);
+
+    // El reloj de milisegundos da la vuelta a media prueba
+    core::mixer_watch_start(w, 0xFFFFFF00u);
+    CHECK(feed(w, 0xFFFFFF00u, 0xFFFFFFF0u, 6.0f).fault == MixerFault::none);
+    const Seen wrapped = feed(w, 0x100u, 0x2000u, 2.8f);
+    CHECK(wrapped.fault == MixerFault::stuck);
+}
+
 
 void calendar_day_change() {
     core::SystemState s = house();
@@ -810,6 +877,49 @@ void sensors_lose_signal() {
 
 }  // namespace
 
+// Prueba de banco: prende con la cisterna en 0 % y el nivel bajo no la apaga
+void mixer_bench_mode() {
+    core::SystemState s = house();
+    s.has_level = true;
+    s.level_range_cm = 200;
+    s.level_sensor_cm = 3;
+    s.level_intake_cm = 60;
+    s.level_full_cm = 183;
+    s.level_volts = s.level_zero_volts + (58.0f - 3.0f) / 200.0f * core::kLevelSpanVolts;  // 0 %
+    CHECK(core::mixer_low_water(s));
+    core::mixer_report_fault(s, core::MixerFault::dry);
+    CHECK(s.mixer_fault == core::MixerFault::dry);
+    CHECK(core::overall_level(s) == core::Level::warning);
+
+    core::mixer_set_bench(s, true);
+    CHECK(s.mixer_bench);
+    CHECK(s.mixer_fault == core::MixerFault::none);  // el nivel bajo que había se quita
+    CHECK(!core::mixer_low_water(s));
+    CHECK(core::overall_level(s) == core::Level::warning);  // la pastilla lo sigue diciendo
+    core::mixer_set_mode(s, core::MixerMode::on);
+    CHECK(s.mixer_on);
+    minutes(s, 5);
+    CHECK(s.mixer_on);  // en 0 % sigue
+    core::mixer_report_fault(s, core::MixerFault::dry);
+    CHECK(s.mixer_on && s.mixer_fault == core::MixerFault::none);
+
+    // Atorada sí la apaga
+    core::mixer_report_fault(s, core::MixerFault::stuck);
+    CHECK(!s.mixer_on && s.mixer_fault == core::MixerFault::stuck);
+
+    // No se guarda: después de reiniciar regresa la protección
+    MemoryStore store;
+    for (const core::SaveGroup g : core::kSaveGroups) core::save(s, store, g);
+    core::SystemState back;
+    back.has_mixer = true;
+    core::load(back, store);
+    CHECK(!back.mixer_bench);
+
+    // Terminar la prueba: vuelve a esperar agua
+    core::mixer_set_bench(s, false);
+    CHECK(core::mixer_low_water(s));
+}
+
 int main() {
     auto_by_liters();
     dose_mixes();
@@ -822,6 +932,8 @@ int main() {
     old_drop_notices_close();
     level_from_the_bottom();
     mixer_waits_for_water();
+    mixer_current();
+    mixer_bench_mode();
     calendar_day_change();
     calendar_hour_samples();
     telemetry_lines();

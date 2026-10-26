@@ -187,7 +187,7 @@ gris lo que lee cada entrada. La bomba R no se detecta: va en `menuconfig`.
 | P1 y P2 (A0, A1) | los dos pasan de 0.3 V | ~0.44 V cada uno sin presión | Hacer cero con V1 cerrada |
 | Nivel (A2) | pasa de 0.10 V | ~0.600 V en el aire (4 mA; medido 0.591) | Calibrar nivel |
 | LDR (A3) | pasa de 0.15 V (con luz) | cambia al taparlo | |
-| Bomba R (GPIO44, INA219) | `menuconfig` > Casa > Bomba R | la corriente al prenderla | umbrales de la prueba 9b |
+| Bomba R (GPIO44, INA219) | `menuconfig` > Casa > Bomba R | la corriente al prenderla | Diagnóstico > Banco, umbrales de la prueba 9b |
 
 - Ya detectado, si un sensor deja de leer (cable suelto, o el ADS1115 no
   contesta) 5 s seguidos, sale "Sin señal" en ámbar donde iba su número, la
@@ -235,4 +235,15 @@ gris lo que lee cada entrada. La bomba R no se detecta: va en `menuconfig`.
   diferencia; si "F: N pulsos" sube, sí se cuelan y hay que filtrarlos en
   el código.
 - Los umbrales de la bomba R (sin 12 V, nivel bajo, atorada) salen de la
-  prueba 9b; los de `menuconfig` son para arrancar.
+  prueba 9b; los de `menuconfig` son para arrancar. Nivel bajo (1.00 A) y
+  atorada (2.50 A, antes 1.90) necesitan 500 ms seguidos después de 500 ms
+  de ventana ciega al prenderla (`core/mixer_watch.h`); sin 12 V (9.0 V) se
+  revisa a los 3 s. Con 1.90 A y una lectura suelta por segundo la ZYW680
+  salía "Atorada" recién prendida (26 oct 2026; jala ~1.7 A con 11.9 V, y
+  una lectura del INA219 dura medio milisegundo: agarra el rizo de las
+  escobillas).
+- Prueba de banco, con la bomba en una cubeta: Ajustes > Diagnóstico >
+  Banco > Empezar, y luego Prendida en Mezcla. Prende con la cisterna en 0 %
+  y nivel bajo no la apaga; atorada y sin 12 V siguen. La corriente sale en
+  Diagnóstico (GPIO44). Se quita con Ya terminé o al reiniciar. Sin red el
+  encabezado esconde el enlace: ahí solo se llega con red.

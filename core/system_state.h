@@ -308,6 +308,9 @@ struct SystemState {
     // Bomba R de la cisterna (la mueve core/mixing.h)
     MixerMode mixer_mode = MixerMode::automatic;
     bool mixer_on = false;
+    // Prueba de banco: prende con la cisterna en 0 % y no la apaga el nivel
+    // bajo del INA219. No se guarda en la NVS: se quita al reiniciar.
+    bool mixer_bench = false;
     uint8_t mixer_minutes_left = 0;
     uint8_t mixer_run_minutes = 0;  // cuánto dura la vuelta de ahorita
     uint8_t mixer_progress_pct = 0;
@@ -397,9 +400,10 @@ inline Level overall_level(const SystemState& s) {
     // El último estado de los cartuchos, aunque ahorita no pase agua
     if (s.has_pressure && !in_service(s)) worst = clog_level(s.clog_state);
     if (s.has_orp && orp_level(s.orp_mv) > worst) worst = orp_level(s.orp_mv);
-    // Avisos: la bomba R que no pudo mezclar, el SIAPA sin agua y un sensor sin señal
-    const bool notice =
-        (s.has_mixer && s.mixer_fault != MixerFault::none) || supply_lost(s) || signal_lost(s);
+    // Avisos: la bomba R que no pudo mezclar o en prueba de banco (sin cuidar
+    // el nivel), el SIAPA sin agua y un sensor sin señal
+    const bool notice = (s.has_mixer && (s.mixer_fault != MixerFault::none || s.mixer_bench)) || supply_lost(s) ||
+                        signal_lost(s);
     if (notice && worst < Level::warning) worst = Level::warning;
     return worst;
 }

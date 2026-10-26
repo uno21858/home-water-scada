@@ -28,6 +28,7 @@
 #include "screens/overlays/alarm_screen.h"
 #include "screens/overlays/idle_screen.h"
 #include "screens/overlays/update_screen.h"
+#include "screens/settings/bench_screen.h"
 #include "screens/settings/bucket_screen.h"
 #include "screens/settings/diagnostics_screen.h"
 #include "screens/settings/settings_screen.h"
@@ -69,7 +70,7 @@ const std::array<Page, kScreenCount> kPages = {{
     {{"Cartuchos", Screen::home, "Cambio", Screen::service, {}}, Screen::home},
     {{"Inyección A y B", Screen::dose, nullptr, {}, {}}, Screen::dose},
     {{"Alarmas y eventos", Screen::history, nullptr, {}, {}}, Screen::history},
-    {{"Diagnóstico", Screen::settings, nullptr, {}, {}}, Screen::settings},
+    {{"Diagnóstico", Screen::settings, "Banco", Screen::bench, {}}, Screen::settings},
     {{"Prueba de cubeta", Screen::settings, nullptr, {}, {}}, Screen::settings},
     {{"Símbolos del diagrama", Screen::home, nullptr, {}, {}}, Screen::home},
     {{"Panorama de la casa", Screen::home, nullptr, {}, {}}, Screen::home},
@@ -77,6 +78,7 @@ const std::array<Page, kScreenCount> kPages = {{
     {{"Cambio de cartuchos", Screen::filters, nullptr, {}, {}}, Screen::home},
     {{"Nivel de la cisterna", Screen::cistern, "Bomba R", Screen::mixer, {}}, Screen::cistern},
     {{"Calibrar nivel", Screen::level, nullptr, {}, {}}, Screen::cistern},
+    {{"Prueba de banco", Screen::diagnostics, nullptr, {}, {}}, Screen::settings},
 }};
 
 Actions app_actions;
@@ -110,6 +112,7 @@ SparesScreen spares;
 ServiceScreen service;
 LevelScreen level;
 LevelCalibrationScreen level_calibration;
+BenchScreen bench_test;  // "bench" ya es la screen donde se arman
 std::array<lv_obj_t*, kScreenCount> pages{};
 
 size_t index_of(Screen screen) { return static_cast<size_t>(screen); }
@@ -124,6 +127,7 @@ bool available(Screen screen) {
         case Screen::level_calibration:
             return state.has_level;
         case Screen::mixer:
+        case Screen::bench:
             return state.has_mixer;
         case Screen::pressure:
         case Screen::pressure_drop:
@@ -199,6 +203,7 @@ void init(const core::SystemState& s, const Actions& a) {
     add(Screen::service, service.create(bench));
     add(Screen::level, level.create(bench));
     add(Screen::level_calibration, level_calibration.create(bench));
+    add(Screen::bench, bench_test.create(bench));
     lv_obj_delete(staging);
 
     header.create(screen);
@@ -242,6 +247,7 @@ void update(const core::SystemState& s) {
     service.update(s);
     level.update(s);
     level_calibration.update(s);
+    bench_test.update(s);
     idle.update(s);
     alarm.update(s);
     updating.update(s);

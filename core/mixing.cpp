@@ -104,7 +104,14 @@ void mixer_add_liters(SystemState& s, uint32_t liters) {
     run_due(s);
 }
 
-bool mixer_low_water(const SystemState& s) { return level_ok(s) && level_pct(s) == 0; }
+bool mixer_low_water(const SystemState& s) { return !s.mixer_bench && level_ok(s) && level_pct(s) == 0; }
+
+void mixer_set_bench(SystemState& s, bool on) {
+    if (!s.has_mixer || on == s.mixer_bench) return;
+    s.mixer_bench = on;
+    // En banco el nivel bajo no cuenta: el aviso que hubiera estorba la prueba
+    if (on && s.mixer_fault == MixerFault::dry) clear_fault(s);
+}
 
 void mixer_tick_minute(SystemState& s) {
     if (!s.has_mixer) return;
@@ -130,6 +137,7 @@ void mixer_tick_minute(SystemState& s) {
 
 void mixer_report_fault(SystemState& s, MixerFault fault) {
     if (fault == MixerFault::none || fault == s.mixer_fault) return;
+    if (fault == MixerFault::dry && s.mixer_bench) return;  // en banco el nivel no se cuida
     clear_fault(s);  // si ya había otro aviso, ese se cierra y queda este
     // La vuelta que se cortó queda pendiente; atorada no, esa la revisa alguien
     if (s.mixer_on && fault != MixerFault::stuck && s.mixer_run_count > 0) pend(s, s.mixer_runs[0].reason, s.mixer_run_minutes);

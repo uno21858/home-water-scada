@@ -13,6 +13,9 @@
 // nivel, en 0 % (el mínimo de Calibrar nivel) tampoco arranca, y si iba
 // corriendo se apaga: la vuelta corre cuando la cisterna sube.
 //
+// Prueba de banco (mixer_set_bench), con la bomba en una cubeta: no espera
+// a la cisterna ni la apaga el nivel bajo. Atorada y sin 12 V siguen.
+//
 // El firmware llama estas funciones y prende el GPIO44 según s.mixer_on.
 
 #include <cstdint>
@@ -40,8 +43,13 @@ void mixer_report_fault(SystemState& s, MixerFault fault);
 // Regresaron los 12 V: se quita el aviso y corre lo pendiente
 void mixer_power_back(SystemState& s);
 
-// La cisterna está en el mínimo (0 %): la bomba R espera agua
+// La cisterna está en el mínimo (0 %): la bomba R espera agua. En prueba de
+// banco nunca.
 bool mixer_low_water(const SystemState& s);
+
+// Empieza o termina la prueba de banco. Al empezar se quita el aviso de
+// nivel bajo que hubiera. No se guarda: al reiniciar regresa la protección.
+void mixer_set_bench(SystemState& s, bool on);
 
 // Se reinició la placa (apagón, OTA o Reiniciar) con la bomba andando: arranca
 // apagada (documento: el GPIO44 en bajo antes que nada) y lo que le faltaba a
