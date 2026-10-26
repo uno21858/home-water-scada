@@ -26,6 +26,7 @@ private:
     void create_strip(lv_obj_t* page);
 
     void update_pressure(const core::SystemState& s);
+    void update_clog(const core::SystemState& s);     // el recuadro de los cartuchos (clog_look)
     void update_orp(const core::SystemState& s);
     void update_level(const core::SystemState& s);  // el agua de la cisterna y su %
     void update_mixer(const core::SystemState& s);
@@ -72,16 +73,17 @@ private:
     lv_obj_t* today_ = nullptr;
     lv_obj_t* due_ = nullptr;
     int with_drop_ = -1;  // -1 = todavía no se acomoda
-    lv_obj_t* drop_value_ = nullptr;
-    lv_obj_t* drop_unit_ = nullptr;
-    lv_obj_t* drop_word_ = nullptr;
+    lv_obj_t* drop_name_ = nullptr;    // "R"
+    lv_obj_t* drop_value_ = nullptr;   // R con un decimal
+    lv_obj_t* drop_detail_ = nullptr;  // "· 101 %", "Sin flujo" o "Filtros"
+    lv_obj_t* drop_word_ = nullptr;    // el estado, con su hora sin flujo
     lv_obj_t* today_value_ = nullptr;
     lv_obj_t* dose_value_ = nullptr;
 
     // Para no repintar lo que no cambió (-1 = todavía no se pinta)
     int flowing_ = -1;
     lv_obj_t* no_supply_ = nullptr;  // "Sin agua" arriba de SIAPA: sin flujo ni presión
-    int drop_level_ = -1;  // core::Level pintado; kNoSignal sin señal
+    int drop_level_ = -1;  // ClogLook::Kind pintado
     int orp_level_ = -1;
     int pump_state_ = -1;
 };

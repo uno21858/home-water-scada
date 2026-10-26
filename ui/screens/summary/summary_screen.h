@@ -62,11 +62,13 @@ private:
     lv_obj_t* p1_marker_ = nullptr;
     lv_obj_t* p2_marker_ = nullptr;
     lv_obj_t* drop_tile_ = nullptr;
-    lv_obj_t* drop_value_ = nullptr;
-    lv_obj_t* drop_unit_ = nullptr;
+    lv_obj_t* drop_name_ = nullptr;    // "R"
+    lv_obj_t* drop_value_ = nullptr;   // R con un decimal
+    lv_obj_t* drop_detail_ = nullptr;  // "· 101 %", "-- Sin flujo" o "Filtros"
+    lv_obj_t* drop_at_ = nullptr;      // sin flujo, la hora del último estado
     lv_obj_t* drop_icon_ = nullptr;
     lv_obj_t* drop_word_ = nullptr;
-    int drop_level_ = -1;
+    int drop_level_ = -1;  // ClogLook::Kind pintado
 
     // Bomba R
     lv_obj_t* mixer_live_ = nullptr;

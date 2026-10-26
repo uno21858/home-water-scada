@@ -58,7 +58,7 @@ private:
     lv_obj_t* drop_ = nullptr;   // grupo de la caída: se esconde sin P1 y P2
     lv_obj_t* drop_value_ = nullptr;
     lv_obj_t* drop_unit_ = nullptr;
-    lv_obj_t* drop_word_ = nullptr;  // Normal, Revisar, Tapados o Sin señal
+    lv_obj_t* drop_word_ = nullptr;  // Normal, Revisar, Tapados, Sin referencia o Sin señal
     lv_obj_t* orp_ = nullptr;    // grupo del ORP: se esconde sin sonda
     lv_obj_t* orp_value_ = nullptr;
 

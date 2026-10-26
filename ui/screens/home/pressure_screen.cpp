@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cstdio>
 
+#include "components/clog_look.h"
 #include "components/primitives.h"
 #include "theme/colors.h"
 #include "theme/fonts.h"
@@ -85,7 +86,7 @@ void PressureScreen::create_readings(lv_obj_t* page) {
 }
 
 void PressureScreen::create_drop(lv_obj_t* page) {
-    // Barra de la caída: el color y la palabra dicen si está bien; abre su detalle
+    // Barra de los cartuchos (R contra R0, clog_look); abre su detalle
     drop_ = box(page, 16, 172, 600, 56);
     lv_obj_set_style_radius(drop_, 6, 0);
     lv_obj_set_style_border_width(drop_, 2, 0);
@@ -96,9 +97,9 @@ void PressureScreen::create_drop(lv_obj_t* page) {
     lv_obj_set_flex_align(drop_, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
     lv_obj_set_style_pad_column(drop_, 8, 0);
     link_to(drop_, Screen::pressure_drop, &styles::button_secondary_pressed);
-    label(drop_, &font_label_26, colors::text_secondary, "Caída del tren");
+    drop_name_ = label(drop_, &font_label_26, colors::text_secondary, "Filtros");
     drop_value_ = label(drop_, &font_digits_44, colors::text, "");
-    drop_unit_ = label(drop_, &font_label_26, colors::text_secondary, "psi");
+    drop_detail_ = label(drop_, &font_label_26, colors::text_secondary, "");
     drop_word_ = label(drop_, &font_label_26, colors::ok, "");
     lv_obj_set_flex_grow(drop_word_, 1);
     lv_obj_set_style_margin_left(drop_word_, 4, 0);
@@ -213,21 +214,28 @@ void PressureScreen::update(const core::SystemState& s) {
     set_text_color(a0_, s.no_signal.p1 ? colors::warning : colors::text);
     set_text_color(a1_, s.no_signal.p2 ? colors::warning : colors::text);
 
-    lv_obj_set_hidden(drop_value_, !ok);
-    lv_obj_set_hidden(drop_unit_, !ok);
-    const int drop = s.p1_psi - s.p2_psi;
-    snprintf(buf, sizeof buf, "%d", drop);
-    set_text(drop_value_, buf);
-    const int level = ok ? static_cast<int>(core::drop_level(s)) : kNoSignal;
-    if (level != drop_level_) {
-        drop_level_ = level;
-        static const uint32_t kFg[4] = {colors::ok, colors::warning, colors::alarm, colors::warning};
-        static const uint32_t kBg[4] = {colors::ok_bg, colors::warning_bg, colors::alarm_bg, colors::warning_bg};
-        static const char* const kWords[4] = {"Normal", "Revisar", "Tapados", "Sin señal"};
-        lv_obj_set_style_bg_color(drop_, color(kBg[level]), 0);
-        lv_obj_set_style_border_color(drop_, color(kFg[level]), 0);
-        set_text(drop_word_, kWords[level]);
-        lv_obj_set_style_text_color(drop_word_, color(kFg[level]), 0);
+    // Los cartuchos, como en el Tren: sin flujo el último estado con su hora
+    const ClogLook look = clog_look(s);
+    const bool rated = look.kind <= ClogLook::clogged;
+    const bool show_r = look.flowing && look.has_r && look.kind != ClogLook::no_signal;
+    set_text(drop_name_, show_r ? "Filtros · R" : "Filtros");
+    lv_obj_set_hidden(drop_value_, !show_r);
+    set_text(drop_value_, look.r);
+    char detail[24] = "";
+    if (show_r && look.pct >= 0) {
+        snprintf(detail, sizeof detail, "· %d %%", look.pct);
+    } else if (!show_r && look.kind != ClogLook::no_signal && !look.flowing) {
+        snprintf(detail, sizeof detail, "-- Sin flujo");
+    }
+    set_text(drop_detail_, detail);
+    char word[24];
+    snprintf(word, sizeof word, rated && !look.flowing ? "%s %s" : "%s", look.word, look.at);
+    set_text(drop_word_, word);
+    if (look.kind != drop_level_) {
+        drop_level_ = look.kind;
+        lv_obj_set_style_bg_color(drop_, color(look.bg), 0);
+        lv_obj_set_style_border_color(drop_, color(look.border), 0);
+        lv_obj_set_style_text_color(drop_word_, color(look.fg), 0);
     }
 
     update_chart(s);

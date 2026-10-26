@@ -40,6 +40,7 @@ private:
     static void handle_factor(lv_event_t* e);
     static void handle_ratio(lv_event_t* e);
     static void handle_cap(lv_event_t* e);
+    static void handle_reference(lv_event_t* e);  // Cartuchos nuevos: guardar referencia
 
     std::array<Tab, 5> tabs_{};
     std::array<lv_obj_t*, 5> groups_{};
@@ -68,6 +69,11 @@ private:
 
     // Cartuchos
     lv_obj_t* spares_pp_ = nullptr;
+    lv_obj_t* ref_value_ = nullptr;   // R0, o "Sin referencia"
+    lv_obj_t* ref_note_ = nullptr;    // de cuándo es, o qué falta para guardarla
+    lv_obj_t* ref_button_ = nullptr;  // sin flujo estable no se deja
+    float ref_r_ = 0.0f;              // el R de ahorita, para el diálogo
+    float ref_lpm_ = 0.0f;
     lv_obj_t* spares_rest_ = nullptr;
 
     // Pantalla

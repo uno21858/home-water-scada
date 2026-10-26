@@ -52,6 +52,7 @@ struct Actions {
     void (*alarm_test)() = nullptr;            // Diagnóstico: Probar alarma
     void (*restart_requested)() = nullptr;     // Diagnóstico: Reiniciar, ya confirmado
     void (*bucket_test_started)() = nullptr;   // entró a la prueba de cubeta: bucket_pulses a 0
+    void (*clog_reference_saved)() = nullptr;  // "Cartuchos nuevos: guardar referencia", ya confirmado (core/clog.h)
     void (*service_set)(bool on) = nullptr;    // Empezar o Ya terminé el cambio de cartuchos
     // Calibrar nivel
     void (*level_range_set)(uint32_t cm) = nullptr;   // rango de la etiqueta del sensor

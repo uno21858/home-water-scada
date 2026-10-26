@@ -19,11 +19,9 @@ void service_end(SystemState& s);  // "Ya terminé"
 // Durante el cambio de cartuchos no toca nada: V1 cerrada no es el SIAPA.
 void check_supply(SystemState& s);
 
-// Anota la caída del tren en Revisar o Tapados y la quita cuando baja. Solo
-// con agua pasando (sin flujo la caída no dice nada) y con 1 psi de margen
-// para salir, para que no se prenda y se apague cuando anda en el borde.
-inline constexpr float kDropHysteresis = 1.0f;
-void check_drop(SystemState& s);
+// Cierra los avisos de caída que dejó el firmware de antes (umbrales fijos
+// en psi). Ahora los cartuchos se califican con R contra R0: core/clog.h.
+void close_old_drop_notices(SystemState& s);
 
 // Cada segundo, con o sin red. Al regresar, si estuvo caída al menos
 // kOfflineEventSeconds, anota "Sin red" con los minutos y desde cuándo (lo

@@ -36,7 +36,7 @@ add_subdirectory(${PROJECT_SOURCE_DIR}/../ui ${CMAKE_BINARY_DIR}/ui)
 # cmake -E env le pone HMI_DEMO solo a ese comando, igual en Mac y Fedora.
 set(DEMO_SCENARIOS
     sin-flujo sin-red alarma sensor tope fase1 completo ro-cocina
-    revisar tapados sin-agua cisterna-vacia sin-12v nivel-bajo atorada sin-senal actualizando a-prueba)
+    revisar tapados sin-referencia sin-agua cisterna-vacia sin-12v nivel-bajo atorada sin-senal actualizando a-prueba)
 foreach(scenario IN LISTS DEMO_SCENARIOS)
     add_custom_target(demo-${scenario}
         COMMAND ${CMAKE_COMMAND} -E env HMI_DEMO=${scenario} $<TARGET_FILE:simulator>

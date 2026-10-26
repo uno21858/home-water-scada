@@ -3,6 +3,7 @@
 #include <cmath>
 #include <cstdio>
 
+#include "components/clog_look.h"
 #include "components/primitives.h"
 #include "components/status_pill.h"
 #include "theme/colors.h"
@@ -106,11 +107,11 @@ void IdleScreen::create(lv_obj_t* layer, Callback on_wake) {
     dose_unit_ = label(root_, &font_title_36, colors::text_secondary, "mL");
     lv_obj_set_pos(label(root_, &font_label_26, colors::text_secondary, "de Cloralex en B"), 744, 350);
 
-    // Renglón de abajo: hoy, caída y ORP
+    // Renglón de abajo: hoy, los cartuchos (R contra R0) y ORP
     lv_obj_t* bottom = row(root_, 40, LV_FLEX_ALIGN_END);
     lv_obj_set_pos(bottom, 32, 410);
     reading(bottom, "Hoy", "L", &today_);
-    drop_ = reading(bottom, "Caída", "psi", &drop_value_, &drop_unit_);
+    drop_ = reading(bottom, "Filtros", "%", &drop_value_, &drop_unit_);
     drop_word_ = label(drop_, &font_label_26, colors::ok, "");
     orp_ = reading(bottom, "ORP", "mV", &orp_value_);
 
@@ -177,19 +178,18 @@ void IdleScreen::update(const core::SystemState& s) {
     lv_obj_set_hidden(drop_, !s.has_pressure);
     if (s.has_pressure) {
         // Sin señal de P1 o P2: la palabra en lugar de la cifra
-        const bool ok = core::pressure_ok(s);
-        lv_obj_set_hidden(drop_value_, !ok);
-        lv_obj_set_hidden(drop_unit_, !ok);
-        const int drop = s.p1_psi - s.p2_psi;
-        snprintf(buf, sizeof buf, "%d", drop);
+        // Los cartuchos: el último % contra la referencia y su estado, aunque
+        // ahorita no pase agua (eso ya lo dice el caudal de arriba)
+        const ClogLook look = clog_look(s);
+        const bool show_pct = look.pct >= 0 && look.kind != ClogLook::no_signal;
+        lv_obj_set_hidden(drop_value_, !show_pct);
+        lv_obj_set_hidden(drop_unit_, !show_pct);
+        snprintf(buf, sizeof buf, "%d", look.pct);
         set_text(drop_value_, buf);
-        const int drop_level = ok ? static_cast<int>(core::drop_level(s)) : kNoSignal;
-        if (drop_level != drop_level_) {
-            drop_level_ = drop_level;
-            static const char* const kWords[4] = {"Normal", "Revisar", "Tapados", "Sin señal"};
-            static const uint32_t kTones[4] = {colors::ok, colors::warning, colors::alarm, colors::warning};
-            set_text(drop_word_, kWords[drop_level]);
-            lv_obj_set_style_text_color(drop_word_, color(kTones[drop_level]), 0);
+        set_text(drop_word_, look.word);
+        if (look.kind != drop_level_) {
+            drop_level_ = look.kind;
+            lv_obj_set_style_text_color(drop_word_, color(look.fg), 0);
         }
     }
 

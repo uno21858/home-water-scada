@@ -7,6 +7,7 @@
 #include <cstring>
 
 #include "calendar.h"
+#include "clog.h"
 #include "detect.h"
 #include "events.h"
 #include "level.h"
@@ -126,21 +127,23 @@ core::SystemState make() {
         s.p2_24h[i] = static_cast<uint8_t>(p1_24h[i] - drop_24h[i]);
     }
 
-    // Caída contra caudal (canvas DetalleCaida): la curva con cartuchos nuevos
-    // del 2 de septiembre y 42 lecturas del último mes que van subiendo
-    auto fresh = [](double q) { return 0.12 * q + 0.0072 * q * q; };
-    for (size_t q = 0; q < 16; ++q) s.drop_new_tenths[q] = static_cast<uint8_t>(std::lround(fresh(static_cast<double>(q)) * 10));
-    s.drop_new_day = 969;
-    auto frac = [](double x) { return x - std::floor(x); };
-    for (int i = 0; i < core::kDropSamples; ++i) {
-        const double day = i * 30.0 / 42.0;
-        const double q = 3 + frac(std::sin(i * 12.9898) * 43758.5453) * 10;
-        const double noise = (frac(std::sin(i * 78.233) * 12345.678) - 0.5) * 0.4;
-        const double p = fresh(q) * (1.05 + 0.45 * day / 30) + noise;
-        s.drop_samples[static_cast<size_t>(i)] = {971 + static_cast<uint32_t>(day), static_cast<uint8_t>(std::lround(q * 10)),
-                                                  static_cast<uint8_t>(std::lround(std::max(0.0, p) * 10))};
+    // Cartuchos (core/clog.h): la referencia del 2 de septiembre con 3.8 psi a
+    // 12.3 L/min y el último minuto con los 4 psi del DS a 12.4 (104 %).
+    // El último mes R fue subiendo poco a poco; los días 0 no hubo agua.
+    s.clog_r0 = 0.31f;
+    s.clog_r0_lpm = 12.3f;
+    s.clog_r0_day = 969;
+    s.clog_r = 4.0f / 12.4f;
+    s.clog_r_lpm = 12.4f;
+    s.clog_r_day = 999;
+    s.clog_r_at = 18 * 60 + 41;
+    s.clog_state = core::ClogState::normal;
+    s.clog_age_s = 30;
+    for (size_t i = 0; i < s.clog_days.size(); ++i) {
+        const bool dry = i == 9 || i == 10 || i == 21;  // sin agua del SIAPA
+        s.clog_days[i] = dry ? 0 : static_cast<uint16_t>(std::lround(31.0 + 1.6 * i / 29.0 + std::sin(i * 1.7) * 0.4));
     }
-    s.drop_sample_count = core::kDropSamples;
+    s.clog_today_count = 600;
 
     // Filtros: el prefiltro se purgó hace 6 días, el de 5 µm se cambió el
     // jueves 1 de octubre y el vaso del sarro está vacío
@@ -245,6 +248,7 @@ core::SystemState make() {
 core::SystemState s = make();
 uint32_t seconds = 0;
 bool no_flow = false;  // escenario sin-flujo: el caudal se queda en 0
+core::ClogWindow clog_window;  // los últimos 60 s para R (core/clog.h), como en el firmware
 bool updating = false;  // escenario actualizando: una vuelta de 40 s
 float liters_fraction = 0.0f;
 bool bucket_running = false;   // prueba de cubeta contando
@@ -309,9 +313,11 @@ const core::SystemState& state() { return s; }
 
 bool set_scenario(const char* name) {
     auto alarm = [](core::AlarmKind kind) { core::alarm_raise(s, kind); };
+    // Otra caída: un minuto de flujo parejo y se califica como en el firmware
     auto drop = [](int psi) {
         s.p2_psi = s.p1_psi - psi;
         s.p2_24h.back() = static_cast<uint8_t>(s.p2_psi);
+        for (int i = 0; i < core::kClogWindowSeconds; ++i) core::clog_tick(s, clog_window);
     };
     // La bomba R se apaga y deja su aviso, como lo haría el firmware con el INA219
     auto mixer_fault = [](core::MixerFault fault) {
@@ -326,6 +332,11 @@ bool set_scenario(const char* name) {
     };
     if (std::strcmp(name, "sin-flujo") == 0) {
         stop_flow();
+    } else if (std::strcmp(name, "sin-referencia") == 0) {
+        // Recién instalada: ya evalúa R pero nadie ha guardado la de nuevos
+        s.clog_r0 = s.clog_r0_lpm = 0.0f;
+        s.clog_r0_day = 0;
+        s.clog_state = core::ClogState::none;
     } else if (std::strcmp(name, "sin-red") == 0) {
         s.wifi_ok = false;
         s.wifi_bars = 0;
@@ -363,9 +374,9 @@ bool set_scenario(const char* name) {
         s.trial = core::FirmwareTrial::testing;
         s.trial_seconds = 30;  // ota::kHealthySeconds
     } else if (std::strcmp(name, "revisar") == 0) {
-        drop(8);  // 5.4 psi más que los 2.6 de nuevos a 12.4 L/min
+        drop(6);  // 6 psi a 12.4 L/min: R 0.48, 156 % de la referencia
     } else if (std::strcmp(name, "tapados") == 0) {
-        drop(13);  // 10.4 más
+        drop(9);  // 9 psi: R 0.73, 234 %
     } else if (std::strcmp(name, "sin-agua") == 0 || std::strcmp(name, "cisterna-vacia") == 0) {
         // Se fue el agua del SIAPA: sin flujo y P1 y P2 en 0 al mismo tiempo
         stop_flow();
@@ -409,6 +420,8 @@ void on_restart() {
     // El demo no se reinicia: el firmware sí
 }
 
+void on_clog_reference() { core::clog_save_reference(s); }
+
 void on_bucket_test_started() {
     s.bucket_pulses = 0;
     bucket_fraction = 0.0f;
@@ -439,6 +452,7 @@ void tick_1s() {
     // a-prueba: la cuenta baja con red y al llegar a 0 queda como buena
     if (s.trial == core::FirmwareTrial::testing && --s.trial_seconds == 0) s.trial = core::FirmwareTrial::passed;
     core::set_flow(s, no_flow ? 0.0f : 12.4f + 0.15f * std::sin(seconds / 3.0f));
+    core::clog_tick(s, clog_window);  // R cada minuto de flujo parejo, como el firmware
 
     // Los litros enteros que contó F en este segundo, como el PCNT del firmware
     liters_fraction += s.flow_lpm / 60.0f;

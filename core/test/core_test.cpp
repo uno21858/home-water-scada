@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "calendar.h"
+#include "clog.h"
 #include "detect.h"
 #include "events.h"
 #include "level.h"
@@ -159,16 +160,95 @@ void supply_and_service() {
     CHECK(core::has_open_event(s, core::EventKind::no_supply));
 }
 
-void drop_against_baseline() {
+// Lo que pidió Erick (26 oct): sin flujo no se evalúa; F 5.6, P1 23, P2 1 sin
+// R0 es "Sin referencia"; con R0 3.9 Normal; con P1 40 a 4.0 L/min, R 9.75 y
+// Tapados. Y nunca "Normal" por una caída de 0.
+void clog_states() {
     core::SystemState s = house();
-    for (size_t q = 0; q < s.drop_new_tenths.size(); ++q) s.drop_new_tenths[q] = static_cast<uint8_t>(q * 2);  // 0.2 psi por L/min
-    s.flow_lpm = 10.0f;  // nuevos: 2.0 psi
-    s.p2_psi = s.p1_psi - 6;
-    CHECK(core::drop_level(s) == core::Level::ok);  // subió 4
-    s.p2_psi = s.p1_psi - 7;
-    CHECK(core::drop_level(s) == core::Level::warning);  // subió 5
-    s.p2_psi = s.p1_psi - 12;
-    CHECK(core::drop_level(s) == core::Level::alarm);  // subió 10
+    s.has_pressure = true;
+    core::ClogWindow w;
+    // n segundos con ese caudal y esas presiones; true si en alguno evaluó
+    auto run = [&s, &w](float lpm, int p1, int p2, int seconds) {
+        bool evaluated = false;
+        for (int i = 0; i < seconds; ++i) {
+            s.flow_lpm = lpm;
+            s.p1_psi = p1;
+            s.p2_psi = p2;
+            evaluated = core::clog_tick(s, w) || evaluated;
+        }
+        return evaluated;
+    };
+    auto open = [&s](core::EventKind kind) { return core::has_open_event(s, kind); };
+
+    // Sin flujo: nada que evaluar, ni con caída de 0
+    CHECK(!run(0.0f, 23, 23, 120));
+    CHECK(s.clog_r == 0.0f && s.clog_state == core::ClogState::none);
+    CHECK(!run(0.9f, 23, 1, 120));  // abajo de 1 L/min tampoco
+
+    // F 5.6, P1 23, P2 1, sin R0: al minuto R = 22 / 5.6 = 3.93, sin referencia
+    CHECK(!run(5.6f, 23, 1, 59));
+    CHECK(run(5.6f, 23, 1, 1));
+    CHECK(std::fabs(s.clog_r - 22.0f / 5.6f) < 0.01f);
+    CHECK(s.clog_state == core::ClogState::none);
+    CHECK(core::overall_level(s) == core::Level::ok);  // sin referencia no hay aviso
+    CHECK(s.clog_days.back() == 393);                   // el promedio de hoy
+
+    // Con R0 = 3.9: Normal
+    s.clog_r0 = 3.9f;
+    CHECK(run(5.6f, 23, 1, 60));
+    CHECK(s.clog_state == core::ClogState::normal);
+    CHECK(core::overall_level(s) == core::Level::ok);
+
+    // P1 40 a 4.0 L/min: R = 39 / 4 = 9.75, 250 %: Tapados, pastilla en Alarma
+    CHECK(run(4.0f, 40, 1, 60));
+    CHECK(std::fabs(s.clog_r - 9.75f) < 0.01f);
+    CHECK(s.clog_state == core::ClogState::clogged);
+    CHECK(core::overall_level(s) == core::Level::alarm);
+    CHECK(open(core::EventKind::clog_alarm) && s.recent_events[0].value == 250);
+
+    // Se cierra la llave: se queda Tapados con su hora, y sin flujo estable
+    // no se puede guardar referencia
+    CHECK(!run(0.0f, 40, 40, 300));
+    CHECK(s.clog_state == core::ClogState::clogged);
+    CHECK(!core::clog_fresh(s) && !core::clog_save_reference(s));
+    CHECK(s.clog_r0 == 3.9f);
+
+    // Margen: con R0 3.9 a 4.0 L/min, 100 % son 15.6 psi
+    CHECK(run(4.0f, 31, 1, 60));  // 30 psi: 192 %, sigue Tapados
+    CHECK(s.clog_state == core::ClogState::clogged);
+    CHECK(run(4.0f, 30, 1, 60));  // 29: 186 %, Revisar
+    CHECK(s.clog_state == core::ClogState::check);
+    CHECK(!open(core::EventKind::clog_alarm) && open(core::EventKind::clog_warning));
+    CHECK(run(4.0f, 24, 1, 60));  // 23: 147 %, sigue Revisar
+    CHECK(s.clog_state == core::ClogState::check);
+    CHECK(run(4.0f, 22, 1, 60));  // 21: 135 %, Normal
+    CHECK(s.clog_state == core::ClogState::normal);
+    CHECK(!open(core::EventKind::clog_warning));
+
+    // Caudal que brinca más de 15 % en los últimos 30 s: no evalúa
+    bool evaluated = false;
+    for (int i = 0; i < 120; ++i) evaluated = run(i % 2 == 0 ? 4.0f : 5.0f, 22, 1, 1) || evaluated;
+    CHECK(!evaluated);
+    // P2 sin señal: tampoco
+    s.no_signal.p2 = true;
+    CHECK(!run(4.0f, 22, 1, 120));
+    s.no_signal.p2 = false;
+
+    // Guardar referencia con flujo estable: R0 = el último R, con su caudal
+    CHECK(run(5.6f, 23, 1, 60));
+    CHECK(core::clog_save_reference(s));
+    CHECK(std::fabs(s.clog_r0 - 22.0f / 5.6f) < 0.01f && std::fabs(s.clog_r0_lpm - 5.6f) < 0.01f && s.clog_r0_day == s.today);
+
+}
+
+// Los avisos de caída con umbrales fijos que dejó el firmware de antes se
+// cierran al siguiente minuto: no se quitarían solos
+void old_drop_notices_close() {
+    core::SystemState s = house();
+    core::add_event(s, core::EventKind::drop_alarm, 22);
+    CHECK(core::has_open_event(s, core::EventKind::drop_alarm));
+    core::tick_minute(s);
+    CHECK(!core::has_open_event(s, core::EventKind::drop_alarm));
 }
 
 void level_from_the_bottom() {
@@ -268,35 +348,6 @@ void calendar_hour_samples() {
     CHECK(s.flow_2h[s.flow_2h.size() - 2] == 11.0f);
 }
 
-void drop_notices() {
-    core::SystemState s = house();  // sin línea base: lo que subió es la caída completa
-    auto open = [&s](core::EventKind kind) { return core::has_open_event(s, kind); };
-    s.p2_psi = s.p1_psi - 5;
-    core::check_drop(s);
-    CHECK(open(core::EventKind::drop_warning));
-    s.p2_psi = s.p1_psi - 4;  // dentro del margen: sigue en Revisar
-    core::check_drop(s);
-    CHECK(open(core::EventKind::drop_warning));
-    s.p2_psi = s.p1_psi - 3;
-    core::check_drop(s);
-    CHECK(!open(core::EventKind::drop_warning));
-    s.p2_psi = s.p1_psi - 10;
-    core::check_drop(s);
-    CHECK(open(core::EventKind::drop_alarm));
-    s.p2_psi = s.p1_psi - 9;  // margen de Tapados
-    core::check_drop(s);
-    CHECK(open(core::EventKind::drop_alarm));
-    s.p2_psi = s.p1_psi - 6;  // baja a Revisar
-    core::check_drop(s);
-    CHECK(!open(core::EventKind::drop_alarm));
-    CHECK(open(core::EventKind::drop_warning));
-    // Sin agua pasando la caída no dice nada: no se quita
-    s.flow_lpm = 0.0f;
-    s.p2_psi = s.p1_psi;
-    core::check_drop(s);
-    CHECK(open(core::EventKind::drop_warning));
-}
-
 // Telemetría: el renglón tiene que salir exacto, el servidor no adivina
 bool line_is(const core::Record& r, const char* expected) {
     char line[256];
@@ -317,7 +368,8 @@ void telemetry_lines() {
     r.pressure = true;
     r.p1_psi = 42;
     r.p2_psi = 38;
-    r.drop_rise = 1.4f;
+    r.clog_r = 3.93f;
+    r.clog_pct = 101;
     r.level = true;
     r.level_cm = 150.0f;
     r.level_pct = 73;
@@ -327,7 +379,7 @@ void telemetry_lines() {
     r.orp = true;
     r.orp_mv = 650;
     CHECK(line_is(r,
-                  "water flow_lpm=12.40,liters_today=1860i,p1_psi=42i,p2_psi=38i,drop_rise=1.4,"
+                  "water flow_lpm=12.40,liters_today=1860i,p1_psi=42i,p2_psi=38i,filter_r=3.93,filter_pct=101i,"
                   "level_cm=150.0,level_pct=73i,mixer_on=1i,mixer_amps=1.58,orp_mv=650i 1760000000000000000"));
     // Sin marcar llena no va el %; un sensor raro (NaN) sale como 0
     r.pressure = r.mixer = r.orp = false;
@@ -653,6 +705,26 @@ void sensors_detect() {
     CHECK(back.has_pressure && back.has_level && !back.has_ldr);
 }
 
+// La referencia, el último estado y el R de cada día sobreviven a un reinicio
+void clog_survives_restart() {
+    core::SystemState s;
+    s.clog_r0 = 3.9f;
+    s.clog_r0_lpm = 5.6f;
+    s.clog_r0_day = 20750;
+    s.clog_r = 9.75f;
+    s.clog_r_lpm = 4.0f;
+    s.clog_r_at = 18 * 60 + 42;
+    s.clog_state = core::ClogState::clogged;
+    s.clog_days.back() = 975;
+    MemoryStore store;
+    for (const core::SaveGroup g : core::kSaveGroups) core::save(s, store, g);
+    core::SystemState back;
+    core::load(back, store);
+    CHECK(back.clog_r0 == 3.9f && back.clog_r0_lpm == 5.6f && back.clog_r0_day == 20750);
+    CHECK(back.clog_r == 9.75f && back.clog_r_at == s.clog_r_at && back.clog_state == core::ClogState::clogged);
+    CHECK(back.clog_days == s.clog_days);
+}
+
 // El cero del nivel que guardó el firmware de 33 Ω (0.132 V) no sirve con R8
 // de 150 Ω: al cargar regresa al de fábrica. Uno medido en el aire se queda.
 void level_zero_from_old_shunt() {
@@ -746,12 +818,12 @@ int main() {
     dry_retries_after_water();
     stuck_needs_a_person();
     supply_and_service();
-    drop_against_baseline();
+    clog_states();
+    old_drop_notices_close();
     level_from_the_bottom();
     mixer_waits_for_water();
     calendar_day_change();
     calendar_hour_samples();
-    drop_notices();
     telemetry_lines();
     telemetry_events_once();
     telemetry_full_queue();
@@ -766,6 +838,7 @@ int main() {
     sensors_detect();
     sensors_lose_signal();
     level_zero_from_old_shunt();
+    clog_survives_restart();
     if (failures == 0) std::printf("core: todo bien\n");
     return failures == 0 ? 0 : 1;
 }

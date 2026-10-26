@@ -26,6 +26,8 @@ void open_hour(SystemState& s) {
 // Cierra el día: el historial se recorre y lo de hoy empieza en 0
 void open_day(SystemState& s) {
     push(s.days, Totals{});
+    push(s.clog_days, 0);  // R de hoy: 0 hasta que se evalúe
+    s.clog_today_count = 0;
     s.hours = {};
     s.liters_today = 0;
     s.mixer_today_minutes = 0;

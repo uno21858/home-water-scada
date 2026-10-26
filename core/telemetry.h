@@ -34,7 +34,8 @@ struct Record {
     uint32_t liters_today = 0;
     int16_t p1_psi = 0;
     int16_t p2_psi = 0;
-    float drop_rise = 0.0f;
+    float clog_r = 0.0f;     // R del último minuto con flujo estable (core/clog.h); 0 = no se manda
+    uint16_t clog_pct = 0;   // R/R0 en %; 0 = sin referencia
     float level_cm = 0.0f;
     int8_t level_pct = -1;  // -1 = falta marcar llena: no se manda
     bool mixer_on = false;

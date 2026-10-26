@@ -10,6 +10,7 @@
 
 #include "board.h"
 #include "calendar.h"
+#include "clog.h"
 #include "detect.h"
 #include "esp_app_desc.h"
 #include "esp_heap_caps.h"
@@ -101,6 +102,7 @@ uint32_t seconds = 0;           // desde que arrancó
 uint32_t last_pulses = 0;       // la cuenta de F del segundo pasado
 uint32_t pulse_remainder = 0;   // pulsos que todavía no hacen un litro
 core::Detection detection;      // segundos que lleva viéndose cada sensor nuevo
+core::ClogWindow clog_window;   // los últimos 60 s de caudal y caída, para R (core/clog.h)
 uint32_t mixer_seconds = 0;     // cuánto lleva prendida la bomba R
 uint32_t minutes_since_save = 0;
 int last_minute = -1;
@@ -206,10 +208,17 @@ void read_network() {
     s.wifi_bars = rssi == 0 ? 0 : rssi > -60 ? 3 : rssi > -70 ? 2 : 1;
 }
 
-// Con LDR, de noche baja solo: 0.88 V es luz de cuarto (prueba del 11 oct).
-// Se mueve poco a poco para que no parpadee. Para afinar con la placa puesta.
+// Con LDR, de noche baja solo. Antes llegaba a todo el brillo hasta 0.9 V
+// (luz de cuarto en la prueba del 11 oct) y en la casa de día se quedaba
+// bajo (Erick, 26 oct): ahora desde 0.4 V va a todo y de noche no baja de
+// 20 %. Se mueve poco a poco para que no parpadee. A3 sale en /estado.
+constexpr float kLdrDarkVolts = 0.10f;    // de aquí para abajo, lo mínimo
+constexpr float kLdrBrightVolts = 0.40f;  // de aquí para arriba, todo el brillo
+constexpr float kMinBrightness = 20.0f;
+
 void adjust_brightness() {
-    const float target = s.has_ldr ? std::clamp(15.0f + (s.ldr_volts - 0.1f) / 0.8f * 85.0f, 15.0f, 100.0f) : 100.0f;
+    const float light = std::clamp((s.ldr_volts - kLdrDarkVolts) / (kLdrBrightVolts - kLdrDarkVolts), 0.0f, 1.0f);
+    const float target = s.has_ldr ? kMinBrightness + light * (100.0f - kMinBrightness) : 100.0f;
     const float before = brightness;
     brightness += (target - brightness) * 0.1f;
     if (std::lround(before) != std::lround(brightness)) board::set_brightness(static_cast<uint8_t>(std::lround(brightness)));
@@ -265,6 +274,7 @@ void every_second(lv_timer_t*) {
     const sensors::Readings r = sensors::latest();
     read_flow(r);
     read_analog(r);
+    core::clog_tick(s, clog_window);  // R cada minuto de flujo parejo; se guarda con los contadores
     watch_mixer(r);
     read_network();
 
@@ -339,6 +349,9 @@ ui::Actions actions() {
     };
     a.restart_requested = [] { restart_locked(); };
     a.bucket_test_started = [] { s.bucket_pulses = 0; };
+    a.clog_reference_saved = [] {
+        if (core::clog_save_reference(s)) changed();  // sin flujo estable no guarda nada
+    };
     return a;
 }
 
@@ -492,6 +505,23 @@ std::size_t status_text(char* buf, std::size_t size) {
         if (s.has_level && s.no_signal.level) out.add(kBad, "Nivel sin señal: revisa su cable (A2)");
     } else {
         out.add(s.has_pressure || s.has_level || s.has_ldr ? kBad : kOff, "ADS1115: no responde");
+    }
+    // Los cartuchos (core/clog.h): Tapados es ✗, Revisar solo dice
+    if (s.has_pressure) {
+        if (s.clog_r <= 0.0f) {
+            out.add(kOff, "Filtros: sin evaluar (falta un minuto de agua pareja)");
+        } else if (s.clog_r0 <= 0.0f) {
+            out.add(kOff, "Filtros: R %.1f a %.1f L/min, sin referencia", static_cast<double>(s.clog_r),
+                    static_cast<double>(s.clog_r_lpm));
+        } else {
+            static const char* const kWords[4] = {"sin evaluar", "Normal", "Revisar", "Tapados"};
+            const auto state = static_cast<std::size_t>(s.clog_state);
+            out.add(s.clog_state == core::ClogState::clogged ? kBad
+                    : s.clog_state == core::ClogState::normal ? kOk
+                                                              : kOff,
+                    "Filtros: R %.1f, %.0f %% de la referencia, %s", static_cast<double>(s.clog_r),
+                    static_cast<double>(core::clog_ratio(s) * 100.0f), kWords[state < 4 ? state : 0]);
+        }
     }
     if (s.has_mixer) {
         out.add(mark(s.devices.ina219), "INA219 bomba R%s", s.devices.ina219 ? "" : ": no responde");

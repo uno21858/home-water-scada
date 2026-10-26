@@ -1,9 +1,11 @@
 #include "telemetry.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstdio>
 #include <cstring>
 
+#include "clog.h"
 #include "level.h"
 
 namespace core {
@@ -24,6 +26,8 @@ const char* event_name(EventKind kind) {
         case EventKind::mixer_fault: return "mixer_fault";
         case EventKind::no_supply: return "no_supply";
         case EventKind::no_signal: return "no_signal";
+        case EventKind::clog_warning: return "clog_warning";
+        case EventKind::clog_alarm: return "clog_alarm";
     }
     return "unknown";
 }
@@ -80,7 +84,11 @@ void queue_reading(SystemState& s, Outbox& out, uint32_t utc) {
     r.pressure = pressure_ok(s);
     r.p1_psi = static_cast<int16_t>(s.p1_psi);
     r.p2_psi = static_cast<int16_t>(s.p2_psi);
-    r.drop_rise = r.pressure ? drop_rise(s) : 0.0f;
+    // R solo si se evaluó en el último minuto (core/clog.h); sin agua no hay
+    if (r.pressure && s.clog_age_s <= kClogWindowSeconds) {
+        r.clog_r = s.clog_r;
+        r.clog_pct = static_cast<uint16_t>(std::lround(std::min(clog_ratio(s) * 100.0f, 65535.0f)));
+    }
     r.level = level_ok(s);
     if (r.level) {
         r.level_cm = level_cm(s);
@@ -118,8 +126,9 @@ std::size_t format_record(const Record& r, char* out, std::size_t size) {
         line.add("water flow_lpm=%.2f,liters_today=%lui", static_cast<double>(finite(r.flow_lpm)),
                  static_cast<unsigned long>(r.liters_today));
         if (r.pressure) {
-            line.add(",p1_psi=%di,p2_psi=%di,drop_rise=%.1f", r.p1_psi, r.p2_psi,
-                     static_cast<double>(finite(r.drop_rise)));
+            line.add(",p1_psi=%di,p2_psi=%di", r.p1_psi, r.p2_psi);
+            if (r.clog_r > 0.0f) line.add(",filter_r=%.2f", static_cast<double>(finite(r.clog_r)));
+            if (r.clog_pct > 0) line.add(",filter_pct=%ui", static_cast<unsigned>(r.clog_pct));
         }
         if (r.level) {
             line.add(",level_cm=%.1f", static_cast<double>(finite(r.level_cm)));

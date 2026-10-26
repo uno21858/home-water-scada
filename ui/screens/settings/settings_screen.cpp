@@ -3,6 +3,7 @@
 #include <cmath>
 #include <cstdio>
 
+#include "clog.h"
 #include "components/keypad_dialog.h"
 #include "components/primitives.h"
 #include "theme/colors.h"
@@ -213,15 +214,18 @@ lv_obj_t* SettingsScreen::create_connection(lv_obj_t* page) {
 lv_obj_t* SettingsScreen::create_cartridges(lv_obj_t* page) {
     lv_obj_t* group = box(page, 0, 0, 1024, 456);
 
-    // Tabla fija: cada cuánto se cambia cada cartucho
-    lv_obj_t* t = settings_card(group, kTopY, "Cada cuánto se cambian");
-    const char* const rows[4][2] = {
-        {"20 µm", "2 a 3 meses"}, {"10 y 5 µm", "3 a 6 meses"}, {"CTO", "6 meses"}, {"Sarro", "1 año"}};
-    for (int i = 0; i < 4; ++i) {
-        const int32_t y = 54 + 36 * i;
-        lv_obj_set_pos(label(t, &font_label_26, colors::text_secondary, rows[i][0]), 20, y);
-        lv_obj_set_pos(label(t, &font_label_26, colors::text, rows[i][1]), 20 + 150 + 16, y);
-    }
+    // La referencia contra la que se califica qué tan tapados van (core/clog.h).
+    // Va en lugar de la tabla de cada cuánto se cambian, que ya dicen
+    // Cartuchos y Resumen. Sin flujo estable el botón no se deja: la nota dice
+    // por qué.
+    lv_obj_t* t = settings_card(group, kTopY, "Cartuchos nuevos");
+    ref_value_ = label(t, &font_body_32, colors::text, "");
+    lv_obj_set_pos(ref_value_, 20, 54);
+    ref_note_ = label(t, &font_label_26, colors::text_secondary, "");
+    lv_obj_set_pos(ref_note_, 20, 94);
+    lv_obj_set_width(ref_note_, 580);
+    lv_label_set_long_mode(ref_note_, LV_LABEL_LONG_MODE_DOTS);
+    ref_button_ = small_button(t, 20, 136, 340, "Guardar referencia", nullptr, false, handle_reference, this);
 
     lv_obj_t* s = settings_card(group, kBottomY, "Repuestos en casa");
     spares_pp_ = label(s, &font_body_32, colors::text, "");
@@ -234,6 +238,17 @@ lv_obj_t* SettingsScreen::create_cartridges(lv_obj_t* page) {
     link_to(small_button(s, 272, 136, 300, "Ver cartuchos", nullptr, true, nullptr, nullptr), Screen::filters,
             &styles::button_secondary_pressed);
     return group;
+}
+
+// Guardar referencia: pide confirmación con el R de ahorita
+void SettingsScreen::handle_reference(lv_event_t* e) {
+    const auto* self = static_cast<SettingsScreen*>(lv_event_get_user_data(e));
+    char body[160];
+    snprintf(body, sizeof body, "R de ahorita: %.1f psi por L/min a %.1f L/min. Contra esta se califica qué tan tapados van.",
+             static_cast<double>(self->ref_r_), static_cast<double>(self->ref_lpm_));
+    open_confirm("¿Son cartuchos nuevos?", body, "Sí, guardar", [] {
+        if (actions().clog_reference_saved != nullptr) actions().clog_reference_saved();
+    });
 }
 
 lv_obj_t* SettingsScreen::create_display(lv_obj_t* page) {
@@ -359,6 +374,33 @@ void SettingsScreen::update(const core::SystemState& s) {
                  static_cast<unsigned>(d.day), fmt::month_short(d.month));
         set_text(tabs_[3].summary, buf);
     }
+
+    // La referencia de cartuchos nuevos
+    ref_r_ = s.clog_r;
+    ref_lpm_ = s.clog_r_lpm;
+    const bool fresh = core::clog_fresh(s) && core::pressure_ok(s);
+    lv_obj_set_disabled(ref_button_, !fresh);
+    if (s.clog_r0 > 0.0f) {
+        snprintf(buf, sizeof buf, "R %.1f psi por L/min", static_cast<double>(s.clog_r0));
+    } else {
+        snprintf(buf, sizeof buf, "Sin referencia");
+    }
+    set_text(ref_value_, buf);
+    set_text_color(ref_value_, s.clog_r0 > 0.0f ? colors::text : colors::text_secondary);
+    if (!fresh) {
+        snprintf(buf, sizeof buf, "Para guardar: un minuto con el agua corriendo pareja");
+    } else if (s.clog_r0 > 0.0f && s.last_cartridge_day > s.clog_r0_day) {
+        snprintf(buf, sizeof buf, "Cambiaste un cartucho después: guarda otra");  // la de antes ya no aplica
+    } else if (s.clog_r0 > 0.0f) {
+        const uint32_t ago = s.today >= s.clog_r0_day ? s.today - s.clog_r0_day : 0;
+        const core::Date d = core::date_days_ago(core::today(s), s.year, ago);
+        snprintf(buf, sizeof buf, "Del %u %s a %.1f L/min · ahorita %.1f", static_cast<unsigned>(d.day),
+                 fmt::month_short(d.month), static_cast<double>(s.clog_r0_lpm), static_cast<double>(s.clog_r));
+    } else {
+        snprintf(buf, sizeof buf, "Ahorita: R %.1f a %.1f L/min", static_cast<double>(s.clog_r),
+                 static_cast<double>(s.clog_r_lpm));
+    }
+    set_text(ref_note_, buf);
 
     // Pantalla
     idle_.set_selected(s.idle_minutes <= 1 ? 0 : s.idle_minutes <= 2 ? 1 : 2);

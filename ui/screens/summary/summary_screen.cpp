@@ -4,6 +4,7 @@
 #include <cmath>
 #include <cstdio>
 
+#include "components/clog_look.h"
 #include "components/mixer.h"
 #include "components/primitives.h"
 #include "theme/colors.h"
@@ -166,7 +167,7 @@ void SummaryScreen::create_filters_card(lv_obj_t* page) {
     pressure(16, "P1", &p1_value_, &p1_marker_, &p1_lost_);
     pressure(260, "P2", &p2_value_, &p2_marker_, &p2_lost_);
 
-    // Caída del tren: el color y la palabra dicen si está bien
+    // Los cartuchos: R, cuánto contra la referencia y el estado (clog_look)
     drop_tile_ = box(filters_live_, 16, 110, 456, 56);
     lv_obj_set_style_radius(drop_tile_, 10, 0);
     lv_obj_set_style_border_width(drop_tile_, 2, 0);
@@ -175,14 +176,14 @@ void SummaryScreen::create_filters_card(lv_obj_t* page) {
     lv_obj_set_flex_flow(drop_tile_, LV_FLEX_FLOW_ROW);
     lv_obj_set_flex_align(drop_tile_, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
     lv_obj_set_style_pad_column(drop_tile_, 8, 0);
-    lv_obj_t* name = label(drop_tile_, &font_label_26, colors::text_secondary, "Caída");
-    lv_obj_set_flex_grow(name, 1);
+    drop_name_ = label(drop_tile_, &font_label_26, colors::text_secondary, "R");
     drop_value_ = label(drop_tile_, &font_digits_44, colors::text, "");
-    drop_unit_ = label(drop_tile_, &font_label_26, colors::text_secondary, "psi");
-    lv_obj_set_size(box(drop_tile_), 8, 1);  // separa la palabra de "psi"
+    drop_detail_ = label(drop_tile_, &font_label_26, colors::text_secondary, "");
+    lv_obj_set_flex_grow(box(drop_tile_, 0, 0, 0, 1), 1);  // el estado a la derecha
     lv_obj_t* state = row(drop_tile_, 6, LV_FLEX_ALIGN_CENTER);
     drop_icon_ = icon(state, &icon_ok_28, colors::ok);
     drop_word_ = label(state, &font_body_32, colors::ok, "");
+    drop_at_ = label(state, &font_label_26, colors::text_secondary, "");  // sin flujo, la hora del estado
 }
 
 void SummaryScreen::create_mixer_card(lv_obj_t* page) {
@@ -419,44 +420,33 @@ void SummaryScreen::update_filters(const core::SystemState& s) {
     signal(p1_value_, p1_marker_, p1_lost_, !s.no_signal.p1);
     signal(p2_value_, p2_marker_, p2_lost_, !s.no_signal.p2);
 
-    const bool ok = core::pressure_ok(s);
-    lv_obj_set_hidden(drop_value_, !ok);
-    lv_obj_set_hidden(drop_unit_, !ok);
-    const int drop = s.p1_psi - s.p2_psi;
-    snprintf(buf, sizeof buf, "%d", drop);
-    set_text(drop_value_, buf);
-
-    const int level_now = ok ? static_cast<int>(core::drop_level(s)) : kNoSignal;
-    if (level_now == drop_level_) return;
-    drop_level_ = level_now;
-
-    uint32_t fg = colors::ok;
-    uint32_t bg = colors::ok_bg;
-    const char* word = "Normal";
-    const lv_image_dsc_t* src = &icon_ok_28;
-    const auto level = static_cast<core::Level>(level_now);
-    if (!ok) {
-        fg = colors::warning;
-        bg = colors::warning_bg;
-        word = "Sin señal";
-        src = &icon_advertencia_28;
-    } else if (level == core::Level::warning) {
-        fg = colors::warning;
-        bg = colors::warning_bg;
-        word = "Revisar";
-        src = &icon_advertencia_28;
-    } else if (level == core::Level::alarm) {
-        fg = colors::alarm;
-        bg = colors::alarm_bg;
-        word = "Tapados";
-        src = &icon_alarma_28;
+    // Los cartuchos. Sin flujo: "-- Sin flujo" en gris y el último estado
+    // con su hora; nunca "Normal" por una caída de 0
+    const ClogLook look = clog_look(s);
+    const bool rated = look.kind <= ClogLook::clogged;
+    const bool show_r = look.flowing && look.has_r && look.kind != ClogLook::no_signal;
+    lv_obj_set_hidden(drop_name_, !show_r);
+    lv_obj_set_hidden(drop_value_, !show_r);
+    set_text(drop_value_, look.r);
+    char detail[24] = "";
+    if (show_r && look.pct >= 0) {
+        snprintf(detail, sizeof detail, "· %d %%", look.pct);
+    } else if (!show_r) {
+        snprintf(detail, sizeof detail, "%s", look.kind != ClogLook::no_signal && !look.flowing ? "-- Sin flujo" : "Filtros");
     }
-    lv_obj_set_style_bg_color(drop_tile_, color(bg), 0);
-    lv_obj_set_style_border_color(drop_tile_, color(fg), 0);
-    lv_image_set_src(drop_icon_, src);
-    set_icon_color(drop_icon_, fg);
-    lv_label_set_text(drop_word_, word);
-    lv_obj_set_style_text_color(drop_word_, color(fg), 0);
+    set_text(drop_detail_, detail);
+    set_text(drop_word_, look.word);
+    lv_obj_set_hidden(drop_icon_, look.word[0] == '\0');
+    lv_obj_set_hidden(drop_at_, !(rated && !look.flowing));
+    set_text(drop_at_, look.at);
+
+    if (look.kind == drop_level_) return;
+    drop_level_ = look.kind;
+    lv_obj_set_style_bg_color(drop_tile_, color(look.bg), 0);
+    lv_obj_set_style_border_color(drop_tile_, color(look.border), 0);
+    lv_image_set_src(drop_icon_, look.icon);
+    set_icon_color(drop_icon_, look.fg);
+    lv_obj_set_style_text_color(drop_word_, color(look.fg), 0);
 }
 
 void SummaryScreen::update_mixer(const core::SystemState& s) {

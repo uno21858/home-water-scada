@@ -4,6 +4,9 @@
 #include <cmath>
 #include <cstdio>
 
+#include "calendar.h"
+#include "clog.h"
+#include "components/clog_look.h"
 #include "components/primitives.h"
 #include "theme/colors.h"
 #include "theme/fonts.h"
@@ -11,59 +14,64 @@
 #include "theme/icons.h"
 #include "theme/styles.h"
 
-// Medidas tomadas del artboard DetalleCaida del canvas (cada y menos 64).
-// Las coordenadas dentro de una tarjeta cuentan desde adentro del borde.
+// El acomodo es el del artboard DetalleCaida del canvas (cada y menos 64),
+// con lo que se mide ahora: R = (P1 - P2) / F contra cartuchos nuevos
+// (core/clog.h). Las coordenadas dentro de una tarjeta cuentan desde adentro
+// del borde.
 
 namespace ui {
 namespace {
 
 constexpr int32_t kValueY = 44 + 10;  // cifra de 136 bajada como en Cisterna
 
-// Escala de lo que subió la caída sobre cartuchos nuevos al mismo caudal
-// (documento: Revisar a +5 y Tapados a +10), de 0 a +15 psi en 576 px.
-// El canvas la pinta con la caída completa; así no se confunde la caída
-// natural de mucho caudal con cartuchos tapados.
+// Escala de R/R0 de 50 a 250 % en 576 px: Normal hasta 150, Revisar hasta
+// 200 y Tapados arriba
 constexpr int32_t kScaleW = 576;
-int32_t scale_x(float psi) { return static_cast<int32_t>(std::lround(std::clamp(psi, 0.0f, 15.0f) * kScaleW / 15.0f)); }
+constexpr float kScaleMin = 50.0f;
+constexpr float kScaleMax = 250.0f;
+int32_t scale_x(float pct) {
+    return static_cast<int32_t>(
+        std::lround((std::clamp(pct, kScaleMin, kScaleMax) - kScaleMin) * kScaleW / (kScaleMax - kScaleMin)));
+}
 
 struct Zone {
-    int32_t x;
-    int32_t w;
+    float from;  // %
+    float to;
     const char* name;
     uint32_t dim;
-    uint32_t lit;
-    const lv_image_dsc_t* icon;
 };
 const Zone kZones[3] = {
-    {0, 192, "Normal", colors::ok_bg, colors::ok, &icon_ok_32},
-    {193, 191, "Revisar", colors::warning_bg, colors::warning, &icon_advertencia_32},
-    {385, 191, "Tapados", colors::alarm_bg, colors::alarm, &icon_alarma_32},
+    {kScaleMin, core::kClogWarningRatio * 100.0f, "Normal", colors::ok_bg},
+    {core::kClogWarningRatio * 100.0f, core::kClogAlarmRatio * 100.0f, "Revisar", colors::warning_bg},
+    {core::kClogAlarmRatio * 100.0f, kScaleMax, "Tapados", colors::alarm_bg},
 };
 
-// Gráfica dentro de su tarjeta: caudal de 0 a 15 L/min y caída de 0 a 6 psi
+// Gráfica dentro de su tarjeta: los 30 días y R de 0 a plot_max_
 constexpr float kPlotX = 71.0f;
 constexpr float kPlotW = 512.0f;
-constexpr float kPlotBase = 142.0f;  // y de 0 psi
-constexpr float kPlotH = 102.0f;     // de 0 a 6 psi
-float chart_x(float lpm) { return kPlotX + std::clamp(lpm, 0.0f, 15.0f) / 15.0f * kPlotW; }
-float chart_y(float psi) { return kPlotBase - std::clamp(psi, 0.0f, 6.0f) / 6.0f * kPlotH; }
+constexpr float kPlotBase = 142.0f;  // y de R = 0
+constexpr float kPlotH = 102.0f;
 int32_t px(float v) { return static_cast<int32_t>(std::lround(v)); }
 
 lv_obj_t* axis_label(lv_obj_t* parent, const char* text, int32_t x, int32_t y, lv_text_align_t align) {
     lv_obj_t* obj = label(parent, &font_label_26, colors::text_disabled, text);
-    lv_obj_set_width(obj, 120);
+    lv_obj_set_width(obj, 180);  // "hace 29 días" mide 169
     lv_obj_set_style_text_align(obj, align, 0);
-    lv_obj_set_pos(obj, align == LV_TEXT_ALIGN_LEFT ? x : align == LV_TEXT_ALIGN_RIGHT ? x - 120 : x - 60, y);
+    lv_obj_set_pos(obj, align == LV_TEXT_ALIGN_LEFT ? x : align == LV_TEXT_ALIGN_RIGHT ? x - 180 : x - 90, y);
     return obj;
 }
 
-lv_obj_t* psi_row(lv_obj_t* parent, const char* name, lv_obj_t** unit = nullptr) {
+// "Último ......... 3.9" con su nota abajo
+lv_obj_t* r_row(lv_obj_t* parent, const char* name, int32_t y, lv_obj_t** note) {
     lv_obj_t* r = row(parent, 8, LV_FLEX_ALIGN_END);
     lv_obj_set_width(r, 348);
+    lv_obj_set_pos(r, 16, y);
     lv_obj_set_flex_grow(label(r, &font_label_26, colors::text_secondary, name), 1);
     lv_obj_t* value = label(r, &font_body_32, colors::text, "");
-    lv_obj_t* u = label(r, &font_label_26, colors::text_secondary, "psi");
-    if (unit != nullptr) *unit = u;
+    *note = label(parent, &font_label_26, colors::text_disabled, "");
+    lv_obj_set_pos(*note, 16, y + 38);
+    lv_obj_set_width(*note, 348);
+    lv_label_set_long_mode(*note, LV_LABEL_LONG_MODE_DOTS);
     return value;
 }
 
@@ -81,36 +89,35 @@ lv_obj_t* DropScreen::create(lv_obj_t* parent) {
 }
 
 void DropScreen::create_reading(lv_obj_t* page) {
-    lv_obj_set_pos(label(page, &font_body_32, colors::text_secondary, "Caída del tren"), 24, 12);
+    lv_obj_set_pos(label(page, &font_body_32, colors::text_secondary, "Contra cartuchos nuevos"), 24, 12);
     value_ = label(page, &font_digits_136, colors::text, "");
     lv_obj_set_pos(value_, 16, kValueY);
-    unit_ = label(page, &font_title_36, colors::text_secondary, "psi");
+    unit_ = label(page, &font_title_36, colors::text_secondary, "%");
     lv_obj_set_y(unit_, 50);
     state_ = row(page, 8, LV_FLEX_ALIGN_CENTER);
     lv_obj_set_y(state_, 102);
     state_icon_ = icon(state_, &icon_ok_32, colors::ok);
     state_word_ = label(state_, &font_title_36, colors::ok, "");
-
-    formula_ = label(page, &font_body_32, colors::text_secondary, "");
-    lv_obj_set_pos(formula_, 344, 56);
-    flow_note_ = label(page, &font_label_26, colors::text_disabled, "");
-    lv_obj_set_pos(flow_note_, 344, 98);
+    note_ = label(page, &font_label_26, colors::text_disabled, "");
+    lv_obj_set_width(note_, 576);
+    lv_label_set_long_mode(note_, LV_LABEL_LONG_MODE_DOTS);
 }
 
 void DropScreen::create_scale(lv_obj_t* page) {
     lv_obj_t* scale = box(page, 24, 172, kScaleW, 88);
     for (size_t i = 0; i < zones_.size(); ++i) {
         const Zone& z = kZones[i];
-        zones_[i] = box(scale, z.x, 36, z.w, 24);
+        const int32_t x = scale_x(z.from);
+        const int32_t w = scale_x(z.to) - x - (i + 1 < zones_.size() ? 1 : 0);
+        zones_[i] = box(scale, x, 36, w, 24);
         fill(zones_[i], z.dim);
-        lv_obj_set_style_border_color(zones_[i], color(z.lit), 0);
-        zone_names_[i] = axis_label(scale, z.name, z.x + z.w / 2, 61, LV_TEXT_ALIGN_CENTER);
+        zone_names_[i] = axis_label(scale, z.name, x + w / 2, 61, LV_TEXT_ALIGN_CENTER);
         lv_obj_set_style_text_color(zone_names_[i], color(colors::text_secondary), 0);
     }
-    axis_label(scale, "0", 0, -3, LV_TEXT_ALIGN_LEFT);
-    axis_label(scale, "+5", scale_x(5), -3, LV_TEXT_ALIGN_CENTER);
-    axis_label(scale, "+10", scale_x(10), -3, LV_TEXT_ALIGN_CENTER);
-    axis_label(scale, "+15 psi", kScaleW, -3, LV_TEXT_ALIGN_RIGHT);
+    axis_label(scale, "100 %", scale_x(100), -3, LV_TEXT_ALIGN_CENTER);
+    axis_label(scale, "150", scale_x(core::kClogWarningRatio * 100.0f), -3, LV_TEXT_ALIGN_CENTER);
+    axis_label(scale, "200", scale_x(core::kClogAlarmRatio * 100.0f), -3, LV_TEXT_ALIGN_CENTER);
+    axis_label(scale, "250 %", kScaleW, -3, LV_TEXT_ALIGN_RIGHT);
     marker_ = box(scale, 0, 26, 6, 44);
     lv_obj_set_style_radius(marker_, 2, 0);
     fill(marker_, colors::text);
@@ -119,56 +126,35 @@ void DropScreen::create_scale(lv_obj_t* page) {
 void DropScreen::create_chart(lv_obj_t* page) {
     lv_obj_t* c = card(page, 16, 272, 600, 172);
 
-    // Título y leyenda: punto de los últimos 3 días y raya punteada de nuevos
+    // Título y leyenda: la línea de R de cada día y la raya de nuevos
     lv_obj_t* head = row(c, 16, LV_FLEX_ALIGN_CENTER);
     lv_obj_set_pos(head, 16, 4);
-    label(head, &font_label_26, colors::text_secondary, "Caída contra caudal");
-    lv_obj_t* recent = row(head, 6, LV_FLEX_ALIGN_CENTER);
-    lv_obj_t* dot = box(recent, 0, 0, 10, 10);
-    lv_obj_set_style_radius(dot, LV_RADIUS_CIRCLE, 0);
-    fill(dot, colors::text);
-    label(recent, &font_label_26, colors::text_secondary, "3 días");
+    label(head, &font_label_26, colors::text_secondary, "R por día · 30 días");
     lv_obj_t* fresh = row(head, 6, LV_FLEX_ALIGN_CENTER);
     lv_obj_t* dash = box(fresh, 0, 0, 24, 2);
     fill(box(dash, 0, 0, 8, 2), colors::text_disabled);
     fill(box(dash, 14, 0, 8, 2), colors::text_disabled);
     label(fresh, &font_label_26, colors::text_secondary, "nuevos");
 
-    for (const int psi : {6, 3, 0}) {
-        const int32_t y = px(chart_y(static_cast<float>(psi)));
-        char buf[4];
-        snprintf(buf, sizeof buf, "%d", psi);
-        axis_label(c, buf, px(kPlotX) - 12, y - 16, LV_TEXT_ALIGN_RIGHT);
-        if (psi == 0) {
-            fill(box(c, px(kPlotX), y - 1, px(kPlotW) + 1, 2), colors::border_control);
-        } else {
-            fill(box(c, px(kPlotX), y, px(kPlotW) + 1, 1), colors::border);
-        }
-    }
-    // Caudal abajo (x del canvas, sin el borde: + 1)
-    axis_label(c, "0", px(chart_x(0)) + 1, 145, LV_TEXT_ALIGN_LEFT);
-    axis_label(c, "5", px(chart_x(5)) + 1, 145, LV_TEXT_ALIGN_CENTER);
-    axis_label(c, "10", px(chart_x(10)) + 1, 145, LV_TEXT_ALIGN_CENTER);
-    axis_label(c, "15 L/min", px(chart_x(15)) + 1, 145, LV_TEXT_ALIGN_RIGHT);
+    fill(box(c, px(kPlotX), px(kPlotBase) - 1, px(kPlotW) + 1, 2), colors::border_control);
+    axis_label(c, "0", px(kPlotX) - 12, px(kPlotBase) - 16, LV_TEXT_ALIGN_RIGHT);
+    top_label_ = axis_label(c, "", px(kPlotX) - 12, px(kPlotBase - kPlotH) - 16, LV_TEXT_ALIGN_RIGHT);
+    fill(box(c, px(kPlotX), px(kPlotBase - kPlotH), px(kPlotW) + 1, 1), colors::border);
+    axis_label(c, "hace 29 días", px(kPlotX) + 1, 145, LV_TEXT_ALIGN_LEFT);
+    axis_label(c, "hoy", px(kPlotX + kPlotW) + 1, 145, LV_TEXT_ALIGN_RIGHT);
 
     plot_ = box(c, 0, 0, 598, 170);
     lv_obj_add_event_cb(plot_, draw_plot, LV_EVENT_DRAW_MAIN_END, this);
 }
 
 void DropScreen::create_side(lv_obj_t* page) {
-    lv_obj_t* same = card(page, 628, 12, 380, 196);
-    same_flow_title_ = label(same, &font_label_26, colors::text_secondary, "");
-    lv_obj_set_pos(same_flow_title_, 16, 10);
-    lv_obj_t* rows = column(same, 8, LV_FLEX_ALIGN_START);
-    lv_obj_set_pos(rows, 16, 50);
-    new_value_ = psi_row(rows, "Cartuchos nuevos");
-    now_value_ = psi_row(rows, "Hoy", &now_unit_);
-    rise_ = label(same, &font_label_26, colors::text_secondary, "");
-    lv_obj_set_pos(rise_, 16, 144);
+    lv_obj_t* r = card(page, 628, 12, 380, 196);
+    lv_obj_set_pos(label(r, &font_label_26, colors::text_secondary, "R, en psi por L/min"), 16, 10);
+    last_value_ = r_row(r, "Último", 46, &last_note_);
+    ref_value_ = r_row(r, "Cartuchos nuevos", 118, &ref_note_);
 
     lv_obj_t* todo = card(page, 628, 220, 380, 136);
-    // "Si llega a Revisar" se leía como verbo: dice cuánto y la zona de la barra
-    lv_obj_set_pos(label(todo, &font_label_26, colors::text_secondary, "Si sube 5 psi (Revisar)"), 16, 10);
+    lv_obj_set_pos(label(todo, &font_label_26, colors::text_secondary, "Si pasa de 150 % (Revisar)"), 16, 10);
     lv_obj_t* steps = label(todo, &font_label_26, colors::text, "1. Purga el PRF\n2. Cambia el de 20 µm");
     lv_obj_set_pos(steps, 16, 46);
 
@@ -182,200 +168,182 @@ void DropScreen::update(const core::SystemState& s) {
     lv_obj_set_hidden(live_, !s.has_pressure);
     lv_obj_set_hidden(locked_, s.has_pressure);
     if (!s.has_pressure) return;
-    if (!core::pressure_ok(s)) {
-        show_no_signal(s);
-        update_chart(s);
-        return;
-    }
-
-    char buf[64];
-    if (level_ == kNoSignal) {  // regresó la señal: lo que show_no_signal() escondió
-        lv_obj_set_hidden(value_, false);
-        lv_obj_set_hidden(unit_, false);
-        lv_obj_set_hidden(marker_, false);
-        lv_obj_set_y(state_, 102);
-        lv_obj_set_hidden(now_unit_, false);
-        set_text_color(now_value_, colors::text);
-    }
-    const int drop = s.p1_psi - s.p2_psi;
-    snprintf(buf, sizeof buf, "%d", drop);
-    set_text(value_, buf);
-
-    // "psi" y el estado van 13 px después de la cifra, como en el canvas
-    lv_point_t size;
-    lv_text_get_size(&size, buf, &font_digits_136, 0, 0, LV_COORD_MAX, LV_TEXT_FLAG_NONE);
-    lv_obj_set_x(unit_, 16 + size.x + 13);
-    lv_obj_set_x(state_, 16 + size.x + 13);
-    lv_obj_set_x(marker_, scale_x(core::drop_rise(s)) - 3);
-
-    snprintf(buf, sizeof buf, "P1 %d \xE2\x88\x92 P2 %d", s.p1_psi, s.p2_psi);
-    set_text(formula_, buf);
-    const bool flowing = s.flow_lpm >= 0.05f;
-    if (flowing) {
-        snprintf(buf, sizeof buf, "con %.1f L/min", static_cast<double>(s.flow_lpm));
-    } else {
-        snprintf(buf, sizeof buf, "sin agua pasando");
-    }
-    set_text(flow_note_, buf);
-
-    const core::Level level = core::drop_level(s);
-    if (static_cast<int>(level) != level_) {
-        level_ = static_cast<int>(level);
-        const int zone = static_cast<int>(level);
-        for (int i = 0; i < 3; ++i) {
-            const bool on = i == zone;
-            lv_obj_set_style_border_width(zones_[static_cast<size_t>(i)], on ? 2 : 0, 0);
-            lv_obj_set_style_text_color(zone_names_[static_cast<size_t>(i)],
-                                        color(on ? kZones[i].lit : colors::text_secondary), 0);
-        }
-        const Zone& z = kZones[zone];
-        lv_image_set_src(state_icon_, z.icon);
-        set_icon_color(state_icon_, z.lit);
-        lv_label_set_text(state_word_, z.name);
-        lv_obj_set_style_text_color(state_word_, color(z.lit), 0);
-    }
-
-    const float fresh = update_baseline(s);
-    snprintf(buf, sizeof buf, "%.1f", static_cast<double>(drop));
-    set_text(now_value_, buf);
-    // Desde cuándo: el día que se midió con cartuchos nuevos (0 = no hay)
-    const bool measured = s.drop_new_day != 0 && s.drop_new_day <= s.today;
-    lv_obj_set_hidden(rise_, !measured);
-    if (measured) {
-        const core::Date since = core::date_days_ago(core::today(s), s.year, s.today - s.drop_new_day);
-        const float rise = static_cast<float>(drop) - fresh;
-        // De 10 psi para arriba sin decimal, para que quepa con días de 2 cifras
-        const double amount = std::fabs(rise);
-        snprintf(buf, sizeof buf, amount >= 10.0 ? "%s %.0f psi desde %u %s" : "%s %.1f psi desde %u %s",
-                 rise >= 0 ? "Subió" : "Bajó", amount, static_cast<unsigned>(since.day), fmt::month_short(since.month));
-        set_text(rise_, buf);
-    }
-
+    update_reading(s);
+    update_side(s);
     update_chart(s);
 }
 
-// Al mismo caudal: la caída de nuevos (contra la de hoy). Los textos de
-// esta tarjeta tienen 346 px: "Al mismo caudal, 12.3 L/min" no cabía.
-// Regresa la de nuevos.
-float DropScreen::update_baseline(const core::SystemState& s) {
-    char buf[40];
-    snprintf(buf, sizeof buf, "Mismo caudal: %.1f L/min", static_cast<double>(s.flow_lpm));
-    set_text(same_flow_title_, buf);
-    const float fresh = core::baseline_drop(s, s.flow_lpm);
-    snprintf(buf, sizeof buf, "%.1f", static_cast<double>(fresh));
-    set_text(new_value_, buf);
-    return fresh;
-}
+// El % en grande con su estado. Sin flujo se queda el último, con su hora;
+// sin referencia o sin señal no hay %: lo dice la palabra
+void DropScreen::update_reading(const core::SystemState& s) {
+    const ClogLook look = clog_look(s);
+    const bool rated = look.kind <= ClogLook::clogged;
+    lv_obj_set_hidden(value_, !rated);
+    lv_obj_set_hidden(unit_, !rated);
+    lv_obj_set_hidden(marker_, !rated);
 
-// Sin P1 o P2 no hay caída: "Sin señal" donde va la cifra, la barra sin
-// zona ni marca y qué sensor fue en lugar de la resta. La de nuevos sí se sabe.
-void DropScreen::show_no_signal(const core::SystemState& s) {
-    update_baseline(s);
-    lv_obj_set_hidden(value_, true);
-    lv_obj_set_hidden(unit_, true);
-    lv_obj_set_hidden(marker_, true);
-    set_text(formula_, s.no_signal.p1 && s.no_signal.p2 ? "P1 y P2 sin señal"
-                       : s.no_signal.p1                 ? "P1 sin señal"
-                                                        : "P2 sin señal");
-    set_text(flow_note_, "revisa su cable");
-    lv_obj_set_hidden(rise_, true);
-    set_text(now_value_, "sin señal");
-    set_text_color(now_value_, colors::warning);
-    lv_obj_set_hidden(now_unit_, true);
-    if (level_ == kNoSignal) return;
-    level_ = kNoSignal;
+    char buf[64];
+    int32_t state_x = 24;
+    int32_t state_y = 64;
+    if (rated) {
+        snprintf(buf, sizeof buf, "%d", look.pct);
+        set_text(value_, buf);
+        // "%" y el estado van 13 px después de la cifra, como en el canvas
+        lv_point_t size;
+        lv_text_get_size(&size, buf, &font_digits_136, 0, 0, LV_COORD_MAX, LV_TEXT_FLAG_NONE);
+        lv_obj_set_x(unit_, 16 + size.x + 13);
+        state_x = 16 + size.x + 13;
+        state_y = 102;
+        lv_obj_set_x(marker_, scale_x(static_cast<float>(look.pct)) - 3);
+    }
+    lv_obj_set_pos(state_, state_x, state_y);
+
+    // Qué pasa, abajo del estado
+    if (look.kind == ClogLook::no_signal) {
+        snprintf(buf, sizeof buf, "%s sin señal: revisa su cable",
+                 s.no_signal.p1 && s.no_signal.p2 ? "P1 y P2" : s.no_signal.p1 ? "P1" : "P2");
+    } else if (look.kind == ClogLook::no_reference) {
+        snprintf(buf, sizeof buf, "Guárdala en Ajustes > Cartuchos");
+    } else if (look.kind == ClogLook::waiting) {
+        snprintf(buf, sizeof buf, "Se califica al minuto de flujo estable");
+    } else if (!look.flowing) {
+        snprintf(buf, sizeof buf, "Sin flujo · %s", look.at);  // caben 286 px junto a un % de 3 cifras
+    } else {
+        snprintf(buf, sizeof buf, "Con flujo · %s", look.at);
+    }
+    set_text(note_, buf);
+    // Hasta la orilla de la escala (x 600): a la derecha va la tarjeta de R
+    const int32_t note_x = rated ? state_x : 24;
+    lv_obj_set_pos(note_, note_x, rated ? 142 : 112);
+    lv_obj_set_width(note_, 600 - note_x);
+
+    const char* word = look.kind == ClogLook::waiting ? "Esperando flujo" : look.word;
+    set_text(state_word_, word);
+    if (look.kind == kind_) return;
+    kind_ = look.kind;
     for (size_t i = 0; i < zones_.size(); ++i) {
-        lv_obj_set_style_border_width(zones_[i], 0, 0);
-        lv_obj_set_style_text_color(zone_names_[i], color(colors::text_secondary), 0);
+        const bool on = static_cast<int>(i) == look.kind;
+        lv_obj_set_style_border_width(zones_[i], on ? 2 : 0, 0);
+        lv_obj_set_style_border_color(zones_[i], color(look.fg), 0);
+        lv_obj_set_style_text_color(zone_names_[i], color(on ? look.fg : colors::text_secondary), 0);
     }
-    lv_obj_set_pos(state_, 24, 64);
-    lv_image_set_src(state_icon_, &icon_advertencia_32);
-    set_icon_color(state_icon_, colors::warning);
-    lv_label_set_text(state_word_, "Sin señal");
-    lv_obj_set_style_text_color(state_word_, color(colors::warning), 0);
+    // El de 32 del mismo estado que el de 28 de clog_look
+    const lv_image_dsc_t* src = look.kind == ClogLook::normal    ? &icon_ok_32
+                                : look.kind == ClogLook::clogged ? &icon_alarma_32
+                                : look.kind == ClogLook::check || look.kind == ClogLook::no_signal
+                                    ? &icon_advertencia_32
+                                    : &icon_info_32;
+    lv_image_set_src(state_icon_, src);
+    set_icon_color(state_icon_, look.fg);
+    lv_obj_set_style_text_color(state_word_, color(look.fg), 0);
 }
 
+// El último R (con su caída y caudal) y la referencia (con su caudal y fecha)
+void DropScreen::update_side(const core::SystemState& s) {
+    char buf[48];
+    if (s.clog_r > 0.0f) {
+        snprintf(buf, sizeof buf, "%.1f", static_cast<double>(s.clog_r));
+        set_text(last_value_, buf);
+        char at[8];
+        fmt::clock(at, sizeof at, s.clog_r_at);
+        const float psi = s.clog_r * s.clog_r_lpm;
+        snprintf(buf, sizeof buf, "%.0f psi a %.1f L/min · %s", static_cast<double>(psi), static_cast<double>(s.clog_r_lpm), at);
+        set_text(last_note_, buf);
+    } else {
+        set_text(last_value_, "--");
+        set_text(last_note_, "Al minuto de flujo estable");
+    }
+    if (s.clog_r0 > 0.0f) {
+        snprintf(buf, sizeof buf, "%.1f", static_cast<double>(s.clog_r0));
+        set_text(ref_value_, buf);
+        const uint32_t ago = s.today >= s.clog_r0_day ? s.today - s.clog_r0_day : 0;
+        const core::Date d = core::date_days_ago(core::today(s), s.year, ago);
+        snprintf(buf, sizeof buf, "%.1f L/min · %u %s", static_cast<double>(s.clog_r0_lpm), static_cast<unsigned>(d.day),
+                 fmt::month_short(d.month));
+        set_text(ref_note_, buf);
+    } else {
+        set_text(ref_value_, "--");
+        set_text(ref_note_, "Sin guardar todavía");
+    }
+}
+
+// R de cada día del último mes. El eje llega a 2.5 veces la referencia (o
+// más si un día no cabe); sin referencia, a 1.5 veces el R más alto
 void DropScreen::update_chart(const core::SystemState& s) {
-    for (size_t q = 0; q < curve_.size(); ++q) {
-        curve_[q] = {static_cast<lv_value_precise_t>(chart_x(static_cast<float>(q))),
-                     static_cast<lv_value_precise_t>(chart_y(s.drop_new_tenths[q] / 10.0f))};
+    float most = 0.0f;
+    for (const uint16_t r : s.clog_days) most = std::max(most, static_cast<float>(r) / 100.0f);
+    float top = s.clog_r0 > 0.0f ? std::max(s.clog_r0 * 2.5f, most * 1.1f) : std::max(most * 1.5f, 1.0f);
+    top = std::ceil(top);
+    if (top != plot_max_) {
+        plot_max_ = top;
+        char buf[8];
+        snprintf(buf, sizeof buf, "%.0f", static_cast<double>(top));
+        set_text(top_label_, buf);
     }
-    dot_count_ = s.drop_sample_count;
-    for (int i = 0; i < dot_count_; ++i) {
-        const core::DropSample& d = s.drop_samples[static_cast<size_t>(i)];
-        dots_[static_cast<size_t>(i)] = {px(chart_x(d.flow_tenths / 10.0f)), px(chart_y(d.drop_tenths / 10.0f)),
-                                         s.today - d.day < 3};
+    auto y_of = [top](float r) { return kPlotBase - std::clamp(r / top, 0.0f, 1.0f) * kPlotH; };
+    const auto n = static_cast<int>(s.clog_days.size());
+    for (int i = 0; i < n; ++i) {
+        const uint16_t r = s.clog_days[static_cast<size_t>(i)];
+        has_point_[static_cast<size_t>(i)] = r > 0;
+        points_[static_cast<size_t>(i)] = {static_cast<lv_value_precise_t>(kPlotX + kPlotW * i / (n - 1)),
+                                           static_cast<lv_value_precise_t>(y_of(static_cast<float>(r) / 100.0f))};
     }
-    today_shown_ = s.flow_lpm >= 0.05f && core::pressure_ok(s);  // sin señal no hay punto de hoy
-    today_x_ = px(chart_x(s.flow_lpm));
-    today_y_ = px(chart_y(static_cast<float>(s.p1_psi - s.p2_psi)));
+    const float ratios[3] = {1.0f, core::kClogWarningRatio, core::kClogAlarmRatio};
+    for (size_t i = 0; i < lines_y_.size(); ++i) {
+        lines_y_[i] = s.clog_r0 > 0.0f ? px(y_of(s.clog_r0 * ratios[i])) : -1;
+    }
     lv_obj_invalidate(plot_);
 }
 
 void DropScreen::draw_plot(lv_event_t* e) {
-    auto* self = static_cast<DropScreen*>(lv_event_get_user_data(e));
+    const auto* self = static_cast<DropScreen*>(lv_event_get_user_data(e));
     lv_layer_t* layer = lv_event_get_layer(e);
     lv_area_t area;
     lv_obj_get_coords(self->plot_, &area);
     const float x0 = static_cast<float>(area.x1);
     const float y0 = static_cast<float>(area.y1);
 
-    // Curva de cartuchos nuevos punteada: 8 px de raya y 6 de hueco a lo largo
-    // de la curva. LVGL solo puntea líneas horizontales o verticales.
+    // Nuevos punteada; 150 y 200 % delgadas en su color
     lv_draw_line_dsc_t line;
     lv_draw_line_dsc_init(&line);
-    line.width = 2;
-    line.color = color(colors::text_disabled);
-    float carry = 0.0f;  // cuánto lleva el patrón de raya y hueco
-    for (size_t i = 0; i + 1 < self->curve_.size(); ++i) {
-        const float ax = static_cast<float>(self->curve_[i].x);
-        const float ay = static_cast<float>(self->curve_[i].y);
-        const float bx = static_cast<float>(self->curve_[i + 1].x);
-        const float by = static_cast<float>(self->curve_[i + 1].y);
-        const float len = std::hypot(bx - ax, by - ay);
-        float t = 0.0f;
-        while (t < len) {
-            const bool on = carry < 8.0f;
-            const float step = std::min(len - t, on ? 8.0f - carry : 14.0f - carry);
-            if (on) {
-                line.p1 = {static_cast<lv_value_precise_t>(x0 + ax + (bx - ax) * t / len),
-                           static_cast<lv_value_precise_t>(y0 + ay + (by - ay) * t / len)};
-                line.p2 = {static_cast<lv_value_precise_t>(x0 + ax + (bx - ax) * (t + step) / len),
-                           static_cast<lv_value_precise_t>(y0 + ay + (by - ay) * (t + step) / len)};
-                lv_draw_line(layer, &line);
-            }
-            t += step;
-            carry = std::fmod(carry + step, 14.0f);
-        }
+    const uint32_t tones[3] = {colors::text_disabled, colors::warning, colors::alarm};
+    for (size_t i = 0; i < self->lines_y_.size(); ++i) {
+        if (self->lines_y_[i] < 0) continue;
+        line.color = color(tones[i]);
+        line.width = i == 0 ? 2 : 1;
+        line.dash_width = i == 0 ? 8 : 0;
+        line.dash_gap = i == 0 ? 6 : 0;
+        line.p1 = {static_cast<lv_value_precise_t>(x0 + kPlotX), static_cast<lv_value_precise_t>(y0 + self->lines_y_[i])};
+        line.p2 = {static_cast<lv_value_precise_t>(x0 + kPlotX + kPlotW),
+                   static_cast<lv_value_precise_t>(y0 + self->lines_y_[i])};
+        lv_draw_line(layer, &line);
     }
 
-    // Puntos de 8 px: los viejos en tubería y los de los últimos 3 días en texto
+    // R de cada día: línea entre días seguidos con agua y un punto en cada uno
+    line.color = color(colors::text);
+    line.width = 3;
+    line.dash_width = 0;
+    line.dash_gap = 0;
+    line.round_start = 1;
+    line.round_end = 1;
     lv_draw_rect_dsc_t dot;
     lv_draw_rect_dsc_init(&dot);
     dot.radius = LV_RADIUS_CIRCLE;
     dot.bg_opa = LV_OPA_COVER;
-    for (const bool recent : {false, true}) {
-        dot.bg_color = color(recent ? colors::text : colors::pipe);
-        for (int i = 0; i < self->dot_count_; ++i) {
-            const Dot& d = self->dots_[static_cast<size_t>(i)];
-            if (d.recent != recent) continue;
-            const lv_area_t a = {area.x1 + d.x - 4, area.y1 + d.y - 4, area.x1 + d.x + 3, area.y1 + d.y + 3};
-            lv_draw_rect(layer, &dot, &a);
+    dot.bg_color = color(colors::text);
+    for (size_t i = 0; i < self->points_.size(); ++i) {
+        if (!self->has_point_[i]) continue;
+        const lv_point_precise_t& p = self->points_[i];
+        if (i > 0 && self->has_point_[i - 1]) {
+            const lv_point_precise_t& q = self->points_[i - 1];
+            line.p1 = {static_cast<lv_value_precise_t>(x0 + q.x), static_cast<lv_value_precise_t>(y0 + q.y)};
+            line.p2 = {static_cast<lv_value_precise_t>(x0 + p.x), static_cast<lv_value_precise_t>(y0 + p.y)};
+            lv_draw_line(layer, &line);
         }
-    }
-
-    // Hoy: un aro alrededor de la caída de ahorita
-    if (self->today_shown_) {
-        lv_draw_rect_dsc_t ring;
-        lv_draw_rect_dsc_init(&ring);
-        ring.radius = LV_RADIUS_CIRCLE;
-        ring.bg_opa = LV_OPA_TRANSP;
-        ring.border_color = color(colors::text);
-        ring.border_width = 3;
-        ring.border_opa = LV_OPA_COVER;
-        const lv_area_t a = {area.x1 + self->today_x_ - 10, area.y1 + self->today_y_ - 10,
-                             area.x1 + self->today_x_ + 10, area.y1 + self->today_y_ + 10};
-        lv_draw_rect(layer, &ring, &a);
+        const int32_t cx = px(x0 + static_cast<float>(p.x));
+        const int32_t cy = px(y0 + static_cast<float>(p.y));
+        const lv_area_t a = {cx - 4, cy - 4, cx + 3, cy + 3};
+        lv_draw_rect(layer, &dot, &a);
     }
 }
 

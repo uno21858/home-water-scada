@@ -55,6 +55,7 @@ int main()
     actions.alarm_test = demo::on_alarm_test;
     actions.restart_requested = demo::on_restart;
     actions.bucket_test_started = demo::on_bucket_test_started;
+    actions.clog_reference_saved = demo::on_clog_reference;
     ui::init(demo::state(), actions);
     // Como el firmware: recién actualizada arranca en Diagnóstico
     if (demo::state().trial == core::FirmwareTrial::testing) ui::show(ui::Screen::diagnostics);

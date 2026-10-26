@@ -14,7 +14,7 @@ void tick_minute(SystemState& s) {
     mixer_tick_minute(s);
     if (s.service_minutes_left > 0) --s.service_minutes_left;
     check_supply(s);
-    check_drop(s);
+    close_old_drop_notices(s);
 }
 
 void service_start(SystemState& s) { s.service_minutes_left = kServiceMinutes; }
@@ -30,30 +30,11 @@ void check_supply(SystemState& s) {
     if (!lost && open) resolve_event(s, EventKind::no_supply);
 }
 
-void check_drop(SystemState& s) {
-    if (!pressure_ok(s) || in_service(s) || s.flow_lpm < kFlowingLpm) return;
-    const float rise = drop_rise(s);
-    const auto psi = static_cast<uint16_t>(std::max(0, s.p1_psi - s.p2_psi));
-    const bool warning = has_open_event(s, EventKind::drop_warning);
-    const bool alarm = has_open_event(s, EventKind::drop_alarm);
-
-    if (alarm) {
-        if (rise >= kDropAlarmRise - kDropHysteresis) return;  // sigue en Tapados
-        resolve_event(s, EventKind::drop_alarm);
-        // Bajó de Tapados pero sigue arriba de lo que saca de Revisar
-        if (rise >= kDropWarningRise - kDropHysteresis) add_event(s, EventKind::drop_warning, psi);
-        return;
-    }
-    if (rise >= kDropAlarmRise) {
-        if (warning) resolve_event(s, EventKind::drop_warning);
-        add_event(s, EventKind::drop_alarm, psi);
-        return;
-    }
-    if (warning) {
-        if (rise < kDropWarningRise - kDropHysteresis) resolve_event(s, EventKind::drop_warning);
-        return;
-    }
-    if (rise >= kDropWarningRise) add_event(s, EventKind::drop_warning, psi);
+void close_old_drop_notices(SystemState& s) {
+    // La caída con umbrales fijos en psi ya no se califica (core/clog.h): los
+    // avisos que dejó el firmware de antes no se quitarían solos
+    resolve_event(s, EventKind::drop_warning);
+    resolve_event(s, EventKind::drop_alarm);
 }
 
 void network_tick(SystemState& s, bool online) {

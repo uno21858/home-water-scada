@@ -552,6 +552,14 @@ void HistoryScreen::update_events(const core::SystemState& s) {
                 tone = icon_tone = colors::warning;
                 src = &icon_advertencia_32;
                 break;
+            case core::EventKind::clog_warning:
+            case core::EventKind::clog_alarm: {
+                const bool alarm = ev.kind == core::EventKind::clog_alarm;
+                snprintf(title, sizeof title, "Filtros al %u %%", static_cast<unsigned>(ev.value));
+                tone = icon_tone = alarm ? colors::alarm : colors::warning;
+                src = alarm ? &icon_alarma_32 : &icon_advertencia_32;
+                break;
+            }
             case core::EventKind::no_signal:  // explica un hueco en Presiones
                 snprintf(title, sizeof title, "%s sin señal", fmt::sensor_name(ev.value));
                 tone = icon_tone = colors::warning;

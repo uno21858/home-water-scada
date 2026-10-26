@@ -3,6 +3,7 @@
 #include <cstdio>
 #include <cstring>
 
+#include "components/clog_look.h"
 #include "components/primitives.h"
 #include "theme/colors.h"
 #include "theme/fonts.h"
@@ -153,7 +154,7 @@ void OverviewScreen::create_train(lv_obj_t* page) {
     flow_ = label(flow, &font_digits_44, colors::water, "");
     label(flow, &font_label_26, colors::text_secondary, "L/min");
 
-    // "Caída 4 psi · Normal" no cabe (264 px de 232): el estado va con su ícono
+    // "Filtros 101 % · Normal" no cabe en 232 px: el estado va con su ícono
     drop_row_ = row(c, 6, LV_FLEX_ALIGN_CENTER);
     drop_ = label(drop_row_, &font_label_26, colors::text_secondary, "");
     drop_icon_ = icon(drop_row_, &icon_ok_28, colors::ok);
@@ -264,25 +265,23 @@ void OverviewScreen::update(const core::SystemState& s) {
         lv_obj_set_style_text_color(flow_, color(flowing ? colors::water : colors::text_disabled), 0);
     }
 
-    // Caída del tren: solo con P1 y P2
+    // Los cartuchos (R contra R0): solo con P1 y P2. "Filtros sin referencia"
+    // no cabe en 232 px: va "Sin referencia" con el ícono de info
     lv_obj_set_hidden(drop_row_, !s.has_pressure);
     if (s.has_pressure) {
-        // Sin señal de P1 o P2 no hay caída: "Caída sin señal" (230 px de 232)
-        const bool ok = core::pressure_ok(s);
-        if (ok) {
-            snprintf(buf, sizeof buf, "Caída %d psi", s.p1_psi - s.p2_psi);
+        const ClogLook look = clog_look(s);
+        if (look.kind == ClogLook::no_signal || look.kind == ClogLook::no_reference) {
+            snprintf(buf, sizeof buf, "%s", look.word);
+        } else if (look.pct >= 0) {
+            snprintf(buf, sizeof buf, "Filtros %d %%", look.pct);
         } else {
-            snprintf(buf, sizeof buf, "Caída sin señal");
+            snprintf(buf, sizeof buf, "Filtros");
         }
         set_text(drop_, buf);
-        const int level = ok ? static_cast<int>(core::drop_level(s)) : kNoSignal;
-        if (level != drop_level_) {
-            drop_level_ = level;
-            static const lv_image_dsc_t* const kIcons[4] = {&icon_ok_28, &icon_advertencia_28, &icon_alarma_28,
-                                                             &icon_advertencia_28};
-            static const uint32_t kTones[4] = {colors::ok, colors::warning, colors::alarm, colors::warning};
-            lv_image_set_src(drop_icon_, kIcons[level]);
-            set_icon_color(drop_icon_, kTones[level]);
+        if (look.kind != drop_level_) {
+            drop_level_ = look.kind;
+            lv_image_set_src(drop_icon_, look.icon);
+            set_icon_color(drop_icon_, look.fg);
         }
     }
 

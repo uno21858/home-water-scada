@@ -28,12 +28,14 @@ Look look_of(core::EventKind kind) {
         case core::EventKind::purge:
             return {&icon_cartucho_32, colors::text_secondary, colors::text};
         case core::EventKind::drop_warning:
+        case core::EventKind::clog_warning:
         case core::EventKind::offline:
         case core::EventKind::mixer_fault:
         case core::EventKind::no_supply:
         case core::EventKind::no_signal:
             return {&icon_advertencia_32, colors::warning, colors::warning};
         case core::EventKind::drop_alarm:
+        case core::EventKind::clog_alarm:
         case core::EventKind::alarm:
             return {&icon_alarma_32, colors::alarm, colors::alarm};
         case core::EventKind::dose:
@@ -157,7 +159,8 @@ void EventsScreen::refresh() {
         const bool notice = ev.kind == core::EventKind::drop_warning || ev.kind == core::EventKind::drop_alarm ||
                             ev.kind == core::EventKind::offline || ev.kind == core::EventKind::alarm ||
                             ev.kind == core::EventKind::mixer_fault || ev.kind == core::EventKind::no_supply ||
-                            ev.kind == core::EventKind::no_signal;
+                            ev.kind == core::EventKind::no_signal || ev.kind == core::EventKind::clog_warning ||
+                            ev.kind == core::EventKind::clog_alarm;
         if (filter_ == Filter::active) {
             // Además de las alarmas, los avisos que siguen sin quitarse
             if (!notice || ev.kind == core::EventKind::alarm || ev.resolved_at != core::kNoTime) continue;
@@ -217,6 +220,12 @@ void EventsScreen::refresh() {
             case core::EventKind::no_signal:
                 snprintf(title, sizeof title, "%s sin señal", fmt::sensor_name(ev.value));
                 detail = " · revisa su cable";
+                break;
+            case core::EventKind::clog_warning:
+            case core::EventKind::clog_alarm:
+                snprintf(title, sizeof title, "Filtros al %u %% · %s", static_cast<unsigned>(ev.value),
+                         ev.kind == core::EventKind::clog_warning ? "Revisar" : "Tapados");
+                detail = " · contra cartuchos nuevos";
                 break;
         }
         if (notice) {

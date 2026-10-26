@@ -6,6 +6,7 @@
 
 #include "components/mixer.h"
 #include "level.h"
+#include "components/clog_look.h"
 #include "components/primitives.h"
 #include "theme/colors.h"
 #include "theme/fonts.h"
@@ -265,7 +266,8 @@ void HomeScreen::create_tags(lv_obj_t* page) {
 }
 
 void HomeScreen::create_strip(lv_obj_t* page) {
-    // Caída del tren: el color y la palabra dicen si está bien
+    // Los cartuchos: R, cuánto contra la referencia y el estado (clog_look).
+    // "R 3.9 · 101 %" y "Tapados" miden 326 de 328 px
     drop_live_ = box(page, 16, 388, 360, 56);
     link_to(drop_live_, Screen::pressure_drop, &styles::button_secondary_pressed);
     lv_obj_set_style_radius(drop_live_, 10, 0);
@@ -275,11 +277,11 @@ void HomeScreen::create_strip(lv_obj_t* page) {
     lv_obj_set_flex_flow(drop_live_, LV_FLEX_FLOW_ROW);
     lv_obj_set_flex_align(drop_live_, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
     lv_obj_set_style_pad_column(drop_live_, 8, 0);
-    lv_obj_set_flex_grow(label(drop_live_, &font_label_26, colors::text_secondary, "Caída"), 1);
+    drop_name_ = label(drop_live_, &font_label_26, colors::text_secondary, "R");
     drop_value_ = label(drop_live_, &font_digits_44, colors::text, "");
-    drop_unit_ = label(drop_live_, &font_label_26, colors::text_secondary, "psi");
+    drop_detail_ = label(drop_live_, &font_label_26, colors::text_secondary, "");
+    lv_obj_set_flex_grow(box(drop_live_, 0, 0, 0, 1), 1);  // la palabra a la derecha
     drop_word_ = label(drop_live_, &font_label_26, colors::ok, "");
-    lv_obj_set_style_margin_left(drop_word_, 8, 0);
 
     // Litros de hoy. Sin P1 y P2 la caída no sale y Hoy y Toca echar
     // ocupan todo el renglón (layout_strip)
@@ -379,38 +381,42 @@ void HomeScreen::update_pressure(const core::SystemState& s) {
     lv_obj_set_hidden(p1_marker_, s.no_signal.p1);
     lv_obj_set_hidden(p2_marker_, s.no_signal.p2);
 
-    // La caída necesita los dos: sin uno, "Sin señal" en lugar de la cifra
-    const bool ok = core::pressure_ok(s);
-    lv_obj_set_hidden(drop_value_, !ok);
-    lv_obj_set_hidden(drop_unit_, !ok);
-    const int drop = s.p1_psi - s.p2_psi;
-    snprintf(buf, sizeof buf, "%d", drop);
-    set_text(drop_value_, buf);
+    update_clog(s);
+}
 
-    const int level_now = ok ? static_cast<int>(core::drop_level(s)) : kNoSignal;
-    if (level_now == drop_level_) return;
-    drop_level_ = level_now;
-    uint32_t fg = colors::ok;
-    uint32_t bg = colors::ok_bg;
-    const char* word = "Normal";
-    const auto level = static_cast<core::Level>(level_now);
-    if (!ok) {
-        fg = colors::warning;
-        bg = colors::warning_bg;
-        word = "Sin señal";
-    } else if (level == core::Level::warning) {
-        fg = colors::warning;
-        bg = colors::warning_bg;
-        word = "Revisar";
-    } else if (level == core::Level::alarm) {
-        fg = colors::alarm;
-        bg = colors::alarm_bg;
-        word = "Tapados";
+// R, % y estado de los cartuchos. Sin flujo: "Sin flujo" en gris y el último
+// estado con su hora; sin R, "Filtros" y lo que se sepa
+void HomeScreen::update_clog(const core::SystemState& s) {
+    const ClogLook look = clog_look(s);
+    const bool rated = look.kind <= ClogLook::clogged;
+    const bool show_r = look.flowing && look.has_r && look.kind != ClogLook::no_signal;
+    lv_obj_set_hidden(drop_name_, !show_r);
+    lv_obj_set_hidden(drop_value_, !show_r);
+    set_text(drop_value_, look.r);
+    char buf[24];
+    if (show_r) {
+        if (look.pct >= 0) {
+            snprintf(buf, sizeof buf, "· %d %%", look.pct);
+        } else {
+            buf[0] = '\0';
+        }
+    } else {
+        snprintf(buf, sizeof buf, "%s", look.kind != ClogLook::no_signal && !look.flowing ? "Sin flujo" : "Filtros");
     }
-    lv_obj_set_style_bg_color(drop_live_, color(bg), 0);
-    lv_obj_set_style_border_color(drop_live_, color(fg), 0);
-    lv_label_set_text(drop_word_, word);
-    lv_obj_set_style_text_color(drop_word_, color(fg), 0);
+    set_text(drop_detail_, buf);
+    // Sin flujo, el estado lleva su hora: "Normal 18:42"
+    if (rated && !look.flowing) {
+        snprintf(buf, sizeof buf, "%s %s", look.word, look.at);
+    } else {
+        snprintf(buf, sizeof buf, "%s", look.word);
+    }
+    set_text(drop_word_, buf);
+
+    if (look.kind == drop_level_) return;
+    drop_level_ = look.kind;
+    lv_obj_set_style_bg_color(drop_live_, color(look.bg), 0);
+    lv_obj_set_style_border_color(drop_live_, color(look.border), 0);
+    lv_obj_set_style_text_color(drop_word_, color(look.fg), 0);
 }
 
 void HomeScreen::update_level(const core::SystemState& s) {

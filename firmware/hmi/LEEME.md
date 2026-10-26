@@ -146,6 +146,7 @@ imprime cómo quedó, para revisarla desde arriba sin ir a verla:
 ✓ Memoria: leyó 52 datos guardados
 ✓ ADS1115 · P1 0.441 V, P2 0.438 V, nivel 0.591 V, LDR 0.880 V
 · Detectados: presión sí, nivel sí, LDR sí
+✓ Filtros: R 3.9, 101 % de la referencia, Normal
 · Bomba R: no está en menuconfig
 · Servidor: sin configurar
 ```
@@ -220,7 +221,13 @@ gris lo que lee cada entrada. La bomba R no se detecta: va en `menuconfig`.
   rayas; el demo de Waveshare usa 24 y parpadea. Si la imagen se recorre,
   bajarlo. La PSRAM va a 80 MHz; el demo usa 120, que en IDF es experimental.
 - El brillo con el LDR (`adjust_brightness` en `main/app.cpp`) y las rayitas
-  de señal del WiFi son a ojo.
+  de señal del WiFi son a ojo. El brillo va a todo desde 0.4 V del LDR y de
+  noche no baja de 20 % (26 oct: de día se quedaba bajo; antes llegaba a
+  todo hasta 0.9 V). Si de día sigue bajo, `/estado` dice cuánto marca el
+  LDR (A3) y se baja `kLdrBrightVolts`.
+- Los cartuchos (`core/clog.h`): con cartuchos nuevos y el agua corriendo
+  pareja un minuto, Ajustes > Cartuchos > Guardar referencia. Sin eso dice
+  "Sin referencia" y no avisa nada.
 - F en reposo: con la interrupción de la ESPDuino, sin filtro, salía a veces
   un pulso suelto con el agua parada. El PCNT ya filtra lo de menos de 10 µs
   (el máximo del S3 es ~12.8 µs). Para ver si con eso basta, con el agua

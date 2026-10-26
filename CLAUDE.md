@@ -16,9 +16,8 @@ Mientras llega el hardware, se desarrolla en el simulador con SDL (Mac y Fedora)
 
 - `core/`: lógica pura, sin LVGL ni hardware; la usan igual el simulador y el
   firmware. `system_state.h` es el estado que muestra la interfaz y los
-  umbrales: la caída del tren contra la de cartuchos nuevos al mismo caudal
-  (`drop_level`, documento pág. 40), el ORP del DS y el sin agua del SIAPA
-  (`supply_lost`). Lo que decide:
+  umbrales: qué tan tapados van los cartuchos (`clog_level`, de `clog`), el
+  ORP del DS y el sin agua del SIAPA (`supply_lost`). Lo que decide:
   - `water`: `set_flow` (caudal en vivo), `count_liters` (lo que contó F),
     `register_dose`, `register_filter` y la presión: `set_pressures` con los
     volts de cada sensor (psi = (V − V0) × 58, documento pág. 39) y
@@ -35,9 +34,9 @@ Mientras llega el hardware, se desarrolla en el simulador con SDL (Mac y Fedora)
     apaga: corre cuando sube el agua. Después de un reinicio arranca apagada
     y lo que faltaba queda pendiente (`mixer_after_restart`).
   - `monitor`: `tick_minute` (cada minuto: muestras, bomba R, modo de cambio y
-    los avisos de sin agua y de caída) y el modo de cambio de cartuchos
-    (`service_start`, `service_end`). La caída se anota en Revisar o Tapados
-    solo con flujo y sale con 1 psi de margen (`kDropHysteresis`).
+    el aviso de sin agua) y el modo de cambio de cartuchos (`service_start`,
+    `service_end`). Cierra los avisos de caída que dejó el firmware de antes
+    (`close_old_drop_notices`).
     `network_tick` cada segundo: al regresar la red, si estuvo caída 2 min o
     más, anota "Sin red" con los minutos.
   - `events`: el registro que leen Alarmas e Historial, y las alarmas a
@@ -62,6 +61,22 @@ Mientras llega el hardware, se desarrolla en el simulador con SDL (Mac y Fedora)
     cuenta: `pressure_ok`, `level_ok` y `signal_lost` en `system_state.h`
     (no hay "Sin agua" ni caída falsos, la bomba R no espera agua y no se
     manda al servidor).
+  - `clog`: qué tan tapados van los cartuchos (Erick, 26 oct 2026). El tren
+    descarga a la cisterna abierta: con flujo P2 queda en 0 a 1 psi y la
+    caída es casi P1, que cambia con el SIAPA; los umbrales fijos de 5 y 10
+    psi marcaban Tapados con cartuchos nuevos (22 psi a 5.6 L/min), y la
+    curva de nuevos al mismo caudal nunca se guardaba en el firmware. Ahora
+    R = (P1 − P2) / F en psi por L/min: `clog_tick` cada segundo junta 60 s
+    con F de 1 L/min o más, estables en los últimos 30 (15 %), y evalúa el
+    promedio (una vez por minuto de agua). Contra R0 (`clog_save_reference`,
+    "Cartuchos nuevos: guardar referencia" en Ajustes > Cartuchos, con su
+    fecha y caudal; sin evaluación de hace menos de 90 s no guarda): menos
+    de 150 % Normal, de 150 a 200 Revisar, más de 200 Tapados, con 10 puntos
+    de margen para salir. Sin R0, `ClogState::none` y sin avisos. Sin flujo
+    se queda el último estado con su hora (`clog_r_at`). Cada evaluación
+    entra al promedio del día (`clog_days`, centésimas) y a los eventos
+    `clog_warning` y `clog_alarm` (value: %). La pastilla sale del estado, ya
+    no de la caída sola. Al servidor van `filter_r` y `filter_pct`.
   - `telemetry`: lo que va al servidor de la casa (VictoriaMetrics en el NAS,
     formato de línea de Influx). `queue_reading` mete a la cola (`Outbox`, un
     anillo sobre memoria del que llama: en la 7B la PSRAM, 8,640 de 48 bytes
@@ -81,7 +96,9 @@ Mientras llega el hardware, se desarrolla en el simulador con SDL (Mac y Fedora)
     `format` (números al formato de México).
   - `components/`: `primitives` (box, label, icon, card, link_to, botones),
     `header` (atrás, título, enlace y "?" según la pantalla; el WiFi con 3, 2 o
-    1 arcos según `wifi_bars`, como dice el DS), `status_pill`
+    1 arcos según `wifi_bars`, como dice el DS), `clog_look` (lo que dicen de
+    los cartuchos todas las tarjetas: palabra, colores, R, % y hora),
+    `status_pill`
     (OK, Advertencia, Alarma o Mantenimiento; la usan encabezado y Pasillo), `nav_bar`,
     `confirm_dialog`, `keypad_dialog` (unidad y decimales con `KeypadSpec`),
     `segmented` (selector de 2 a 4 opciones), `mixer` (impulsor que gira y el
@@ -189,7 +206,7 @@ CLion sale en la lista de configuraciones). La lista de targets está en
 demo, va también ahí.
 Escenarios: `sin-flujo`, `sin-red`, `alarma`, `sensor`, `tope`, `fase1`,
 `revisar`, `tapados`, `sin-agua`, `cisterna-vacia`, `sin-12v`, `nivel-bajo`, `atorada`,
-`ro-cocina`, `sin-senal`, `actualizando`, `a-prueba` y `completo` (`demo::set_scenario` en `simulator/demo.h`).
+`ro-cocina`, `sin-referencia`, `sin-senal`, `actualizando`, `a-prueba` y `completo` (`demo::set_scenario` en `simulator/demo.h`).
 El demo arranca como la casa de Erick, en la fase 1.5: todo menos la sonda ORP
 y las bombas A y B. `HMI_DEMO=completo` prende la sonda para comparar con el
 canvas. Dosis con 0.1 mL por litro (la prueba de jarras del documento: el
@@ -306,7 +323,10 @@ laptop o la Mac (24 oct; la Mac lleva la misma llave y el mismo `sdkconfig`).
 El checklist de después (`/estado`, Diagnóstico solo) ya salió en la 7B (24
 oct, c1a275f): táctil, expansor, WiFi, NTP y la NVS después del reinicio
 (leyó 62 llaves). La prueba de la versión nueva bajó de 60 a 30 s.
-Faltan los sensores (se detectan solos;
+Desde el 26 oct está en la casa midiendo P1, P2 y F ("ya ando en prod"):
+con eso salió que la caída con umbrales fijos marcaba Tapados con 22 psi a
+5.6 L/min, y cambió a R contra R0 (`core/clog.h`). Falta guardar la
+referencia con los cartuchos de ahorita. Los sensores se detectan solos (
 las 22 pantallas quedan igual detectándolos en vivo que arrancando con ellos,
 comparado pixel por pixel). La red de la casa es una sola, 192.168.1.x (los Deco en modo AP, las
 IPs las da el módem); el NAS es 192.168.1.68.
@@ -348,8 +368,6 @@ Pendiente, en este orden:
   el título. Con 100 mL o más, las marcas de la derecha se recorren 12 px.
 - En DetalleP, "Con V1 cerrada y sin presión" no cabe en 348 px (en el canvas se
   sale de la tarjeta): dice "Con V1 cerrada, sin presión".
-- La curva de "nuevos" en DetalleCaida se puntea a mano: LVGL solo puntea
-  líneas horizontales o verticales.
 - Textos que en el canvas tampoco caben y se quedaron igual, para arreglar en el
   diseño: en Cartuchos "Lo cambié" toca el borde de su botón.
 - En Cartuchos los litros van en etiqueta (26 Medium, texto-2) justo detrás de
@@ -361,14 +379,32 @@ Pendiente, en este orden:
   salían los días desde 1970) y Resumen pone ese antes de los que todavía no
   tocan, con "Sin fecha: regístralo en Cartuchos". "Lo cambié" o "Ya purgué"
   le pone fecha. No está en el canvas.
-- En DetalleCaida los textos que no cabían se acortaron: "con 12.4 L/min",
-  "Mismo caudal: 12.4 L/min" y "Subió 1.4 psi desde 2 sep" (de 10 psi para
-  arriba sin decimal). "Si llega a Revisar" se leía como verbo: dice "Si sube
-  5 psi (Revisar)".
-- La caída se califica contra la de cartuchos nuevos al mismo caudal, como
-  dice el documento (Revisar a +5 psi y Tapados a +10), no con 5 y 10 psi
-  fijos como el DS. La cifra grande sigue siendo P1 − P2, pero la escala de
-  DetalleCaida va de 0 a "+15 psi" y la marca es lo que subió.
+- Los cartuchos se califican con R = (P1 − P2) / F contra la referencia de
+  nuevos (`core/clog.h`), no con la caída en psi del DS ni del documento:
+  - Tren: "R 3.9 · 101 % Normal" en lugar de "Caída 4 psi Normal" (326 de
+    328 px; de R = 10 para arriba sin decimal). Sin flujo, "Sin flujo" y
+    "Tapados 18:42" en el color del estado ("-- Sin flujo" no cabe con
+    Tapados). Sin referencia, "R 3.9" y "Sin referencia" en gris.
+  - Resumen (tarjeta Filtros): igual con ícono, y sin flujo "-- Sin flujo" y
+    el estado con su hora.
+  - Pasillo: "Filtros 101 % Normal"; Panorama: "Filtros 101 %" con el ícono
+    ("Filtros sin referencia" no cabe en 232: "Sin referencia"); DetalleP:
+    "Filtros · R 3.9 · 101 % Normal".
+  - DetalleCaida: el % en la cifra de 136 con el estado, la escala de 50 a
+    250 % (Normal, Revisar desde 150, Tapados arriba de 200), "R por día ·
+    30 días" con la raya punteada de nuevos y las de 150 y 200 % (rectas:
+    `dash_width` de LVGL sí las puntea), y a la derecha el último R ("39 psi
+    a 4.0 L/min · 18:42") y la referencia ("5.6 L/min · 1 oct"). "Si pasa
+    de 150 % (Revisar)" en lugar de "Si sube 5 psi". Sin flujo: "Sin flujo ·
+    18:42" junto al estado (caben 286 px a la derecha de un % de 3 cifras).
+  - Ajustes > Cartuchos lleva la tarjeta "Cartuchos nuevos" con R0, de
+    cuándo es y "Guardar referencia" (pide confirmación con el R de
+    ahorita); sin flujo estable el botón no se deja y la nota dice por qué,
+    y si se cambió un cartucho después dice que se guarde otra. Va en lugar
+    de la tabla "Cada cuánto se cambian", que ya dicen Cartuchos y Resumen.
+  - Alarmas: "Filtros al 250 % · Tapados · contra cartuchos nuevos";
+    Historial: "Filtros al 250 %". Los "Caída del tren 22 psi" del firmware
+    de antes se siguen leyendo y se cierran solos.
 - Los vasos del Tren salen llenos o vacíos según `filters[].installed` (en el
   canvas el del sarro siempre está vacío). Poner cartucho en un vaso vacío se
   registra como `EventKind::cartridge_added`: "· puesto" en Historial y "Se
@@ -388,7 +424,7 @@ Pendiente, en este orden:
   y la olita es una franja de 24 px que un `lv_timer` de 80 ms invalida
   mientras el Pasillo está abierto (`kWave` en `idle_screen.cpp` la apaga si
   en la 7B pesa). "Cisterna 73 %" va abajo a la derecha, junto a la pista:
-  en el renglón de Hoy, Caída y ORP no caben los cuatro. No está en el canvas.
+  en el renglón de Hoy, Filtros y ORP no caben los cuatro. No está en el canvas.
   Tampoco el WiFi de 40 (3, 2 o 1 arcos, o tachado en ámbar) a la izquierda
   de la pastilla, que se queda donde la pone el canvas.
 - En Ajustes, "Cambiar red" sale deshabilitado: el canvas no tiene la vista
@@ -430,7 +466,7 @@ Pendiente, en este orden:
     Pasillo, y en Alarmas e Historial.
   - Sin señal (P1, P2 o el nivel ya instalados que dejan de leer): "Sin
     señal" en ámbar donde iría su número (Resumen, DetalleP, DetalleCaida,
-    Nivel, Pasillo, la caída y la cisterna del Tren; "Caída sin señal" en
+    Nivel, Pasillo, los filtros y la cisterna del Tren; "Sin señal" en
     Panorama; "sin señal" en Diagnóstico). En las etiquetas P1 y P2 del Tren
     "P1 Sin señal" no cabe en 172 px: va el ícono de advertencia y el borde
     ámbar. Sin señal no se deja Hacer cero ni marcar "Está llena" (guardaría
@@ -475,8 +511,9 @@ Pendiente, en este orden:
   en el canvas: el DS no tiene ese estilo y no vale otra fuente por eso. Los
   dibujos son símbolos del P&ID de 72 x 60 (`pid/svg/leyenda_*.svg`); el tubo
   de "Con flujo" corre siempre.
-- En Panorama la tarjeta del Tren dice "Caída 4 psi" con el ícono del estado
-  y no "Caída 4 psi · Normal": mide 264 px y caben 232 (en el canvas se sale).
+- En Panorama la tarjeta del Tren dice "Filtros 104 %" con el ícono del
+  estado y no "Caída 4 psi · Normal": mide 264 px y caben 232 (en el canvas
+  se sale).
   La flecha va pegada al título por lo mismo. El presostato mide lo que su
   texto (en el canvas "35 a 65 psi" se sale de 140 px) y queda centrado en el
   tubo. Sin P1 y P2 no sale la caída, sin sonda no sale el ORP y sin bomba R

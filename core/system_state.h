@@ -66,13 +66,9 @@ struct FilterStatus {
     bool installed = true;   // el vaso del sarro puede estar vacío
 };
 
-// Una lectura de caída contra caudal, para ver si los cartuchos se tapan
-struct DropSample {
-    uint32_t day = 0;         // mismo conteo que SystemState::today
-    uint8_t flow_tenths = 0;  // L/min x 10
-    uint8_t drop_tenths = 0;  // psi x 10
-};
-inline constexpr int kDropSamples = 42;
+// Qué tan tapados van los cartuchos, de la última evaluación de R contra R0
+// (core/clog.h). none: sin referencia o todavía sin evaluar.
+enum class ClogState : uint8_t { none, normal, check, clogged };
 
 // Alarmas a pantalla completa (DS: las tres de la fase 3)
 enum class AlarmKind : uint8_t {
@@ -98,12 +94,14 @@ enum class EventKind : uint8_t {
     cartridge_added,  // se puso cartucho en un vaso vacío (el del sarro)
     purge,         // purga del prefiltro
     alarm,         // una alarma; value es su AlarmKind
-    drop_warning,  // caída del tren en Revisar
-    drop_alarm,    // caída del tren en Tapados
+    drop_warning,  // firmware de antes: caída en Revisar con umbrales fijos en psi (solo se leen)
+    drop_alarm,    // firmware de antes: caída en Tapados (solo se leen)
     offline,       // se cayó la red; value son los minutos sin red
     mixer_fault,   // aviso de la bomba R; value es su MixerFault
     no_supply,     // se fue el agua del SIAPA
     no_signal,     // un sensor instalado dejó de dar lectura; value es su Sensor
+    clog_warning,  // cartuchos en Revisar: value es R/R0 en %
+    clog_alarm,    // cartuchos tapados: value es R/R0 en %
 };
 
 // Los del ADS1115 que pueden quedarse sin señal (core/detect.h)
@@ -263,11 +261,18 @@ struct SystemState {
     std::array<uint8_t, 24> p1_24h{};  // una por hora, la última es la de ahorita
     std::array<uint8_t, 24> p2_24h{};
 
-    // Caída contra caudal: con cartuchos nuevos y las lecturas del último mes
-    std::array<uint8_t, 16> drop_new_tenths{};  // caída nueva a 0, 1 ... 15 L/min, en décimas
-    uint32_t drop_new_day = 0;                  // cuándo se midió con cartuchos nuevos
-    std::array<DropSample, kDropSamples> drop_samples{};  // la más vieja primero
-    uint8_t drop_sample_count = 0;
+    // Qué tan tapados van los cartuchos: R = (P1 - P2) / F (core/clog.h)
+    float clog_r = 0.0f;           // último R evaluado, psi por L/min; 0 = nunca
+    float clog_r_lpm = 0.0f;       // con qué caudal
+    uint32_t clog_r_day = 0;       // cuándo (mismo conteo que today)
+    uint16_t clog_r_at = 0;        // minuto del día
+    ClogState clog_state = ClogState::none;  // el último evaluado contra R0
+    uint16_t clog_age_s = 0xFFFF;  // segundos desde la última evaluación (no se guarda)
+    float clog_r0 = 0.0f;          // referencia con cartuchos nuevos; 0 = sin referencia
+    float clog_r0_lpm = 0.0f;      // a qué caudal se tomó
+    uint32_t clog_r0_day = 0;      // cuándo
+    std::array<uint16_t, kHistoryDays> clog_days{};  // R promedio de cada día x 100; 0 = sin agua; el último es hoy
+    uint16_t clog_today_count = 0;                   // evaluaciones de hoy, para el promedio
 
     // Filtros y cartuchos
     std::array<FilterStatus, kFilterCount> filters{};
@@ -345,31 +350,14 @@ inline uint32_t dose_ml(const SystemState& s) {
 // Abajo de esto F no cuenta y se toma como sin flujo
 inline constexpr float kFlowingLpm = 0.05f;
 
-// Caída que tenían los cartuchos nuevos a ese caudal, entre las de cada L/min.
-// Sin línea base guardada la curva es 0 y la caída cuenta completa.
-inline float baseline_drop(const SystemState& s, float lpm) {
-    const float q = std::clamp(lpm, 0.0f, 15.0f);
-    const int i = std::min(14, static_cast<int>(q));
-    const float a = static_cast<float>(s.drop_new_tenths[static_cast<std::size_t>(i)]) / 10.0f;
-    const float b = static_cast<float>(s.drop_new_tenths[static_cast<std::size_t>(i + 1)]) / 10.0f;
-    return a + (b - a) * (q - static_cast<float>(i));
-}
-
-// Cuánto subió la caída (P1 - P2) sobre la de cartuchos nuevos al mismo caudal.
-// Así 6 psi a 15 L/min con cartuchos nuevos no se confunde con tapados.
-inline float drop_rise(const SystemState& s) {
-    return static_cast<float>(s.p1_psi - s.p2_psi) - baseline_drop(s, s.flow_lpm);
-}
-
-// Documento, pág. 40: Revisar a +5 psi sobre la base y Tapados a +10
-inline constexpr float kDropWarningRise = 5.0f;
-inline constexpr float kDropAlarmRise = 10.0f;
-constexpr Level drop_rise_level(float rise) {
-    if (rise >= kDropAlarmRise) return Level::alarm;
-    if (rise >= kDropWarningRise) return Level::warning;
+// Lo que dice de los cartuchos la última evaluación (core/clog.h): Revisar
+// es advertencia y Tapados alarma. Sin referencia o sin evaluar, nada: la
+// caída sola ya no prende la pastilla.
+constexpr Level clog_level(ClogState state) {
+    if (state == ClogState::clogged) return Level::alarm;
+    if (state == ClogState::check) return Level::warning;
     return Level::ok;
 }
-inline Level drop_level(const SystemState& s) { return drop_rise_level(drop_rise(s)); }
 
 // P1 y P2 instalados y los dos con lectura: la caída se puede calcular
 inline bool pressure_ok(const SystemState& s) { return s.has_pressure && !s.no_signal.p1 && !s.no_signal.p2; }
@@ -406,7 +394,8 @@ inline Level overall_level(const SystemState& s) {
         if (a.active) return Level::alarm;
     }
     Level worst = Level::ok;
-    if (pressure_ok(s) && !in_service(s)) worst = drop_level(s);
+    // El último estado de los cartuchos, aunque ahorita no pase agua
+    if (s.has_pressure && !in_service(s)) worst = clog_level(s.clog_state);
     if (s.has_orp && orp_level(s.orp_mv) > worst) worst = orp_level(s.orp_mv);
     // Avisos: la bomba R que no pudo mezclar, el SIAPA sin agua y un sensor sin señal
     const bool notice =

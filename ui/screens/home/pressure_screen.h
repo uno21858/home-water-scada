@@ -33,10 +33,11 @@ private:
     std::array<lv_obj_t*, 2> lost_{};
 
     lv_obj_t* drop_ = nullptr;
-    lv_obj_t* drop_value_ = nullptr;
-    lv_obj_t* drop_unit_ = nullptr;
+    lv_obj_t* drop_name_ = nullptr;    // "Filtros · R" o "Filtros"
+    lv_obj_t* drop_value_ = nullptr;   // R con un decimal
+    lv_obj_t* drop_detail_ = nullptr;  // "· 101 %" o "-- Sin flujo"
     lv_obj_t* drop_word_ = nullptr;
-    int drop_level_ = -1;  // -1 = todavía no se pinta; kNoSignal sin señal
+    int drop_level_ = -1;  // ClogLook::Kind pintado; -1 = todavía no se pinta
 
     lv_obj_t* chart_ = nullptr;
     lv_chart_series_t* p1_series_ = nullptr;

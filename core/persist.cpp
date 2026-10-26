@@ -31,8 +31,9 @@ void each(SaveGroup group, S& s, F&& f) {
             f("lvl_sensor", s.level_sensor_cm);
             f("lvl_intake", s.level_intake_cm);
             f("lvl_full", s.level_full_cm);
-            f("drop_new", s.drop_new_tenths);
-            f("drop_new_day", s.drop_new_day);
+            f("clog_r0", s.clog_r0);
+            f("clog_r0_lpm", s.clog_r0_lpm);
+            f("clog_r0_day", s.clog_r0_day);
             f("spares", s.spares);
             f("last_cart", s.last_cartridge);
             f("last_cart_day", s.last_cartridge_day);
@@ -71,6 +72,12 @@ void each(SaveGroup group, S& s, F&& f) {
             f("mix_runs", s.mixer_runs);
             f("mix_run_count", s.mixer_run_count);
             f("service_left", s.service_minutes_left);
+            f("clog_r", s.clog_r);
+            f("clog_r_lpm", s.clog_r_lpm);
+            f("clog_r_day", s.clog_r_day);
+            f("clog_r_at", s.clog_r_at);
+            f("clog_state", s.clog_state);
+            f("clog_today_n", s.clog_today_count);
             return;
         case SaveGroup::history:
             f("days", s.days);
@@ -80,8 +87,7 @@ void each(SaveGroup group, S& s, F&& f) {
             f("p1_24h", s.p1_24h);
             f("p2_24h", s.p2_24h);
             f("orp_7d", s.orp_7d);
-            f("drop_samples", s.drop_samples);
-            f("drop_count", s.drop_sample_count);
+            f("clog_days", s.clog_days);
             return;
     }
 }
@@ -136,10 +142,19 @@ void sanitize(SystemState& s) {
     // Listas
     if (s.recent_event_count > kEventCount) s.recent_event_count = 0;
     for (uint8_t i = 0; i < s.recent_event_count; ++i) {
-        if (!enum_le(s.recent_events[i].kind, EventKind::no_signal)) s.recent_event_count = 0;
+        if (!enum_le(s.recent_events[i].kind, EventKind::clog_alarm)) s.recent_event_count = 0;
     }
     if (s.recent_dose_count > s.recent_doses.size()) s.recent_dose_count = 0;
-    if (s.drop_sample_count > kDropSamples) s.drop_sample_count = 0;
+    // R y R0 en psi por L/min: arriba de 1,000 sería un caudal de casi 0
+    if (!finite_in(s.clog_r0, 0.0f, 1000.0f) || !finite_in(s.clog_r0_lpm, 0.0f, 100.0f)) {
+        s.clog_r0 = f.clog_r0;
+        s.clog_r0_lpm = f.clog_r0_lpm;
+    }
+    if (!finite_in(s.clog_r, 0.0f, 1000.0f) || !finite_in(s.clog_r_lpm, 0.0f, 100.0f)) {
+        s.clog_r = f.clog_r;
+        s.clog_r_lpm = f.clog_r_lpm;
+    }
+    if (!enum_le(s.clog_state, ClogState::clogged)) s.clog_state = f.clog_state;
     if (s.mixer_run_count > s.mixer_runs.size()) s.mixer_run_count = 0;
     for (uint8_t i = 0; i < s.mixer_run_count; ++i) {
         if (!enum_le(s.mixer_runs[i].reason, MixerReason::manual)) s.mixer_run_count = 0;
