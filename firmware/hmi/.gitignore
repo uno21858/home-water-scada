@@ -1,7 +1,7 @@
 build/
 managed_components/
 dependencies.lock
-sdkconfig
+# sdkconfig sí va: lo de menuconfig (bomba R, URLs) igual en las dos compus
 sdkconfig.old
 # Lo que no va a git: la red de la casa y la llave que firma las OTA
 wifi.csv

@@ -152,7 +152,9 @@ Mientras llega el hardware, se desarrolla en el simulador con SDL (Mac y Fedora)
   (`status_text`) y que `subir-ota.sh` imprime cuando la nueva pasa la
   prueba) y `app`, que junta todo
   como `simulator/main.cpp` y `demo.cpp`. La bomba R y las URLs van en
-  `menuconfig` > Casa (P1 y P2, el nivel y el LDR se detectan solos); la red en `wifi.csv` y la llave de las OTA en
+  `menuconfig` > Casa (P1 y P2, el nivel y el LDR se detectan solos) y quedan
+  en `sdkconfig`, que sí va en git (el de la casa lo sube Erick; el que arma
+  esta sesión no se sube); la red en `wifi.csv` y la llave de las OTA en
   `secretos/`, los dos fuera de git. Sin bomba R el GPIO44 no se toca y
   `sdkconfig.mesa` saca la consola por UART0 (switch en UART1: flashear y ver
   los mensajes por el mismo USB-C); con bomba R eso no compila (`#error`). Según el documento de proyecto (15 oct

@@ -79,16 +79,14 @@ idf.py -D SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.mesa" build
 idf.py -p /dev/ttyACM0 flash monitor
 ```
 
-Ese `rm -f sdkconfig` borra también lo de `menuconfig` > Casa (la URL de la
-OTA): solo para la primera vez. Del monitor se sale con `Ctrl+]`. Los
-mensajes dicen a cuántos ms quedaron armadas las pantallas y a cuántos se
-prendió la pantalla.
+Ese `rm -f sdkconfig` borra también lo de `menuconfig` > Casa (la bomba R y
+las URLs): el de la casa regresa con `git checkout sdkconfig`. Del monitor se
+sale con `Ctrl+]`. Los mensajes dicen a cuántos ms quedaron armadas las
+pantallas y a cuántos se prendió la pantalla.
 
 Para regresar a la consola por el USB nativo sin perder lo de Casa:
 `idf.py menuconfig` > Component config > ESP-STDIO > Channel for console
-output > USB Serial/JTAG Controller. No borres `sdkconfig`: se pierden la URL
-de la OTA y la bomba R (con `subir-ota.sh` se sigue pudiendo actualizar,
-pero la placa ya no revisa la URL).
+output > USB Serial/JTAG Controller.
 
 ## Desde CLion
 
@@ -122,10 +120,12 @@ git pull; ./firmware/hmi/subir-ota.sh
   una vez no se vuelve a instalar. Después de un `git pull` o un commit,
   `idf.py build` vuelve a configurar CMake solo, para que la versión sea la del
   commit nuevo.
-- En otra compu (la Mac): ESP-IDF v6.1 (arriba) y dos archivos que no van en
-  git, copiados de la laptop: `secretos/firma_ota.pem` (con otra llave la
-  placa no acepta nada) y `sdkconfig` (así las dos compilan igual: modo mesa,
-  bomba R, URL). `wifi.csv` no: la red ya está grabada en la placa y la OTA no
+- En otra compu (la Mac): ESP-IDF v6.1 (arriba) y la llave, copiada de la
+  laptop: `secretos/firma_ota.pem` (con otra llave la placa no acepta nada).
+  `sdkconfig` sí va en git (26 oct 2026): lo de `menuconfig` (bomba R, URLs,
+  consola) se cambia en una compu, se hace commit y la otra lo baja con
+  `git pull`. No trae nada secreto. Mientras no se haga commit, la versión
+  sale con "+". `wifi.csv` no: la red ya está grabada en la placa y la OTA no
   la toca; solo hace falta para la primera carga por cable.
 
 La versión nueva arranca a prueba: si en 5 min no se conecta a la red, regresa
