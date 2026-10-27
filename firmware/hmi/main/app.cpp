@@ -179,6 +179,15 @@ void watch_mixer(const sensors::Readings& r) {
         return;
     }
     if (s.mixer_on) {
+        // Cada segundo a la consola, para compararlo con el multímetro en el
+        // R100 (27 oct 2026: 196 mV, o sea 1.96 A, y la pantalla decía 0.42)
+        if (r.ina_ok) {
+            ESP_LOGI(kTag, "Bomba R: shunt %.2f mV = %.3f A · 1 s: prom %.2f mV (%.2f a %.2f) · %.2f V · config 0x%04x",
+                     static_cast<double>(r.mixer_shunt_mv), static_cast<double>(r.mixer_amps),
+                     static_cast<double>(r.mixer_shunt_avg_mv), static_cast<double>(r.mixer_shunt_min_mv),
+                     static_cast<double>(r.mixer_shunt_max_mv), static_cast<double>(r.mixer_volts),
+                     static_cast<unsigned>(r.ina_config));
+        }
         if (++mixer_seconds >= kMixerCheckSeconds && (!r.ina_ok || r.mixer_volts < kMixerMinVolts)) {
             core::mixer_report_fault(s, core::MixerFault::no_power);
         } else if (r.mixer_fault != core::MixerFault::none) {

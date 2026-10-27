@@ -22,6 +22,11 @@ struct Readings {
     bool ina_ok = false;      // el INA219 contestó la última vuelta
     float mixer_volts = 0.0f;
     float mixer_amps = 0.0f;
+    float mixer_shunt_mv = 0.0f;      // la última lectura cruda del shunt (10 µV por cuenta)
+    float mixer_shunt_avg_mv = 0.0f;  // el último segundo completo: promedio, mínimo y máximo
+    float mixer_shunt_min_mv = 0.0f;
+    float mixer_shunt_max_mv = 0.0f;
+    uint16_t ina_config = 0;          // el registro de configuración (0x399F: ±320 mV)
     // Atorada o en seco según todas las lecturas desde que se prendió la bomba
     // R (core/mixer_watch.h); none mientras no pase nada o si está apagada
     core::MixerFault mixer_fault = core::MixerFault::none;

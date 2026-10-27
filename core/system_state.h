@@ -256,7 +256,7 @@ struct SystemState {
     float ldr_volts = 0.0f;    // A3: la luz que le llega a la pantalla
     float level_volts = 0.0f;  // A2: el lazo 4-20 mA del nivel sobre R8 de 150 Ω
     float mixer_volts = 0.0f;  // INA219 en la rama de la bomba R: 0 V es apagón o fusible
-    float mixer_amps = 0.0f;   // ~1.6 A sumergida; menos es en seco, más es atorada
+    float mixer_amps = 0.0f;   // ~2 A sumergida (1.96 medidos); menos es en seco, más es atorada
     MixerFault mixer_fault = MixerFault::none;
     std::array<uint8_t, 24> p1_24h{};  // una por hora, la última es la de ahorita
     std::array<uint8_t, 24> p2_24h{};

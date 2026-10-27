@@ -29,7 +29,7 @@ inline constexpr uint32_t kMixerMaxGapMs = 200;
 struct MixerLimits {
     float min_volts = 9.0f;   // abajo: sin 12 V, la corriente no cuenta
     float dry_amps = 1.0f;    // abajo, sostenido: nivel bajo (en seco)
-    float stuck_amps = 2.5f;  // arriba, sostenido: atorada (1.5 veces los ~1.6 A de la ZYW680)
+    float stuck_amps = 2.5f;  // arriba, sostenido: atorada (1.28 veces los 1.96 A medidos de la ZYW680)
 };
 
 struct MixerWatch {

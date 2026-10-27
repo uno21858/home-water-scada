@@ -51,12 +51,12 @@ menu "Casa (home-water-scada)"
 
     menu "Bomba R (INA219)"
         # Los umbrales salen de la prueba 9b (bomba en una cubeta); estos son
-        # para arrancar: ~1.6 A sumergida (la ZYW680, 19 W a 12 V) y fusible
-        # de 2 A. Nivel bajo y atorada necesitan 500 ms seguidos, después de
-        # 500 ms de ventana ciega al prenderla (core/mixer_watch.h). Atorada
-        # era 1.90 A con una lectura suelta por segundo y la apagaba recién
-        # prendida (26 oct 2026; lo más probable, el rizo de las escobillas).
-        # Ahora 2.50, 1.5 veces lo normal.
+        # para arrancar. La ZYW680 jala 1.96 A sumergida (196 mV en el R100,
+        # medido el 27 oct 2026; la hoja dice 19 W a 12 V) y el documento
+        # lleva fusible de 2 A. Nivel bajo y atorada necesitan 500 ms
+        # seguidos, después de 500 ms de ventana ciega al prenderla
+        # (core/mixer_watch.h). Atorada era 1.90 A, abajo de lo normal: la
+        # apagaba recién prendida. Ahora 2.50, 1.28 veces lo normal.
 
         config HMI_MIXER_MIN_VOLTS_X10
             int "Abajo de este voltaje es sin 12 V (décimas de V)"

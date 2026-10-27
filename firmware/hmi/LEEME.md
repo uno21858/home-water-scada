@@ -238,10 +238,15 @@ gris lo que lee cada entrada. La bomba R no se detecta: va en `menuconfig`.
   prueba 9b; los de `menuconfig` son para arrancar. Nivel bajo (1.00 A) y
   atorada (2.50 A, antes 1.90) necesitan 500 ms seguidos después de 500 ms
   de ventana ciega al prenderla (`core/mixer_watch.h`); sin 12 V (9.0 V) se
-  revisa a los 3 s. Con 1.90 A y una lectura suelta por segundo la ZYW680
-  salía "Atorada" recién prendida (26 oct 2026; jala ~1.7 A con 11.9 V, y
-  una lectura del INA219 dura medio milisegundo: agarra el rizo de las
-  escobillas).
+  revisa a los 3 s. La ZYW680 jala 1.96 A (196 mV en el R100, medido el 27
+  oct 2026): con la atorada en 1.90 salía "Atorada" recién prendida.
+- El INA219 se configura al arrancar en 32 V y ±320 mV (0x399F, la de
+  fábrica, pero ahora escrita): con el R100 llega a 3.2 A. La consola dice
+  qué traía antes ("INA219: traía la configuración ...") y, con la bomba R
+  prendida, cada segundo el shunt crudo en mV, la corriente, el promedio
+  del último segundo con su mínimo y máximo, el voltaje y la configuración.
+  Para comparar con el multímetro en el R100: `idf.py -p PUERTO monitor`
+  con el cable en el USB-C nativo.
 - Prueba de banco, con la bomba en una cubeta: Ajustes > Diagnóstico >
   Banco > Empezar, y luego Prendida en Mezcla. Prende con la cisterna en 0 %
   y nivel bajo no la apaga; atorada y sin 12 V siguen. La corriente sale en

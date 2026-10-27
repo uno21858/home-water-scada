@@ -40,11 +40,15 @@ Mientras llega el hardware, se desarrolla en el simulador con SDL (Mac y Fedora)
     una cada ~50 ms en la tarea de sensores). 500 ms de ventana ciega al
     prenderla (el arranque jala de 3 a 5 veces) y luego 500 ms seguidos
     arriba de `stuck_amps` o abajo de `dry_amps`; un hueco de más de 200 ms
-    entre lecturas reinicia la cuenta. Con 1.90 A y una lectura suelta por
-    segundo salía Atorada recién prendida (Erick, 26 oct 2026: la ZYW680
-    jala ~1.7 A con 11.9 V; lo más probable, el rizo de las escobillas);
-    atorada quedó en 2.50. Atorada se queda hasta apagarla; en seco es lo
-    de cada momento.
+    entre lecturas reinicia la cuenta. Medido en el R100 del INA219 (Erick,
+    27 oct 2026): 196 mV, o sea 1.96 A normales, arriba de la atorada de
+    1.90 que había; quedó en 2.50 (1.28 veces). Ese día la pantalla decía
+    0.42 A estables con los 196 mV; el firmware nunca había escrito la
+    configuración del INA219 (la de fábrica ya es ±320 mV): ahora la
+    escribe al arrancar (`kInaSetup`, 0x399F) y con la bomba prendida la
+    consola dice cada segundo el shunt crudo, su promedio y la
+    configuración. Atorada se queda hasta apagarla; en seco es lo de cada
+    momento.
   - `monitor`: `tick_minute` (cada minuto: muestras, bomba R, modo de cambio y
     el aviso de sin agua) y el modo de cambio de cartuchos (`service_start`,
     `service_end`). Cierra los avisos de caída que dejó el firmware de antes

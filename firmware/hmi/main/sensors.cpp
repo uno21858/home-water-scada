@@ -1,5 +1,6 @@
 #include "sensors.h"
 
+#include <algorithm>
 #include <array>
 
 #include "board.h"
@@ -48,11 +49,20 @@ constexpr float kAdsVoltsPerCount = 4.096f / 32768.0f;
 constexpr int kAdsChannels = 4;  // A0 P1, A1 P2, A2 nivel, A3 LDR
 constexpr int kAverage = 16;
 
-// INA219 en 0x40, con su configuración de fábrica (32 V y ±320 mV)
+// INA219 en 0x40. La corriente sale del registro del shunt entre la
+// resistencia (V / R): no usa la calibración, que solo sirve para los
+// registros de corriente y potencia (0x04 y 0x03), y esos no se leen.
 constexpr uint8_t kInaAddress = 0x40;
-constexpr uint8_t kInaShunt = 0x01;  // 10 µV por cuenta, con signo
+constexpr uint8_t kInaConfig = 0x00;
+constexpr uint8_t kInaShunt = 0x01;  // 10 µV por cuenta, con signo, en cualquier rango
 constexpr uint8_t kInaBus = 0x02;    // bits 15-3, 4 mV por cuenta
 constexpr float kShuntOhms = CONFIG_HMI_INA219_SHUNT_MOHM / 1000.0f;
+// 32 V (bit 13), ±320 mV con el PGA en /8 (bits 12-11 en 11), 12 bits y una
+// muestra en bus y shunt (bits 10-7 y 6-3 en 0011) y los dos continuos (bits
+// 2-0 en 111). Es la de fábrica, pero se escribe al arrancar: el chip se
+// queda con lo que le escriban mientras tenga corriente, y una OTA o un
+// reinicio de la 7B no se la quitan. Con el R100 (0.1 Ω) llega a 3.2 A.
+constexpr uint16_t kInaSetup = 0x399F;
 
 pcnt_unit_handle_t pcnt = nullptr;
 i2c_master_dev_handle_t ads = nullptr;
@@ -121,14 +131,60 @@ bool ads_read(int channel, float* volts) {
     return true;
 }
 
-bool ina_read(float* volts, float* amps) {
+// Una lectura del INA219. La configuración va también: si algo le cambiara
+// el rango, el log lo enseña.
+struct InaSample {
+    float bus_volts = 0.0f;
+    float shunt_mv = 0.0f;  // crudo: 10 µV por cuenta
+    uint16_t config = 0;
+};
+
+bool ina_read(InaSample* out) {
     uint16_t bus = 0;
     uint16_t shunt = 0;
-    if (!read16(ina, kInaBus, &bus) || !read16(ina, kInaShunt, &shunt)) return false;
-    *volts = static_cast<float>(bus >> 3) * 0.004f;
-    *amps = static_cast<float>(static_cast<int16_t>(shunt)) * 10e-6f / kShuntOhms;
+    uint16_t config = 0;
+    if (!read16(ina, kInaBus, &bus) || !read16(ina, kInaShunt, &shunt) || !read16(ina, kInaConfig, &config)) {
+        return false;
+    }
+    out->bus_volts = static_cast<float>(bus >> 3) * 0.004f;
+    out->shunt_mv = static_cast<float>(static_cast<int16_t>(shunt)) * 0.01f;
+    out->config = config;
     return true;
 }
+
+float shunt_amps(float mv) { return mv / 1000.0f / kShuntOhms; }
+
+// Le escribe kInaSetup y dice en la consola qué traía antes
+void ina_setup() {
+    uint16_t before = 0;
+    const bool had = read16(ina, kInaConfig, &before);
+    const uint8_t data[3] = {kInaConfig, static_cast<uint8_t>(kInaSetup >> 8), static_cast<uint8_t>(kInaSetup & 0xFF)};
+    uint16_t after = 0;
+    if (i2c_master_transmit(ina, data, sizeof data, kTimeoutMs) != ESP_OK || !read16(ina, kInaConfig, &after)) {
+        ESP_LOGE(kTag, "INA219: no se pudo escribir la configuración");
+        return;
+    }
+    ESP_LOGI(kTag, "INA219: traía la configuración 0x%04x%s, ahora 0x%04x (±320 mV: hasta %.2f A)",
+             static_cast<unsigned>(before), had ? "" : " (no se pudo leer)", static_cast<unsigned>(after),
+             static_cast<double>(shunt_amps(320.0f)));
+}
+
+// El shunt durante un segundo, para el log: con lo que dice el multímetro se
+// compara el promedio; el mínimo y el máximo dicen cuánto se mueve
+struct ShuntSecond {
+    uint32_t start_ms = 0;
+    int count = 0;
+    float sum = 0.0f;
+    float lo = 0.0f;
+    float hi = 0.0f;
+
+    void add(float mv) {
+        lo = count == 0 ? mv : std::min(lo, mv);
+        hi = count == 0 ? mv : std::max(hi, mv);
+        sum += mv;
+        ++count;
+    }
+};
 
 // Lee el I2C sin parar: una vuelta por los 4 canales son ~45 ms, así que el
 // promedio de 16 cubre ~0.7 s. Con la bomba R prendida, cada lectura del
@@ -139,6 +195,7 @@ void task(void*) {
     std::array<float, kAdsChannels> volts{};
     core::MixerWatch watch;
     uint32_t watched_start = 0;  // la vuelta de pump_starts que vigila watch
+    ShuntSecond second;
     while (true) {
         bool ads_ok = ads != nullptr;
         for (int ch = 0; ch < kAdsChannels && ads_ok; ++ch) {
@@ -146,9 +203,13 @@ void task(void*) {
             ads_ok = ads_read(ch, &v);
             if (ads_ok) volts[ch] = average[ch].add(v);
         }
-        float mixer_volts = 0.0f;
-        float mixer_amps = 0.0f;
-        const bool ina_ok = ina != nullptr && ina_read(&mixer_volts, &mixer_amps);
+        InaSample ina_sample;
+        const bool ina_ok = ina != nullptr && ina_read(&ina_sample);
+        const float mixer_volts = ina_sample.bus_volts;
+        const float mixer_amps = shunt_amps(ina_sample.shunt_mv);
+        const uint32_t now = now_ms();
+        if (ina_ok) second.add(ina_sample.shunt_mv);
+        const bool second_done = now - second.start_ms >= 1000;
 
         portENTER_CRITICAL(&lock);
         const bool on = pump_on;
@@ -156,7 +217,6 @@ void task(void*) {
         portEXIT_CRITICAL(&lock);
         core::MixerFault fault = core::MixerFault::none;
         if (on) {
-            const uint32_t now = now_ms();
             if (starts != watched_start) {
                 watched_start = starts;
                 core::mixer_watch_start(watch, now);
@@ -178,6 +238,13 @@ void task(void*) {
         if (ina_ok) {
             shared.mixer_volts = mixer_volts;
             shared.mixer_amps = mixer_amps;
+            shared.mixer_shunt_mv = ina_sample.shunt_mv;
+            shared.ina_config = ina_sample.config;
+        }
+        if (second_done && second.count > 0) {
+            shared.mixer_shunt_avg_mv = second.sum / static_cast<float>(second.count);
+            shared.mixer_shunt_min_mv = second.lo;
+            shared.mixer_shunt_max_mv = second.hi;
         }
         // La app lo lee una vez por segundo. Atorada se queda hasta que la
         // apague, para que no se pierda entre dos lecturas; en seco es lo de
@@ -190,6 +257,10 @@ void task(void*) {
             shared.mixer_fault = fault;
         }
         portEXIT_CRITICAL(&lock);
+        if (second_done) {
+            second = ShuntSecond{};
+            second.start_ms = now;
+        }
 
         vTaskDelay(pdMS_TO_TICKS(ads == nullptr && ina == nullptr ? 1000 : 5));
     }
@@ -240,6 +311,7 @@ void start() {
     ina = add_device(kInaAddress);
     if (ads == nullptr) ESP_LOGW(kTag, "El ADS1115 (0x%02x) no contesta", kAdsAddress);
     if (ina == nullptr) ESP_LOGW(kTag, "El INA219 (0x%02x) no contesta", kInaAddress);
+    if (ina != nullptr) ina_setup();
     xTaskCreate(task, "sensors", 4096, nullptr, 4, nullptr);
 }
 
