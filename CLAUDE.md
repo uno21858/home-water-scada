@@ -559,7 +559,9 @@ Pendiente, en este orden:
   reparten el renglón de abajo.
 - Nivel y Calibrar nivel no están en el canvas. Nivel copia el acomodo de
   Cisterna: a la izquierda el tanque (útil en azul arriba de la rejilla de la
-  bomba de pozo, gris abajo; Llena y Toma con sus cm), a la derecha el %
+  bomba de pozo, gris abajo; Llena y Toma con sus cm). El gris no va a
+  escala: ocupa la quinta parte del tanque y lo útil lo demás (con la toma
+  en 50 y llena en 88 se veía más gris que azul, Erick, 27 oct). A la derecha el %
   útil en la cifra de 136 y los cm. Sin marcar "Está llena" dice "Sin
   calibrar". Calibrar nivel son 5 renglones como Cartuchos, en el orden en
   que se instala: rango de la etiqueta, cero en el aire, altura del sensor

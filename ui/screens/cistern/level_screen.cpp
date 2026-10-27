@@ -27,6 +27,11 @@ constexpr int32_t kTankY = 24;
 constexpr int32_t kTankW = 130;
 constexpr int32_t kTankH = 380;
 constexpr int32_t kInner = kTankH - 4;  // adentro del borde de 2
+// Lo de abajo de la toma no se usa: va apretado en esta parte del tanque y
+// lo útil se estira en lo demás. A escala, con la toma en 50 y llena en 88,
+// el gris salía más alto que el azul (Erick, 27 oct 2026). Los cm los dicen
+// las rayas y los renglones de la derecha.
+constexpr float kDeadShare = 0.2f;
 
 // La raya de la rejilla es punteada: lv_line solo la puntea si es horizontal
 const lv_point_precise_t kIntakeLine[2] = {{0, 0}, {kTankW - 4, 0}};
@@ -144,8 +149,16 @@ void LevelScreen::update(const core::SystemState& s) {
     // Tanque: arriba cabe llena más un 8 %; sin marcar, el rango del sensor
     const float top = s.level_full_cm > 0 ? static_cast<float>(s.level_full_cm) * 1.08f
                                           : static_cast<float>(s.level_sensor_cm + s.level_range_cm);
-    auto y_of = [top](float cm) {
-        return kInner - static_cast<int32_t>(std::lround(std::clamp(cm / top, 0.0f, 1.0f) * static_cast<float>(kInner)));
+    // Abajo de la toma, kDeadShare del tanque; de la toma para arriba, lo
+    // demás. Con una toma que no cabe (0 o arriba de top), todo a escala.
+    const bool squeeze = intake > 0.0f && intake < top;
+    auto y_of = [top, intake, squeeze](float cm) {
+        float share = cm / top;
+        if (squeeze) {
+            share = cm <= intake ? cm / intake * kDeadShare
+                                 : kDeadShare + (cm - intake) / (top - intake) * (1.0f - kDeadShare);
+        }
+        return kInner - static_cast<int32_t>(std::lround(std::clamp(share, 0.0f, 1.0f) * static_cast<float>(kInner)));
     };
     const int32_t y_level = y_of(level);
     const int32_t y_intake = y_of(intake);

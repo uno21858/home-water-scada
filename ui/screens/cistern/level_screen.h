@@ -2,8 +2,8 @@
 // Nivel de la cisterna (pestaña Cisterna mientras no haya sonda ORP; con la
 // sonda, desde el enlace "Nivel" de Cisterna). No está en el canvas.
 // A la izquierda el tanque con el agua: arriba de la rejilla de la bomba de
-// pozo en azul, abajo en gris (esa no la saca). A la derecha el % útil en
-// grande, los cm y "Calibrar nivel".
+// pozo en azul, abajo en gris (esa no la saca), apretado a la quinta parte
+// del tanque. A la derecha el % útil en grande, los cm y "Calibrar nivel".
 
 #include <array>
 #include <cstdint>
