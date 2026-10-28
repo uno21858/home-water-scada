@@ -129,7 +129,7 @@ void sanitize(SystemState& s) {
         !finite_in(s.level_liters_per_cm, kLevelLitersPerCmMin, kLevelLitersPerCmMax)) {
         s.level_liters_per_cm = f.level_liters_per_cm;
     }
-    if (!in<uint16_t>(s.level_range_cm, 10, 2000)) s.level_range_cm = f.level_range_cm;
+    if (!in<uint16_t>(s.level_range_cm, kLevelRangeMinCm, kLevelRangeMaxCm)) s.level_range_cm = f.level_range_cm;
     if (s.level_sensor_cm > 50) s.level_sensor_cm = f.level_sensor_cm;
     if (static_cast<uint8_t>(s.last_cartridge) >= kFilterCount) s.last_cartridge = f.last_cartridge;
 

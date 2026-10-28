@@ -65,7 +65,10 @@ Mientras llega el hardware, se desarrolla en el simulador con SDL (Mac y Fedora)
     dice cuántas llaves leyó: 0 es primera vez o que se perdió).
   - `level`: el sensor de nivel 4-20 mA del A2 (`level_cm` desde el fondo y
     `level_pct`, lo útil de la rejilla de la bomba de pozo a llena) y su
-    calibración (`level_zero` en el aire, `level_mark_full`). Litros por cm
+    calibración (`level_zero` en el aire, `level_mark_full`, y
+    `level_set_range`, que al cambiar el rango recalcula "Está llena" y los
+    litros por cm con los mismos volts: con 200 puesto y un sensor de más
+    rango, llena salía en 88 cm en una cisterna de 220). Litros por cm
     (`level_liters_per_cm`, NVS): la cisterna de Erick es una Rotoplas sin
     medidas, así que se miden con F (`level_measure_start`/`save`): con la
     bomba de pozo apagada y agua entrando, los litros que contó F entre los

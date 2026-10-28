@@ -989,6 +989,34 @@ void cistern_liters() {
     CHECK(back2.level_liters_per_cm == 0.0f);
 }
 
+// El rango mal puesto: llena y los litros por cm se recalculan con los mismos volts
+void level_range_fix() {
+    core::SystemState s = house();
+    s.has_level = true;
+    s.level_range_cm = 200;  // puesto de 0 a 2 m; el sensor es de 0 a 5
+    s.level_sensor_cm = 3;
+    s.level_intake_cm = 50;
+    s.level_volts = s.level_zero_volts + 85.0f / 200.0f * core::kLevelSpanVolts;
+    core::level_mark_full(s);
+    CHECK(s.level_full_cm == 88);
+    s.level_liters_per_cm = 110.0f;
+
+    core::level_set_range(s, 500);
+    CHECK(s.level_range_cm == 500);
+    CHECK(std::fabs(core::level_cm(s) - 215.5f) < 0.1f);   // los mismos volts, en cm de verdad
+    CHECK(s.level_full_cm == 216);                           // 3 + 85 x 2.5
+    CHECK(std::fabs(s.level_liters_per_cm - 44.0f) < 0.01f);
+    // 215.5 cm x 44: antes los 3 cm del sensor (cm de verdad) iban a 110 L por cm
+    CHECK(std::fabs(core::level_liters(s) - 9482.0f) < 1.0f);
+    CHECK(core::level_pct(s) == 100);
+    CHECK(s.level_intake_cm == 50 && s.level_sensor_cm == 3);  // medidos a mano: se quedan
+
+    // Fuera de lo que se cree, nada cambia
+    core::level_set_range(s, 5);
+    core::level_set_range(s, 5000);
+    CHECK(s.level_range_cm == 500 && s.level_full_cm == 216);
+}
+
 int main() {
     auto_by_liters();
     dose_mixes();
@@ -1004,6 +1032,7 @@ int main() {
     mixer_current();
     mixer_bench_mode();
     cistern_liters();
+    level_range_fix();
     calendar_day_change();
     calendar_hour_samples();
     telemetry_lines();

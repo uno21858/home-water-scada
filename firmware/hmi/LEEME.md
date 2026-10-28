@@ -225,6 +225,11 @@ gris lo que lee cada entrada. La bomba R no se detecta: va en `menuconfig`.
   noche no baja de 20 % (26 oct: de día se quedaba bajo; antes llegaba a
   todo hasta 0.9 V). Si de día sigue bajo, `/estado` dice cuánto marca el
   LDR (A3) y se baja `kLdrBrightVolts`.
+- Rango del sensor de nivel: el de la etiqueta (0 a 5 m es 500). Si se
+  puso otro, todos los cm salen en otra escala (28 oct 2026: una Rotoplas
+  de 10,000 L, de 220 de alto, decía llena en 88 cm). Al cambiarlo, "Está
+  llena" y los litros por cm se recalculan solos; la toma y la altura del
+  sensor no, porque se midieron a mano.
 - Litros de la cisterna: Cisterna > Calibrar nivel > Litros por cm > Medir.
   Con la bomba de pozo apagada y agua entrando del SIAPA, Empezar; cuando
   suba unos 10 cm, Guardar (se deja desde 5). Antes, el factor de F con la

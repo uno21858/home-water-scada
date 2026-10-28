@@ -341,10 +341,7 @@ ui::Actions actions() {
         }
         changed();
     };
-    a.level_range_set = [](uint32_t cm) {
-        if (cm > 0) s.level_range_cm = static_cast<uint16_t>(cm);
-        changed();
-    };
+    a.level_range_set = [](uint32_t cm) { core::level_set_range(s, cm); changed(); };
     a.level_zeroed = [] { core::level_zero(s); changed(); };
     a.level_sensor_set = [](uint32_t cm) { s.level_sensor_cm = static_cast<uint8_t>(cm); changed(); };
     a.level_intake_set = [](uint32_t cm) { s.level_intake_cm = static_cast<uint8_t>(cm); changed(); };

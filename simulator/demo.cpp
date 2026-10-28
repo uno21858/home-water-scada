@@ -498,9 +498,7 @@ void on_mixer_every_liters(uint32_t minutes) { s.mixer_every_liters_min = static
 
 void on_mixer_bench(bool on) { core::mixer_set_bench(s, on); }
 
-void on_level_range(uint32_t cm) {
-    if (cm > 0) s.level_range_cm = static_cast<uint16_t>(cm);
-}
+void on_level_range(uint32_t cm) { core::level_set_range(s, cm); }
 
 void on_level_zeroed() { core::level_zero(s); }
 

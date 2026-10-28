@@ -57,6 +57,22 @@ bool level_measure_save(SystemState& s) {
 
 void level_measure_cancel(SystemState& s) { s.level_measuring = false; }
 
+void level_set_range(SystemState& s, uint32_t range_cm) {
+    if (range_cm < kLevelRangeMinCm || range_cm > kLevelRangeMaxCm || range_cm == s.level_range_cm) return;
+    if (s.level_range_cm > 0) {
+        const float k = static_cast<float>(range_cm) / static_cast<float>(s.level_range_cm);
+        if (s.level_full_cm > 0) {
+            // Lo de arriba del sensor crece con el rango; los cm del sensor no
+            const float sensor = static_cast<float>(s.level_sensor_cm);
+            const float above = std::max(0.0f, static_cast<float>(s.level_full_cm) - sensor);
+            s.level_full_cm = static_cast<uint16_t>(std::lround(std::min(sensor + above * k, 65535.0f)));
+        }
+        if (s.level_liters_per_cm > 0.0f) s.level_liters_per_cm /= k;
+    }
+    level_measure_cancel(s);
+    s.level_range_cm = static_cast<uint16_t>(range_cm);
+}
+
 void level_zero(SystemState& s) { s.level_zero_volts = s.level_volts; }
 
 void level_mark_full(SystemState& s) {
