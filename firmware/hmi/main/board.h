@@ -20,9 +20,13 @@ i2c_master_bus_handle_t i2c();
 bool probe(uint8_t address);
 
 // La memoria de la pantalla (framebuffers en PSRAM y bounce buffers en RAM
-// interna), sin prenderla. Va al principio, antes del WiFi: pidiéndola hasta
+// interna), sin prenderla. Va antes de arrancar el WiFi: pidiéndola hasta
 // prender la pantalla, con el WiFi ya conectado, a veces ya no había RAM
 // interna para los bounce buffers y tronaba en ciclo (28 oct 2026).
+// Se llama desde la tarea de LVGL, en el núcleo 1: la interrupción que llena
+// los bounce buffers se queda en el núcleo que crea el panel. Pedida desde
+// app_main (núcleo 0, con el WiFi) se peleaba la PSRAM con LVGL y la pantalla
+// se trababa al cambiar de pestaña.
 void reserve_display();
 
 // El display de LVGL, todavía sin pantalla: ahí se arma la interfaz

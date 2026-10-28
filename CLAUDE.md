@@ -328,8 +328,13 @@ En Mac, SDL2 viene de Homebrew (`brew install sdl2`). Si CMake no lo encuentra:
   ancho de banda a LVGL: se prende después de armar la interfaz
   (`board::create_display` y luego `start_display`). Caché de instrucciones de
   32 KB, como el demo de Waveshare (la de fábrica es de 16).
-- Pero su memoria se pide al principio (`board::reserve_display`, antes del
-  WiFi): los dos bounce buffers son ~80 KB de RAM interna con DMA. Pedidos
+- Pero su memoria se pide antes de arrancar el WiFi (`board::reserve_display`,
+  lo primero de la tarea de LVGL; `start` espera esa señal para arrancar el
+  WiFi): los dos bounce buffers son ~80 KB de RAM interna con DMA. Tiene que
+  ser desde la tarea de LVGL (núcleo 1): la interrupción que llena los bounce
+  buffers se queda en el núcleo que crea el panel, y pedida desde `app_main`
+  (núcleo 0, con el WiFi) se peleaba la PSRAM con LVGL y la pantalla se
+  trababa al cambiar de pestaña (lo advierte la doc de ESP-IDF del RGB LCD). Pedidos
   hasta prenderla, con el WiFi ya conectado, a veces no alcanzaba y tronaba en
   ciclo (`no mem for bounce buffer`, 28 oct 2026, al crecer la interfaz a 24
   pantallas). Como la primera vez sí prendió, la OTA ya la había dado por

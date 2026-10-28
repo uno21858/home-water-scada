@@ -82,6 +82,7 @@ constexpr std::size_t kBodySize = 4096;
 // El estado que comparten la interfaz, la red y la OTA
 core::SystemState s;
 SemaphoreHandle_t lock = nullptr;
+SemaphoreHandle_t display_reserved = nullptr;  // la tarea de LVGL ya pidió la memoria de la pantalla
 
 // Toma el lock al crearse y lo suelta al salir de su bloque, pase lo que pase
 // adentro: no hay forma de olvidarse de soltarlo
@@ -367,6 +368,10 @@ ui::Actions actions() {
 }
 
 void lvgl_task(void*) {
+    // La memoria de la pantalla, lo primero y desde aquí (board.h): antes que
+    // el WiFi, que espera esta señal, y en el núcleo 1, el de LVGL
+    board::reserve_display();
+    xSemaphoreGive(display_reserved);
     lv_init();
     lv_tick_set_cb([]() { return static_cast<uint32_t>(esp_timer_get_time() / 1000); });
     lv_display_t* display = board::create_display();
@@ -571,9 +576,6 @@ core::Outbox* make_outbox() {
 
 void start() {
     lock = xSemaphoreCreateMutex();
-    // Lo primero, la memoria de la pantalla: el WiFi y lo demás se quedan con
-    // la RAM interna que sobre (board.h)
-    board::reserve_display();
 
     // Lo que se guardó antes del reinicio. La bomba R arranca apagada y lo
     // que le faltaba queda pendiente.
@@ -607,8 +609,12 @@ void start() {
     const bool has_wifi = storage::wifi_credentials(ssid, sizeof ssid, password, sizeof password);
     if (has_wifi) std::memcpy(s.wifi_ssid, ssid, sizeof s.wifi_ssid);
 
-    // Primero la pantalla; el WiFi tarda en arrancar y no tiene por qué esperarla
+    // Primero la pantalla. El WiFi solo espera a que ella pida su memoria (unos
+    // ms): si arranca antes, a veces se queda con la RAM interna que necesitan
+    // los bounce buffers. Lo demás de la pantalla no lo espera.
+    display_reserved = xSemaphoreCreateBinary();
     xTaskCreatePinnedToCore(lvgl_task, "lvgl", 16 * 1024, nullptr, 3, nullptr, 1);
+    xSemaphoreTake(display_reserved, portMAX_DELAY);
     if (has_wifi) {
         net::start(ssid, password);
     } else {
