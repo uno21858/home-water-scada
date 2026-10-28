@@ -225,6 +225,12 @@ gris lo que lee cada entrada. La bomba R no se detecta: va en `menuconfig`.
   noche no baja de 20 % (26 oct: de día se quedaba bajo; antes llegaba a
   todo hasta 0.9 V). Si de día sigue bajo, `/estado` dice cuánto marca el
   LDR (A3) y se baja `kLdrBrightVolts`.
+- Litros de la cisterna: Cisterna > Calibrar nivel > Litros por cm > Medir.
+  Con la bomba de pozo apagada y agua entrando del SIAPA, Empezar; cuando
+  suba unos 10 cm, Guardar (se deja desde 5). Antes, el factor de F con la
+  Prueba de cubeta: los litros salen de F. Con eso la pantalla dice los
+  litros que hay y "Toca echar" nunca pide más que litros que hay × la
+  relación.
 - Los cartuchos (`core/clog.h`): con cartuchos nuevos y el agua corriendo
   pareja un minuto, Ajustes > Cartuchos > Guardar referencia. Sin eso dice
   "Sin referencia" y no avisa nada.

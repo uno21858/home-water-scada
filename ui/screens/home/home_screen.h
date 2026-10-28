@@ -60,6 +60,7 @@ private:
     // Cisterna
     lv_obj_t* cistern_name_ = nullptr;  // "Cisterna", o "Cisterna · 78 %" con la sonda
     lv_obj_t* cistern_word_ = nullptr;  // estado del ORP, o el nivel sin sonda
+    lv_obj_t* cistern_liters_ = nullptr;  // "≈ 2,520 L", sin sonda (con ella ahí va su etiqueta)
     lv_obj_t* water_ = nullptr;         // agua de la cisterna, con sensor de nivel
     lv_obj_t* water_line_ = nullptr;
     lv_obj_t* cistern_ = nullptr;

@@ -349,6 +349,12 @@ ui::Actions actions() {
     a.level_sensor_set = [](uint32_t cm) { s.level_sensor_cm = static_cast<uint8_t>(cm); changed(); };
     a.level_intake_set = [](uint32_t cm) { s.level_intake_cm = static_cast<uint8_t>(cm); changed(); };
     a.level_full_marked = [] { core::level_mark_full(s); changed(); };
+    // Litros por cm: la medición no se guarda; lo medido sí
+    a.level_measure_started = [] { core::level_measure_start(s); };
+    a.level_measure_saved = [] {
+        if (core::level_measure_save(s)) changed();
+    };
+    a.level_measure_canceled = [] { core::level_measure_cancel(s); };
     a.alarm_acknowledged = [](core::AlarmKind kind) { core::alarm_acknowledge(s, kind); changed(); };
     a.alarm_test = [] {
         core::alarm_raise(s, core::AlarmKind::no_flow);

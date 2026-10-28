@@ -10,6 +10,7 @@
 #include "components/primitives.h"
 #include "screens/cistern/cistern_screen.h"
 #include "screens/cistern/level_calibration_screen.h"
+#include "screens/cistern/level_liters_screen.h"
 #include "screens/cistern/level_screen.h"
 #include "screens/cistern/mixer_screen.h"
 #include "screens/dose/dose_screen.h"
@@ -79,6 +80,7 @@ const std::array<Page, kScreenCount> kPages = {{
     {{"Nivel de la cisterna", Screen::cistern, "Bomba R", Screen::mixer, {}}, Screen::cistern},
     {{"Calibrar nivel", Screen::level, nullptr, {}, {}}, Screen::cistern},
     {{"Prueba de banco", Screen::diagnostics, nullptr, {}, {}}, Screen::settings},
+    {{"Litros por cm", Screen::level_calibration, nullptr, {}, {}}, Screen::cistern},
 }};
 
 Actions app_actions;
@@ -113,6 +115,7 @@ ServiceScreen service;
 LevelScreen level;
 LevelCalibrationScreen level_calibration;
 BenchScreen bench_test;  // "bench" ya es la screen donde se arman
+LevelLitersScreen level_liters;
 std::array<lv_obj_t*, kScreenCount> pages{};
 
 size_t index_of(Screen screen) { return static_cast<size_t>(screen); }
@@ -125,6 +128,7 @@ bool available(Screen screen) {
             return state.has_orp || state.has_level;
         case Screen::level:
         case Screen::level_calibration:
+        case Screen::level_liters:
             return state.has_level;
         case Screen::mixer:
         case Screen::bench:
@@ -204,6 +208,7 @@ void init(const core::SystemState& s, const Actions& a) {
     add(Screen::level, level.create(bench));
     add(Screen::level_calibration, level_calibration.create(bench));
     add(Screen::bench, bench_test.create(bench));
+    add(Screen::level_liters, level_liters.create(bench));
     lv_obj_delete(staging);
 
     header.create(screen);
@@ -248,6 +253,7 @@ void update(const core::SystemState& s) {
     level.update(s);
     level_calibration.update(s);
     bench_test.update(s);
+    level_liters.update(s);
     idle.update(s);
     alarm.update(s);
     updating.update(s);

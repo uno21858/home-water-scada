@@ -920,6 +920,75 @@ void mixer_bench_mode() {
     CHECK(core::mixer_low_water(s));
 }
 
+// Litros por cm medidos con F, los litros que hay y el tope de la dosis
+void cistern_liters() {
+    core::SystemState s = house();
+    s.has_level = true;
+    s.level_range_cm = 200;
+    s.level_sensor_cm = 3;
+    s.level_intake_cm = 50;
+    s.level_full_cm = 88;
+    auto set_level = [&s](float cm) {
+        s.level_volts = s.level_zero_volts + (cm - 3.0f) / 200.0f * core::kLevelSpanVolts;
+    };
+    set_level(60.0f);
+    CHECK(core::level_liters(s) < 0.0f);  // sin medir
+
+    // 100 L y 3 cm: todavía no se deja guardar
+    core::level_measure_start(s);
+    core::count_liters(s, 60);
+    set_level(63.0f);
+    CHECK(std::fabs(core::level_measure_rise(s) - 3.0f) < 0.05f);
+    CHECK(!core::level_measure_ready(s));
+    CHECK(!core::level_measure_save(s));
+    // Con 5 cm sí: 100 L / 5 cm = 20 L por cm
+    core::count_liters(s, 40);
+    set_level(65.0f);
+    CHECK(core::level_measure_ready(s));
+    // Sin señal no
+    s.no_signal.level = true;
+    CHECK(!core::level_measure_ready(s));
+    s.no_signal.level = false;
+    CHECK(core::level_measure_save(s));
+    CHECK(!s.level_measuring);
+    CHECK(std::fabs(s.level_liters_per_cm - 20.0f) < 0.2f);
+    CHECK(std::fabs(core::level_liters(s) - 1300.0f) < 15.0f);  // 65 cm x 20
+    // Sin medir no cuenta lo que entra
+    const uint32_t counted = s.level_measure_liters;
+    core::count_liters(s, 10);
+    CHECK(s.level_measure_liters == counted);
+
+    // Tope de la dosis: entraron 800 L pero en la cisterna hay ~690 (34.5 cm x 20)
+    s.liters_since_dose = 800;
+    s.ml_per_liter = 0.1f;
+    set_level(34.5f);
+    CHECK(core::dose_liters(s) == 690);
+    CHECK(core::dose_ml(s) == 69);
+    set_level(80.0f);  // 1,600 L: alcanza para los 800
+    CHECK(core::dose_liters(s) == 800 && core::dose_ml(s) == 80);
+    s.no_signal.level = true;  // sin lectura no hay tope
+    CHECK(core::dose_ml(s) == 80);
+    s.no_signal.level = false;
+
+    // Se guarda; una medición a medias no
+    core::level_measure_start(s);
+    MemoryStore store;
+    for (const core::SaveGroup g : core::kSaveGroups) core::save(s, store, g);
+    core::SystemState back;
+    core::load(back, store);
+    CHECK(std::fabs(back.level_liters_per_cm - 20.0f) < 0.2f);
+    CHECK(!back.level_measuring);
+
+    // Un número que no se cree regresa a sin medir
+    core::SystemState bad;
+    bad.level_liters_per_cm = 5000.0f;
+    MemoryStore store2;
+    core::save(bad, store2, core::SaveGroup::settings);
+    core::SystemState back2;
+    core::load(back2, store2);
+    CHECK(back2.level_liters_per_cm == 0.0f);
+}
+
 int main() {
     auto_by_liters();
     dose_mixes();
@@ -934,6 +1003,7 @@ int main() {
     mixer_waits_for_water();
     mixer_current();
     mixer_bench_mode();
+    cistern_liters();
     calendar_day_change();
     calendar_hour_samples();
     telemetry_lines();

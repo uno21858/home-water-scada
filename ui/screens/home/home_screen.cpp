@@ -200,6 +200,9 @@ void HomeScreen::create_cistern(lv_obj_t* page) {
 
     cistern_name_ = tag_text(page, "Cisterna", 396, 304);
     cistern_word_ = tag_text(page, "", 396, 332);
+    // Los litros van a la derecha del palo de la bomba R (x 539): junto al %
+    // se le encimaban
+    cistern_liters_ = tag_text(page, "", 566, 332, 0, LV_TEXT_ALIGN_LEFT, colors::text);
 
     // Mástil con la sonda ORP (fase 2) y la bomba R abajo (fase 1)
     mast_ = box(page, 539, 276, 3, 72);
@@ -456,6 +459,15 @@ void HomeScreen::update_orp(const core::SystemState& s) {
         char buf[24];
         const int pct = core::level_ok(s) ? core::level_pct(s) : -1;
         const bool lost = s.has_level && s.no_signal.level;
+        const float liters = core::level_liters(s);
+        lv_obj_set_hidden(cistern_liters_, liters < 0.0f);
+        if (liters >= 0.0f) {
+            char amount[16];
+            fmt::thousands(amount, sizeof amount, static_cast<uint32_t>(std::lround(liters / 10.0f) * 10));
+            char text[24];
+            snprintf(text, sizeof text, "\xE2\x89\x88 %s L", amount);
+            set_text(cistern_liters_, text);
+        }
         if (pct >= 0) {
             snprintf(buf, sizeof buf, "%d %% útil", pct);
         } else {
@@ -467,6 +479,7 @@ void HomeScreen::update_orp(const core::SystemState& s) {
         return;
     }
 
+    lv_obj_set_hidden(cistern_liters_, true);  // con sonda ahí va su etiqueta
     char buf[12];
     snprintf(buf, sizeof buf, "%d", s.orp_mv);
     set_text(orp_.value, buf);

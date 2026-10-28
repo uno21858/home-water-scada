@@ -58,6 +58,9 @@ void on_level_zeroed();
 void on_level_sensor(uint32_t cm);
 void on_level_intake(uint32_t cm);
 void on_level_full();
+void on_level_measure_start();   // Litros por cm: Empezar, Guardar y Cancelar
+void on_level_measure_save();
+void on_level_measure_cancel();
 
 // Ajustes
 void on_flow_factor(uint32_t pulses_per_liter);

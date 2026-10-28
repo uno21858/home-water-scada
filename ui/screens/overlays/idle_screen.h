@@ -74,6 +74,7 @@ private:
     lv_obj_t* cistern_value_ = nullptr;
     lv_obj_t* cistern_unit_ = nullptr;
     lv_obj_t* cistern_lost_ = nullptr;  // "Sin señal" en lugar de "73 %"
+    lv_obj_t* cistern_liters_ = nullptr;  // "· ≈ 2,520 L" con los litros por cm medidos
     int water_pct_ = -2;  // -2 = todavía no se pinta
 
     // -1 = todavía no se pinta

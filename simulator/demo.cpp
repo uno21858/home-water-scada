@@ -67,6 +67,10 @@ core::SystemState make() {
     s.level_zero_volts = 0.134f;
     s.level_full_cm = 183;
     s.level_volts = level_volts_at(150.0f, s);
+    // Litros por cm ya medidos con F: a 150 cm hay ~3,750 L, más que los
+    // 1,850 desde la última dosis, así que "Toca echar" no topa (sí en
+    // sin-agua y cisterna-vacia)
+    s.level_liters_per_cm = 25.0f;
     s.mixer_volts = 12.1f;
     s.mixer_amps = 1.58f;  // arranca prendida
     s.wifi_bars = 3;
@@ -505,6 +509,12 @@ void on_level_sensor(uint32_t cm) { s.level_sensor_cm = static_cast<uint8_t>(cm)
 void on_level_intake(uint32_t cm) { s.level_intake_cm = static_cast<uint8_t>(cm); }
 
 void on_level_full() { core::level_mark_full(s); }
+
+void on_level_measure_start() { core::level_measure_start(s); }
+
+void on_level_measure_save() { core::level_measure_save(s); }
+
+void on_level_measure_cancel() { core::level_measure_cancel(s); }
 
 void on_service(bool on) {
     if (on) {

@@ -30,9 +30,10 @@ enum class Screen : uint8_t {
     level,          // Nivel de la cisterna: la pestaña Cisterna sin sonda ORP
     level_calibration,  // Calibrar nivel, desde Nivel
     bench,          // Prueba de banco de la bomba R, desde Diagnóstico
+    level_liters,   // Litros por cm de la cisterna, desde Calibrar nivel
 };
 inline constexpr int kTabCount = 7;
-inline constexpr int kScreenCount = 23;
+inline constexpr int kScreenCount = 24;
 
 // Lo que la interfaz le pide a la app. Cualquiera puede quedar en nullptr.
 struct Actions {
@@ -43,6 +44,9 @@ struct Actions {
     void (*mixer_after_dose_set)(uint32_t minutes) = nullptr; // programa: después de cada dosis
     void (*mixer_every_liters_set)(uint32_t minutes) = nullptr; // programa: cada 1,000 L que entran
     void (*mixer_bench_set)(bool on) = nullptr;  // Prueba de banco: Empezar (ya confirmado) o Ya terminé
+    void (*level_measure_started)() = nullptr;   // Litros por cm: Empezar
+    void (*level_measure_saved)() = nullptr;     // Litros por cm: Guardar (ya subió lo que pide)
+    void (*level_measure_canceled)() = nullptr;  // Litros por cm: Cancelar
     void (*flow_factor_set)(uint32_t pulses_per_liter) = nullptr;
     void (*pressure_zeroed)() = nullptr;                      // confirmó Hacer cero
     void (*dose_ratio_set)(uint32_t thousandths) = nullptr;   // mL por litro x 1000: 20 = 0.020

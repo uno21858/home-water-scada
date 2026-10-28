@@ -192,9 +192,18 @@ void DoseScreen::update(const core::SystemState& s) {
     layout_due(ml >= 100);
     lv_obj_set_disabled(done_button_, ml == 0);
 
+    // Con el tope (core::dose_liters) dice cuánta agua hay y cuánta entró
     char liters[16];
-    fmt::thousands(liters, sizeof liters, s.liters_since_dose);
-    snprintf(buf, sizeof buf, "%s L desde la última dosis", liters);
+    const uint32_t counted = core::dose_liters(s);
+    if (counted < s.liters_since_dose) {
+        char entered[16];
+        fmt::thousands(liters, sizeof liters, counted);
+        fmt::thousands(entered, sizeof entered, s.liters_since_dose);
+        snprintf(buf, sizeof buf, "%s L en la cisterna (entraron %s)", liters, entered);
+    } else {
+        fmt::thousands(liters, sizeof liters, s.liters_since_dose);
+        snprintf(buf, sizeof buf, "%s L desde la última dosis", liters);
+    }
     set_text(due_liters_, buf);
     snprintf(buf, sizeof buf, "× %.3f mL por litro · en la boca B", static_cast<double>(s.ml_per_liter));
     set_text(due_ratio_, buf);

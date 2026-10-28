@@ -309,7 +309,7 @@ void SettingsScreen::update(const core::SystemState& s) {
     cap_value_ = s.daily_cap_ml;
     format_ratio(a, sizeof a, ratio_value_);
     set_text(ratio_, a);
-    fmt::thousands(b, sizeof b, s.liters_since_dose);
+    fmt::thousands(b, sizeof b, core::dose_liters(s));  // con el tope de lo que hay en la cisterna
     snprintf(buf, sizeof buf, "Hoy: %s L × %s = %lu mL de Cloralex", b, a,
              static_cast<unsigned long>(core::dose_ml(s)));
     set_text(ratio_note_, buf);

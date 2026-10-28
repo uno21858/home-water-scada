@@ -335,6 +335,12 @@ struct SystemState {
     uint8_t level_intake_cm = 60;     // el 0 %: la rejilla de la bomba de pozo (documento: ~45)
                                       // y un colchón; con 60 la bomba R (~50) sigue cubierta
     uint16_t level_full_cm = 0;       // nivel con la cisterna llena; 0 = sin marcar
+    float level_liters_per_cm = 0.0f; // litros que caben por cm, medidos con F; 0 = sin medir
+    // Midiendo los litros por cm (core/level.h; no se guarda): desde qué
+    // nivel empezó y cuántos litros ha contado F desde entonces
+    bool level_measuring = false;
+    float level_measure_from_cm = 0.0f;
+    uint32_t level_measure_liters = 0;
 
     // Cambio de cartuchos: con V1 cerrada P1 baja a 0 igual que si se fuera el
     // SIAPA, así que mientras dura no se avisa ni la caída ni el sin agua.
@@ -345,10 +351,15 @@ struct SystemState {
 inline constexpr uint8_t kServiceMinutes = 60;
 inline bool in_service(const SystemState& s) { return s.service_minutes_left > 0; }
 
-// mL de Cloralex que tocan: litros desde la última dosis por la relación
-inline uint32_t dose_ml(const SystemState& s) {
-    return static_cast<uint32_t>(static_cast<float>(s.liters_since_dose) * s.ml_per_liter + 0.5f);
-}
+// Los litros que cuentan para la dosis: los que entraron desde la última,
+// pero nunca más de los que hay en la cisterna (con los litros por cm
+// medidos). Si se dosifica tarde, parte de esa agua ya se usó sin cloro y la
+// dosis caería en menos agua (Erick, 28 oct 2026: 80 mL con la cisterna a la
+// mitad). En core/water.cpp.
+uint32_t dose_liters(const SystemState& s);
+
+// mL de Cloralex que tocan: dose_liters por la relación
+uint32_t dose_ml(const SystemState& s);
 
 // Abajo de esto F no cuenta y se toma como sin flujo
 inline constexpr float kFlowingLpm = 0.05f;

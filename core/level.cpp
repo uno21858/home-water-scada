@@ -19,6 +19,44 @@ int level_pct(const SystemState& s) {
     return static_cast<int>(std::lround(std::clamp(pct, 0.0f, 100.0f)));
 }
 
+float level_liters(const SystemState& s) {
+    if (s.level_liters_per_cm <= 0.0f || !level_ok(s)) return -1.0f;
+    return level_cm(s) * s.level_liters_per_cm;
+}
+
+void level_measure_start(SystemState& s) {
+    s.level_measuring = true;
+    s.level_measure_from_cm = level_cm(s);
+    s.level_measure_liters = 0;
+}
+
+float level_measure_rise(const SystemState& s) {
+    if (!s.level_measuring) return 0.0f;
+    return std::max(0.0f, level_cm(s) - s.level_measure_from_cm);
+}
+
+float level_measure_ratio(const SystemState& s) {
+    const float rise = level_measure_rise(s);
+    if (rise < 0.5f) return 0.0f;
+    return static_cast<float>(s.level_measure_liters) / rise;
+}
+
+bool level_measure_ready(const SystemState& s) {
+    if (!s.level_measuring || !level_ok(s)) return false;
+    const float ratio = level_measure_ratio(s);
+    return level_measure_rise(s) >= kLevelMeasureMinCm && ratio >= kLevelLitersPerCmMin &&
+           ratio <= kLevelLitersPerCmMax;
+}
+
+bool level_measure_save(SystemState& s) {
+    if (!level_measure_ready(s)) return false;
+    s.level_liters_per_cm = level_measure_ratio(s);
+    s.level_measuring = false;
+    return true;
+}
+
+void level_measure_cancel(SystemState& s) { s.level_measuring = false; }
+
 void level_zero(SystemState& s) { s.level_zero_volts = s.level_volts; }
 
 void level_mark_full(SystemState& s) {

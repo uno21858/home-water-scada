@@ -8,6 +8,7 @@
 #include "level.h"
 #include "theme/colors.h"
 #include "theme/fonts.h"
+#include "theme/format.h"
 #include "theme/icons.h"
 #include "theme/styles.h"
 #include "ui.h"
@@ -99,6 +100,18 @@ void LevelScreen::create_reading(lv_obj_t* page) {
     uncalibrated_ = label(page, &font_title_xl_48, colors::text_secondary, "Sin calibrar");
     lv_obj_set_pos(uncalibrated_, 408, 92);
 
+    // Los litros que hay en total, con lo de abajo de la toma. "≈" en
+    // etiqueta: las fuentes de cifras no lo traen
+    liters_ = column(page, 0, LV_FLEX_ALIGN_END);
+    lv_obj_align(liters_, LV_ALIGN_TOP_RIGHT, -16, 76);
+    label(liters_, &font_label_26, colors::text_secondary, "En la cisterna");
+    liters_row_ = row(liters_, 6, LV_FLEX_ALIGN_END);
+    lv_obj_t* about = label(liters_row_, &font_title_36, colors::text_secondary, "\xE2\x89\x88");
+    lv_obj_set_style_pad_bottom(about, 2, 0);
+    liters_value_ = label(liters_row_, &font_digits_44, colors::text, "");
+    label(liters_row_, &font_label_26, colors::text_secondary, "L");
+    liters_none_ = label(liters_, &font_body_32, colors::text_secondary, "Sin medir");
+
     lv_obj_t* c = card(page, 392, 220, 616, 140);
     lv_obj_t* rows = column(c, 6, LV_FLEX_ALIGN_START);
     lv_obj_set_pos(rows, 16, 8);
@@ -145,6 +158,16 @@ void LevelScreen::update(const core::SystemState& s) {
     set_text(above_intake_, lost ? "sin señal" : buf);
     snprintf(buf, sizeof buf, "%u", static_cast<unsigned>(s.level_intake_cm));
     set_text(below_intake_, buf);
+
+    // Litros: de 10 en 10, que es aproximado. Sin medir lo dice; sin señal nada.
+    const float liters = core::level_liters(s);
+    lv_obj_set_hidden(liters_, lost);
+    lv_obj_set_hidden(liters_row_, liters < 0.0f);
+    lv_obj_set_hidden(liters_none_, liters >= 0.0f);
+    if (liters >= 0.0f) {
+        fmt::thousands(buf, sizeof buf, static_cast<uint32_t>(std::lround(liters / 10.0f) * 10));
+        set_text(liters_value_, buf);
+    }
 
     // Tanque: arriba cabe llena más un 8 %; sin marcar, el rango del sensor
     const float top = s.level_full_cm > 0 ? static_cast<float>(s.level_full_cm) * 1.08f

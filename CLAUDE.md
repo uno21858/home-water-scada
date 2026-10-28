@@ -65,7 +65,15 @@ Mientras llega el hardware, se desarrolla en el simulador con SDL (Mac y Fedora)
     dice cuántas llaves leyó: 0 es primera vez o que se perdió).
   - `level`: el sensor de nivel 4-20 mA del A2 (`level_cm` desde el fondo y
     `level_pct`, lo útil de la rejilla de la bomba de pozo a llena) y su
-    calibración (`level_zero` en el aire, `level_mark_full`).
+    calibración (`level_zero` en el aire, `level_mark_full`). Litros por cm
+    (`level_liters_per_cm`, NVS): la cisterna de Erick es una Rotoplas sin
+    medidas, así que se miden con F (`level_measure_start`/`save`): con la
+    bomba de pozo apagada y agua entrando, los litros que contó F entre los
+    cm que subió; se guarda desde 5 cm. Con eso `level_liters` (todo lo que
+    hay, con lo de abajo de la toma) y el tope de la dosis: `dose_liters`
+    (en `water`) es lo menor entre los litros desde la última dosis y los
+    que hay (Erick, 28 oct 2026: le pedía 80 mL con la cisterna a la mitad;
+    el agua que ya se usó sin cloro no se vuelve a dosificar).
   - `detect`: los sensores del ADS1115 se detectan solos (`detect_sensors`
     cada segundo): con 5 s seguidos de una lectura que solo da un sensor
     conectado (P1 y P2 arriba de 0.3 V, nivel de 0.10, LDR de 0.15) su
@@ -125,8 +133,8 @@ Mientras llega el hardware, se desarrolla en el simulador con SDL (Mac y Fedora)
   - `screens/`: una carpeta por pestaña, y cada pantalla va en la de la
     pestaña que marca la barra (`kPages`): `home/` (Tren, DetalleP,
     DetalleCaida, Cartuchos, Cambio de cartuchos, Leyenda y Panorama),
-    `summary/`, `flow/` (y DetalleF), `cistern/` (Mezcla, Nivel y Calibrar
-    nivel), `dose/` (Inyección), `history/` (Alarmas) y `settings/`
+    `summary/`, `flow/` (y DetalleF), `cistern/` (Mezcla, Nivel, Calibrar
+    nivel y Litros por cm), `dose/` (Inyección), `history/` (Alarmas) y `settings/`
     (Diagnóstico, Prueba de cubeta, Prueba de banco y Repuestos). Las que van en
     `lv_layer_top()`, encima de todo, en `overlays/` (Pasillo, la alarma y
     Actualizando). Una pantalla nueva va donde la ponga su `kPages`.
@@ -148,7 +156,8 @@ Mientras llega el hardware, se desarrolla en el simulador con SDL (Mac y Fedora)
     Diagnóstico),
     `service_screen` (Cambio de cartuchos, el enlace Cambio de Cartuchos),
     `level_screen` (Nivel: la pestaña Cisterna sin sonda ORP, o el enlace
-    Nivel de Cisterna con ella) y `level_calibration_screen` (Calibrar nivel).
+    Nivel de Cisterna con ella), `level_calibration_screen` (Calibrar nivel)
+    y `level_liters_screen` (Litros por cm, Medir en Calibrar nivel).
     `alarm_screen` es la alarma a pantalla completa: va en `lv_layer_top()`
     encima de todo, Pasillo incluido. `update_screen` (Actualizando) va
     encima de la alarma mientras llega una versión por WiFi
@@ -563,18 +572,26 @@ Pendiente, en este orden:
   escala: ocupa la quinta parte del tanque y lo útil lo demás (con la toma
   en 50 y llena en 88 se veía más gris que azul, Erick, 27 oct). A la derecha el %
   útil en la cifra de 136 y los cm. Sin marcar "Está llena" dice "Sin
-  calibrar". Calibrar nivel son 5 renglones como Cartuchos, en el orden en
-  que se instala: rango de la etiqueta, cero en el aire, altura del sensor
-  (2 o 3 cm del fondo para que no lo tape el lodo), la rejilla y Está llena.
-  En el Tren el agua de la cisterna sube y baja con el nivel y dice "76 %
-  útil" (con sonda ORP, "Cisterna · 76 %"). Sin lectura (sin sensor o sin
+  calibrar". A la derecha del % va "En la cisterna ≈ 3,750 L" (de 10 en 10,
+  "≈" en etiqueta: las fuentes de cifras no lo traen), o "Sin medir".
+  Calibrar nivel son 6 renglones como Cartuchos (de 60 con 6 de aire), en
+  el orden en que se instala: rango de la etiqueta, cero en el aire, altura
+  del sensor (2 o 3 cm del fondo para que no lo tape el lodo), la rejilla,
+  Está llena y Litros por cm ("Medir" abre su pantalla con el acomodo de
+  Prueba de cubeta: Empezar, lo que entró y lo que subió, Guardar desde 5
+  cm). En el Tren el agua de la cisterna sube y baja con el nivel y dice "76 %
+  útil" (con sonda ORP, "Cisterna · 76 %"); sin sonda, "≈ 3,750 L" va a la
+  derecha del palo de la bomba R (junto al % se encimaba), y en el Pasillo
+  "Cisterna 73 % · ≈ 3,750 L". Con el tope de la dosis, Dosis dice "690 L
+  en la cisterna (entraron 800)" en lugar de "800 L desde la última dosis". Sin lectura (sin sensor o sin
   calibrar) no se dibuja agua: la raya del canvas, siempre arriba, se leía
   como cisterna llena. Diagnóstico muestra el A2 en V.
   "Toma de la bomba de pozo" es el 0 %: Erick pone 60 cm (la rejilla anda
   en ~45 y la bomba R en ~50, así quedan cubiertas). En 0 % la bomba R
   espera agua ("Cisterna en 0 %: espera agua"). El demo trae un sensor de 0
-  a 2 m, el mínimo en 60, lleno a 183 cm y con 150 cm (73 %); `sin-agua` lo
-  baja a 70 cm y `cisterna-vacia` a 58 (0 %).
+  a 2 m, el mínimo en 60, lleno a 183 cm y con 150 cm (73 %), con 25 L por
+  cm medidos (3,750 L: no topa los 1,850 desde la dosis); `sin-agua` lo
+  baja a 70 cm y `cisterna-vacia` a 58 (0 %), y ahí "Toca echar" sí topa.
 - Actualizando no está en el canvas: pantalla completa en fondo con
   "Actualizando", "a7dc67c+ → a7bd074+" a 36 px con 24 de aire (la que corre
   en texto-2, la que llega en texto; la flecha es el ícono `flecha`, porque

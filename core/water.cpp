@@ -4,6 +4,7 @@
 #include <cmath>
 
 #include "events.h"
+#include "level.h"
 #include "mixing.h"
 
 namespace core {
@@ -32,6 +33,7 @@ void count_liters(SystemState& s, uint32_t liters) {
     if (liters == 0) return;
     s.liters_today += liters;
     s.liters_since_dose += liters;
+    if (s.level_measuring) s.level_measure_liters += liters;  // midiendo litros por cm
     Totals& hour = s.hours[s.hour % s.hours.size()];
     hour.liters = add16(hour.liters, liters);
     s.days.back().liters = add16(s.days.back().liters, liters);
@@ -39,6 +41,16 @@ void count_liters(SystemState& s, uint32_t liters) {
         if (f.installed) f.liters += liters;
     }
     mixer_add_liters(s, liters);
+}
+
+uint32_t dose_liters(const SystemState& s) {
+    const float in_cistern = level_liters(s);
+    if (in_cistern < 0.0f) return s.liters_since_dose;  // sin litros por cm no hay tope
+    return std::min(s.liters_since_dose, static_cast<uint32_t>(std::lround(in_cistern)));
+}
+
+uint32_t dose_ml(const SystemState& s) {
+    return static_cast<uint32_t>(static_cast<float>(dose_liters(s)) * s.ml_per_liter + 0.5f);
 }
 
 void register_dose(SystemState& s, uint32_t ml, bool typed) {

@@ -31,6 +31,7 @@ void each(SaveGroup group, S& s, F&& f) {
             f("lvl_sensor", s.level_sensor_cm);
             f("lvl_intake", s.level_intake_cm);
             f("lvl_full", s.level_full_cm);
+            f("lvl_l_per_cm", s.level_liters_per_cm);
             f("clog_r0", s.clog_r0);
             f("clog_r0_lpm", s.clog_r0_lpm);
             f("clog_r0_day", s.clog_r0_day);
@@ -123,6 +124,11 @@ void sanitize(SystemState& s) {
     if (!in<uint8_t>(s.mixer_manual_max_min, 1, 60)) s.mixer_manual_max_min = f.mixer_manual_max_min;
     // De 3 a 5 mA: el 0.132 que guardaba el firmware de 33 Ω regresa a fábrica
     if (!finite_in(s.level_zero_volts, kLevelZeroMinVolts, kLevelZeroMaxVolts)) s.level_zero_volts = f.level_zero_volts;
+    // 0 es sin medir; lo demás, lo que la medición se cree
+    if (s.level_liters_per_cm != 0.0f &&
+        !finite_in(s.level_liters_per_cm, kLevelLitersPerCmMin, kLevelLitersPerCmMax)) {
+        s.level_liters_per_cm = f.level_liters_per_cm;
+    }
     if (!in<uint16_t>(s.level_range_cm, 10, 2000)) s.level_range_cm = f.level_range_cm;
     if (s.level_sensor_cm > 50) s.level_sensor_cm = f.level_sensor_cm;
     if (static_cast<uint8_t>(s.last_cartridge) >= kFilterCount) s.last_cartridge = f.last_cartridge;

@@ -1,8 +1,9 @@
 #pragma once
 // Calibrar nivel (desde Nivel): un renglón por dato, en el orden en que se
 // hace al instalarlo. Rango de la etiqueta, cero en el aire, a cuántos cm del
-// fondo quedó, la rejilla de la bomba de pozo y "Está llena". No está en el
-// canvas: copia los renglones de Cartuchos.
+// fondo quedó, la rejilla de la bomba de pozo, "Está llena" y los litros por
+// cm (Medir abre su pantalla). No está en el canvas: copia los renglones de
+// Cartuchos.
 
 #include <array>
 #include <cstdint>
@@ -19,7 +20,7 @@ public:
 
 private:
     // Cada botón lleva su renglón en el user_data
-    enum Row : uint8_t { range, zero, sensor, intake, full, kRows };
+    enum Row : uint8_t { range, zero, sensor, intake, full, liters, kRows };
     static void handle_row(lv_event_t* e);
 
     std::array<lv_obj_t*, kRows> values_{};

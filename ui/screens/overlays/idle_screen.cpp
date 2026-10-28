@@ -124,6 +124,7 @@ void IdleScreen::create(lv_obj_t* layer, Callback on_wake) {
     // Caída y ORP ya no cabe cuando están los cuatro
     cistern_ = reading(root_, "Cisterna", "%", &cistern_value_, &cistern_unit_);
     cistern_lost_ = label(cistern_, &font_label_26, colors::warning, "Sin señal");
+    cistern_liters_ = label(cistern_, &font_label_26, colors::text_secondary, "");
     lv_obj_set_hidden(cistern_lost_, true);
     lv_obj_align(cistern_, LV_ALIGN_BOTTOM_RIGHT, -32, -24);
 
@@ -210,6 +211,15 @@ void IdleScreen::update(const core::SystemState& s) {
     if (pct >= 0) {
         snprintf(buf, sizeof buf, "%d", pct);
         set_text(cistern_value_, buf);
+    }
+    const float liters = lost ? -1.0f : core::level_liters(s);
+    lv_obj_set_hidden(cistern_liters_, liters < 0.0f);
+    if (liters >= 0.0f) {
+        char amount[16];
+        fmt::thousands(amount, sizeof amount, static_cast<uint32_t>(std::lround(liters / 10.0f) * 10));
+        char text[32];
+        snprintf(text, sizeof text, "\xC2\xB7 \xE2\x89\x88 %s L", amount);
+        set_text(cistern_liters_, text);
     }
     place_water(pct);
 }

@@ -8,6 +8,7 @@
 #include "level.h"
 #include "theme/colors.h"
 #include "theme/fonts.h"
+#include "theme/format.h"
 #include "ui.h"
 
 namespace ui {
@@ -17,20 +18,23 @@ struct RowText {
     const char* name;
     const char* button;
 };
-const RowText kRowText[5] = {
+const RowText kRowText[6] = {
     {"Rango del sensor", "Cambiar"},
     {"Cero en el aire", "Hacer cero"},
     {"Altura del sensor", "Cambiar"},
     {"Toma de la bomba de pozo", "Cambiar"},
     {"Llena", "Está llena"},
+    {"Litros por cm", "Medir"},
 };
+// Seis renglones de 60 con 6 de aire (eran cinco con 12) y la nota abajo
+constexpr int32_t kRowStep = 66;
 
 }  // namespace
 
 lv_obj_t* LevelCalibrationScreen::create(lv_obj_t* parent) {
     lv_obj_t* page = box(parent, 0, 0, 1024, 456);
     for (size_t i = 0; i < kRows; ++i) {
-        lv_obj_t* c = card(page, 16, 12 + 72 * static_cast<int32_t>(i), 992, 60);
+        lv_obj_t* c = card(page, 16, 12 + kRowStep * static_cast<int32_t>(i), 992, 60);
         lv_obj_set_pos(label(c, &font_body_32, colors::text, kRowText[i].name), 20, 10);
         values_[i] = label(c, &font_body_32, colors::text_secondary, "");
         lv_obj_set_pos(values_[i], 500, 10);  // "Toma de la bomba de pozo" llega a x 480
@@ -40,7 +44,7 @@ lv_obj_t* LevelCalibrationScreen::create(lv_obj_t* parent) {
         buttons_[i] = button;
     }
     note_ = label(page, &font_label_26, colors::text_secondary, "");
-    lv_obj_set_pos(note_, 16, 380);
+    lv_obj_set_pos(note_, 16, 12 + kRowStep * static_cast<int32_t>(kRows) + 6);
     lv_obj_set_width(note_, 992);
     return page;
 }
@@ -65,6 +69,17 @@ void LevelCalibrationScreen::update(const core::SystemState& s) {
         snprintf(buf, sizeof buf, "Sin marcar");
     }
     set_text(values_[full], buf);
+    if (s.level_measuring) {
+        // Caben 280 px antes del botón: "Midiendo: 12.4 cm" no
+        snprintf(buf, sizeof buf, "Subió %.1f cm", static_cast<double>(core::level_measure_rise(s)));
+    } else if (s.level_liters_per_cm > 0.0f) {
+        char value[16];
+        fmt::one_decimal(value, sizeof value, s.level_liters_per_cm);
+        snprintf(buf, sizeof buf, "%s L por cm", value);
+    } else {
+        snprintf(buf, sizeof buf, "Sin medir");
+    }
+    set_text(values_[liters], buf);
 
     // Sin señal lo que se guardara sería de un cable suelto: el cero y "Está
     // llena" esperan a que regrese
@@ -119,6 +134,9 @@ void LevelCalibrationScreen::handle_row(lv_event_t* e) {
             open_confirm("¿Ya está llena?", body, "Sí, está llena", [] {
                 if (actions().level_full_marked != nullptr) actions().level_full_marked();
             });
+            break;
+        case liters:
+            show(Screen::level_liters);
             break;
         case kRows:
             break;
