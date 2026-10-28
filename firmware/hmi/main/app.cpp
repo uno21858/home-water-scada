@@ -571,6 +571,9 @@ core::Outbox* make_outbox() {
 
 void start() {
     lock = xSemaphoreCreateMutex();
+    // Lo primero, la memoria de la pantalla: el WiFi y lo demás se quedan con
+    // la RAM interna que sobre (board.h)
+    board::reserve_display();
 
     // Lo que se guardó antes del reinicio. La bomba R arranca apagada y lo
     // que le faltaba queda pendiente.

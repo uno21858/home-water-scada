@@ -328,6 +328,13 @@ En Mac, SDL2 viene de Homebrew (`brew install sdl2`). Si CMake no lo encuentra:
   ancho de banda a LVGL: se prende después de armar la interfaz
   (`board::create_display` y luego `start_display`). Caché de instrucciones de
   32 KB, como el demo de Waveshare (la de fábrica es de 16).
+- Pero su memoria se pide al principio (`board::reserve_display`, antes del
+  WiFi): los dos bounce buffers son ~80 KB de RAM interna con DMA. Pedidos
+  hasta prenderla, con el WiFi ya conectado, a veces no alcanzaba y tronaba en
+  ciclo (`no mem for bounce buffer`, 28 oct 2026, al crecer la interfaz a 24
+  pantallas). Como la primera vez sí prendió, la OTA ya la había dado por
+  buena y no regresó sola: se arregló por cable. Si no caben 20 renglones
+  prueba con 10 y luego sin bounce buffer, antes que tronar.
 - QEMU (`idf.py qemu`) lee mal la flash desde la app con QIO y trae 32 MB de
   PSRAM: para probar ahí, otra build con DIO, PSRAM quad, consola en UART0 y
   `qemu-system-xtensa -m 8M`. Sin eso la app no encuentra su firma y aborta.

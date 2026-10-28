@@ -88,6 +88,15 @@ Para regresar a la consola por el USB nativo sin perder lo de Casa:
 `idf.py menuconfig` > Component config > ESP-STDIO > Channel for console
 output > USB Serial/JTAG Controller.
 
+## Si truena en ciclo
+
+Con el cable en el USB-C nativo, `idf.py -p /dev/ttyACM0 monitor` desde
+`firmware/hmi` enseña el error con su línea del código (se sale con `Ctrl+T`
+y luego `Ctrl+X`; `Ctrl+]` no sale con teclado en español). Para cargarle una
+que sí sirva, `idf.py -p /dev/ttyACM0 flash monitor`: escribe también
+`ota_data_initial.bin`, así que arranca la de `ota_0` sin importar en cuál
+quedó la que truena. La NVS no se toca.
+
 ## Desde CLion
 
 Run > Edit Configurations > + > Shell Script, y en Script path

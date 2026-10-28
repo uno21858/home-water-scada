@@ -19,10 +19,17 @@ i2c_master_bus_handle_t i2c();
 // ¿Contesta alguien en esa dirección?
 bool probe(uint8_t address);
 
+// La memoria de la pantalla (framebuffers en PSRAM y bounce buffers en RAM
+// interna), sin prenderla. Va al principio, antes del WiFi: pidiéndola hasta
+// prender la pantalla, con el WiFi ya conectado, a veces ya no había RAM
+// interna para los bounce buffers y tronaba en ciclo (28 oct 2026).
+void reserve_display();
+
 // El display de LVGL, todavía sin pantalla: ahí se arma la interfaz
 lv_display_t* create_display();
 
-// Prende la pantalla y le da a LVGL sus framebuffers. Va después de armar la
+// Prende la pantalla (ya con su memoria, de reserve_display) y le da a LVGL
+// sus framebuffers. Va después de armar la
 // interfaz: mientras la pantalla se refresca, le quita PSRAM a LVGL. Se llama
 // desde la tarea de LVGL, que espera ahí el cambio de framebuffer.
 void start_display(lv_display_t* display);

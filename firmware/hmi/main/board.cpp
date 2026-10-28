@@ -5,6 +5,7 @@
 
 #include "driver/gpio.h"
 #include "esp_attr.h"
+#include "esp_heap_caps.h"
 #include "esp_lcd_panel_ops.h"
 #include "esp_lcd_panel_rgb.h"
 #include "esp_log.h"
@@ -151,7 +152,12 @@ void flush_wait(lv_display_t* display) {
     lv_display_flush_ready(display);
 }
 
-esp_err_t start_panel() {
+// Pide la memoria de la pantalla: los dos framebuffers en la PSRAM y los dos
+// bounce buffers en la RAM interna con DMA (~80 KB con 20 renglones). Todavía
+// no la prende: eso es esp_lcd_panel_init, en start_panel. Si no caben 20
+// renglones prueba con 10, y al último sin bounce buffer (la pantalla lee la
+// PSRAM directo y puede rayarse), antes que tronar en ciclo.
+esp_err_t create_panel() {
     esp_lcd_rgb_panel_config_t config = {};
     config.clk_src = LCD_CLK_SRC_DEFAULT;
     config.timings.pclk_hz = CONFIG_HMI_LCD_PCLK_MHZ * 1000 * 1000;
@@ -166,7 +172,6 @@ esp_err_t start_panel() {
     config.timings.flags.pclk_active_neg = 1;
     config.data_width = 16;
     config.num_fbs = 2;
-    config.bounce_buffer_size_px = kWidth * 20;  // 20 renglones en la RAM interna
     config.dma_burst_size = 64;
     config.hsync_gpio_num = GPIO_NUM_46;
     config.vsync_gpio_num = GPIO_NUM_3;
@@ -179,8 +184,23 @@ esp_err_t start_panel() {
     std::copy(std::begin(data), std::end(data), config.data_gpio_nums);
     config.flags.fb_in_psram = 1;
 
-    esp_err_t err = esp_lcd_new_rgb_panel(&config, &panel);
-    if (err == ESP_OK) err = esp_lcd_panel_reset(panel);
+    esp_err_t err = ESP_ERR_NO_MEM;
+    const int tries[3] = {20, 10, 0};  // 600 renglones: cada uno cabe justo
+    for (const int lines : tries) {
+        config.bounce_buffer_size_px = static_cast<size_t>(kWidth * lines);
+        err = esp_lcd_new_rgb_panel(&config, &panel);
+        if (err != ESP_ERR_NO_MEM) {
+            if (err == ESP_OK && lines != tries[0]) ESP_LOGW(kTag, "Pantalla con %d renglones de bounce buffer", lines);
+            break;
+        }
+        ESP_LOGW(kTag, "Sin RAM interna para %d renglones de bounce buffer", lines);
+    }
+    return err;
+}
+
+// Prende la pantalla que ya tiene su memoria: desde aquí lee la PSRAM todo el tiempo
+esp_err_t start_panel() {
+    esp_err_t err = esp_lcd_panel_reset(panel);
     if (err == ESP_OK) err = esp_lcd_panel_init(panel);
     if (err != ESP_OK) return err;
 
@@ -214,6 +234,13 @@ void start_i2c() {
 i2c_master_bus_handle_t i2c() { return bus; }
 
 bool probe(uint8_t address) { return bus != nullptr && i2c_master_probe(bus, address, kTimeoutMs) == ESP_OK; }
+
+void reserve_display() {
+    ESP_ERROR_CHECK(create_panel());
+    ESP_LOGI(kTag, "Memoria de la pantalla lista; quedan %u bytes de RAM interna (el bloque más grande, %u)",
+             static_cast<unsigned>(heap_caps_get_free_size(MALLOC_CAP_INTERNAL)),
+             static_cast<unsigned>(heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL)));
+}
 
 lv_display_t* create_display() {
     lv_display_t* display = lv_display_create(kWidth, kHeight);
