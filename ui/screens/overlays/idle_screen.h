@@ -2,7 +2,8 @@
 // Pasillo: el modo de reposo. Si nadie toca la pantalla en 1, 2 o 5 min
 // (Ajustes), tapa todo con cifras para leer de lejos: caudal, lo que toca
 // echar, litros de hoy, caída del tren, ORP y cisterna. Un toque en
-// cualquier lado regresa al Tren.
+// cualquier lado regresa al Tren. Con la bomba R prendida, abajo a la
+// izquierda va su impulsor girando y lo que le falta, en lugar de la pista.
 //
 // Con sensor de nivel, el fondo es el agua de la cisterna a su altura, con
 // una olita en la superficie. El agua quieta solo se redibuja cuando cambia
@@ -15,6 +16,7 @@
 #include <array>
 #include <cstdint>
 
+#include "components/mixer.h"
 #include "components/pipe.h"
 #include "lvgl.h"
 #include "system_state.h"
@@ -75,6 +77,17 @@ private:
     lv_obj_t* cistern_unit_ = nullptr;
     lv_obj_t* cistern_lost_ = nullptr;  // "Sin señal" en lugar de "73 %"
     lv_obj_t* cistern_liters_ = nullptr;  // "· ≈ 2,520 L" con los litros por cm medidos
+
+    // Bomba R abajo a la izquierda, en lugar de la pista: prendida, el
+    // impulsor girando y lo que le falta; con un aviso, su palabra en ámbar
+    lv_obj_t* hint_ = nullptr;          // "Toca la pantalla para volver al tren"
+    lv_obj_t* mixer_icon_ = nullptr;    // caja del impulsor, para esconderlo
+    Impeller impeller_;
+    lv_obj_t* mixer_ = nullptr;         // "Mezclando · faltan 32 min" o "Bomba R Atorada"
+    lv_obj_t* mixer_name_ = nullptr;
+    lv_obj_t* mixer_value_ = nullptr;
+    lv_obj_t* mixer_unit_ = nullptr;
+    lv_obj_t* mixer_word_ = nullptr;
     int water_pct_ = -2;  // -2 = todavía no se pinta
 
     // -1 = todavía no se pinta

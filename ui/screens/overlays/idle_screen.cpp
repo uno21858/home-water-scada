@@ -117,8 +117,17 @@ void IdleScreen::create(lv_obj_t* layer, Callback on_wake) {
 
     pipe_.add(root_, 0, 500, 1024, 10, FlowPipes::Dir::right);
 
-    lv_obj_t* hint = label(root_, &font_label_26, colors::text_disabled, "Toca la pantalla para volver al tren");
-    lv_obj_set_pos(hint, 32, 540);
+    hint_ = label(root_, &font_label_26, colors::text_disabled, "Toca la pantalla para volver al tren");
+    lv_obj_set_pos(hint_, 32, 540);
+
+    // Bomba R: abajo a la izquierda, en la misma línea que la cisterna. El
+    // impulsor va en su caja para poder esconderlo junto.
+    mixer_icon_ = box(root_, 32, 522, 56, 56);
+    impeller_.create(mixer_icon_, 0, 0);
+    mixer_ = reading(root_, "Mezclando \xC2\xB7 faltan", "min", &mixer_value_, &mixer_unit_);
+    mixer_name_ = lv_obj_get_child(mixer_, 0);
+    mixer_word_ = label(mixer_, &font_body_32, colors::warning, "");
+    lv_obj_align(mixer_, LV_ALIGN_BOTTOM_LEFT, 100, -24);
 
     // Cisterna abajo a la derecha, junto a la pista: en el renglón de Hoy,
     // Caída y ORP ya no cabe cuando están los cuatro
@@ -222,6 +231,25 @@ void IdleScreen::update(const core::SystemState& s) {
         set_text(cistern_liters_, text);
     }
     place_water(pct);
+
+    // Bomba R: prendida, girando con lo que le falta; con un aviso, su
+    // palabra; si no, la pista de cómo salir
+    const bool fault = s.has_mixer && s.mixer_fault != core::MixerFault::none;
+    const bool running = s.has_mixer && s.mixer_on && !fault;
+    const bool show_mixer = fault || running;
+    lv_obj_set_hidden(hint_, show_mixer);
+    lv_obj_set_hidden(mixer_icon_, !show_mixer);
+    lv_obj_set_hidden(mixer_, !show_mixer);
+    impeller_.set_spinning(running);
+    if (show_mixer) {
+        set_text(mixer_name_, running ? "Mezclando \xC2\xB7 faltan" : "Bomba R");
+        lv_obj_set_hidden(mixer_value_, !running);
+        lv_obj_set_hidden(mixer_unit_, !running);
+        lv_obj_set_hidden(mixer_word_, running);
+        snprintf(buf, sizeof buf, "%u", static_cast<unsigned>(s.mixer_minutes_left));
+        set_text(mixer_value_, buf);
+        if (fault) set_text(mixer_word_, fmt::mixer_fault(static_cast<unsigned>(s.mixer_fault)));
+    }
 }
 
 void IdleScreen::place_water(int pct) {

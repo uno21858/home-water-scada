@@ -472,7 +472,10 @@ Pendiente, en este orden:
   en la 7B pesa). "Cisterna 73 %" va abajo a la derecha, junto a la pista:
   en el renglón de Hoy, Filtros y ORP no caben los cuatro. No está en el canvas.
   Tampoco el WiFi de 40 (3, 2 o 1 arcos, o tachado en ámbar) a la izquierda
-  de la pastilla, que se queda donde la pone el canvas.
+  de la pastilla, que se queda donde la pone el canvas. Ni la bomba R abajo
+  a la izquierda, en la línea de la cisterna y en lugar de la pista: prendida,
+  el impulsor de Mezcla girando y "Mezclando · faltan 32 min"; con un aviso,
+  quieto y "Bomba R Atorada" en ámbar; apagada, regresa la pista.
 - En Ajustes, "Cambiar red" sale deshabilitado: el canvas no tiene la vista
   que abre. Pantalla no lleva la tarjeta "Apagar la luz de noche" del canvas:
   el brillo lo lleva el LDR del firmware (de noche baja solo) y el Pasillo ya
