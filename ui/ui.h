@@ -44,6 +44,7 @@ struct Actions {
     void (*mixer_after_dose_set)(uint32_t minutes) = nullptr; // programa: después de cada dosis
     void (*mixer_every_liters_set)(uint32_t minutes) = nullptr; // programa: cada 1,000 L que entran
     void (*mixer_bench_set)(bool on) = nullptr;  // Prueba de banco: Empezar (ya confirmado) o Ya terminé
+    void (*level_liters_per_cm_set)(uint32_t tenths) = nullptr;  // Calibrar nivel: litros por cm x 10 (455 = 45.5)
     void (*level_measure_started)() = nullptr;   // Litros por cm: Empezar
     void (*level_measure_saved)() = nullptr;     // Litros por cm: Guardar (ya subió lo que pide)
     void (*level_measure_canceled)() = nullptr;  // Litros por cm: Cancelar

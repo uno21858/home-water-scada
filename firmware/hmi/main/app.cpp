@@ -347,6 +347,10 @@ ui::Actions actions() {
     a.level_sensor_set = [](uint32_t cm) { s.level_sensor_cm = static_cast<uint8_t>(cm); changed(); };
     a.level_intake_set = [](uint32_t cm) { s.level_intake_cm = static_cast<uint8_t>(cm); changed(); };
     a.level_full_marked = [] { core::level_mark_full(s); changed(); };
+    a.level_liters_per_cm_set = [](uint32_t tenths) {
+        core::level_set_liters_per_cm(s, static_cast<float>(tenths) / 10.0f);
+        changed();
+    };
     // Litros por cm: la medición no se guarda; lo medido sí
     a.level_measure_started = [] { core::level_measure_start(s); };
     a.level_measure_saved = [] {

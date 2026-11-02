@@ -78,7 +78,7 @@ const std::array<Page, kScreenCount> kPages = {{
     {{"Repuestos en casa", Screen::settings, nullptr, {}, {}}, Screen::settings},
     {{"Cambio de cartuchos", Screen::filters, nullptr, {}, {}}, Screen::home},
     {{"Nivel de la cisterna", Screen::cistern, "Bomba R", Screen::mixer, {}}, Screen::cistern},
-    {{"Calibrar nivel", Screen::level, nullptr, {}, {}}, Screen::cistern},
+    {{"Calibrar nivel", Screen::level, "Medir litros", Screen::level_liters, {}}, Screen::cistern},
     {{"Prueba de banco", Screen::diagnostics, nullptr, {}, {}}, Screen::settings},
     {{"Litros por cm", Screen::level_calibration, nullptr, {}, {}}, Screen::cistern},
 }};

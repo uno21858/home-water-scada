@@ -58,6 +58,7 @@ void on_level_zeroed();
 void on_level_sensor(uint32_t cm);
 void on_level_intake(uint32_t cm);
 void on_level_full();
+void on_level_liters_per_cm(uint32_t tenths);  // escritos a mano: x 10
 void on_level_measure_start();   // Litros por cm: Empezar, Guardar y Cancelar
 void on_level_measure_save();
 void on_level_measure_cancel();

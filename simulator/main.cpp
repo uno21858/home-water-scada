@@ -52,6 +52,7 @@ int main()
     actions.level_sensor_set = demo::on_level_sensor;
     actions.level_intake_set = demo::on_level_intake;
     actions.level_full_marked = demo::on_level_full;
+    actions.level_liters_per_cm_set = demo::on_level_liters_per_cm;
     actions.level_measure_started = demo::on_level_measure_start;
     actions.level_measure_saved = demo::on_level_measure_save;
     actions.level_measure_canceled = demo::on_level_measure_cancel;

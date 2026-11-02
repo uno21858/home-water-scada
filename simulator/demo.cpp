@@ -508,6 +508,8 @@ void on_level_intake(uint32_t cm) { s.level_intake_cm = static_cast<uint8_t>(cm)
 
 void on_level_full() { core::level_mark_full(s); }
 
+void on_level_liters_per_cm(uint32_t tenths) { core::level_set_liters_per_cm(s, static_cast<float>(tenths) / 10.0f); }
+
 void on_level_measure_start() { core::level_measure_start(s); }
 
 void on_level_measure_save() { core::level_measure_save(s); }

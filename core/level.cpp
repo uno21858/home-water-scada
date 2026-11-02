@@ -24,6 +24,15 @@ float level_liters(const SystemState& s) {
     return level_cm(s) * s.level_liters_per_cm;
 }
 
+void level_set_liters_per_cm(SystemState& s, float liters_per_cm) {
+    if (!std::isfinite(liters_per_cm) || liters_per_cm < kLevelLitersPerCmMin ||
+        liters_per_cm > kLevelLitersPerCmMax) {
+        return;
+    }
+    s.level_liters_per_cm = liters_per_cm;
+    level_measure_cancel(s);
+}
+
 void level_measure_start(SystemState& s) {
     s.level_measuring = true;
     s.level_measure_from_cm = level_cm(s);

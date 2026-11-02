@@ -239,10 +239,13 @@ gris lo que lee cada entrada. La bomba R no se detecta: va en `menuconfig`.
   de 10,000 L, de 220 de alto, decía llena en 88 cm). Al cambiarlo, "Está
   llena" y los litros por cm se recalculan solos; la toma y la altura del
   sensor no, porque se midieron a mano.
-- Litros de la cisterna: Cisterna > Calibrar nivel > Litros por cm > Medir.
-  Con la bomba de pozo apagada y agua entrando del SIAPA, Empezar; cuando
-  suba unos 10 cm, Guardar (se deja desde 5). Antes, el factor de F con la
-  Prueba de cubeta: los litros salen de F. Con eso la pantalla dice los
+- Litros de la cisterna: Cisterna > Calibrar nivel > Litros por cm >
+  Cambiar, la capacidad entre la altura (10,000 L en 220 cm: 45.5). Va
+  después de corregir el rango: los litros salen de los cm. Si no se saben,
+  "Medir litros" del encabezado los mide con F: con la bomba de pozo
+  apagada y agua entrando del SIAPA, Empezar; cuando suba unos 10 cm,
+  Guardar (se deja desde 5), con el factor de F ya calibrado con la Prueba
+  de cubeta. Con eso la pantalla dice los
   litros que hay y "Toca echar" nunca pide más que litros que hay × la
   relación.
 - Los cartuchos (`core/clog.h`): con cartuchos nuevos y el agua corriendo

@@ -13,10 +13,11 @@
 // - a cuántos cm del fondo quedó (2 o 3, para que no lo tape el lodo)
 // - a cuántos cm del fondo está la rejilla de la bomba de pozo
 // - "Está llena" con el flotador cerrado: ese nivel es el 100 %
-// - litros por cm: una Rotoplas no es pareja y no se saben sus medidas, así
-//   que se miden con F. Con agua entrando y nadie sacando (la bomba de pozo
-//   apagada), los litros que contó F entre los cm que subió. Con eso salen
-//   los litros que hay y el tope de la dosis (dose_liters).
+// - litros por cm: la capacidad entre la altura (10,000 L en 220 cm son
+//   45.5; Erick, 2 nov 2026), o medidos con F si no se saben: con agua
+//   entrando y nadie sacando (la bomba de pozo apagada), los litros que contó
+//   F entre los cm que subió. Con eso salen los litros que hay y el tope de
+//   la dosis (dose_liters).
 
 #include "system_state.h"
 
@@ -47,6 +48,10 @@ inline constexpr float kLevelLitersPerCmMax = 1000.0f;
 // fondo por los litros por cm. Aproximado: la cisterna no es pareja de
 // arriba abajo. -1 sin litros por cm o sin lectura del nivel.
 float level_liters(const SystemState& s);
+
+// Los litros por cm escritos a mano (Calibrar nivel). Fuera de lo que se
+// cree, nada cambia. Una medición a medias se cancela.
+void level_set_liters_per_cm(SystemState& s, float liters_per_cm);
 
 // Medir los litros por cm: empieza en el nivel de ahorita con F en 0
 void level_measure_start(SystemState& s);

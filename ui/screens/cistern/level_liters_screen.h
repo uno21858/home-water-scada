@@ -1,6 +1,7 @@
 #pragma once
-// Litros por cm de la cisterna (desde Calibrar nivel, "Medir"). Una Rotoplas
-// no es pareja y no se saben sus medidas: con la bomba de pozo apagada y agua
+// Litros por cm medidos con F (desde Calibrar nivel, el enlace "Medir
+// litros"), para cuando no se saben la capacidad y la altura de la cisterna,
+// o para comprobarlas: con la bomba de pozo apagada y agua
 // entrando, F cuenta los litros y el sensor de nivel los cm que sube
 // (core/level.h). Con eso salen los litros que hay y el tope de la dosis. No
 // está en el canvas: copia el acomodo de Prueba de cubeta, los pasos a la

@@ -1011,6 +1011,14 @@ void level_range_fix() {
     CHECK(core::level_pct(s) == 100);
     CHECK(s.level_intake_cm == 50 && s.level_sensor_cm == 3);  // medidos a mano: se quedan
 
+    // Escritos a mano: la capacidad entre la altura (10,000 L en 220 cm)
+    core::level_set_liters_per_cm(s, 45.5f);
+    CHECK(std::fabs(s.level_liters_per_cm - 45.5f) < 0.01f);
+    core::level_set_liters_per_cm(s, 0.0f);    // no se cree: se queda
+    core::level_set_liters_per_cm(s, 5000.0f);
+    CHECK(std::fabs(s.level_liters_per_cm - 45.5f) < 0.01f);
+    s.level_liters_per_cm = 44.0f;
+
     // Fuera de lo que se cree, nada cambia
     core::level_set_range(s, 5);
     core::level_set_range(s, 5000);

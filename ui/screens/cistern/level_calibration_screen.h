@@ -2,7 +2,8 @@
 // Calibrar nivel (desde Nivel): un renglón por dato, en el orden en que se
 // hace al instalarlo. Rango de la etiqueta, cero en el aire, a cuántos cm del
 // fondo quedó, la rejilla de la bomba de pozo, "Está llena" y los litros por
-// cm (Medir abre su pantalla). No está en el canvas: copia los renglones de
+// cm (la capacidad entre la altura, en el teclado; "Medir litros" del
+// encabezado los mide con F). No está en el canvas: copia los renglones de
 // Cartuchos.
 
 #include <array>
@@ -32,6 +33,7 @@ private:
     float cm_ = 0.0f;
     uint8_t sensor_cm_ = 0;
     uint8_t intake_cm_ = 0;
+    float liters_per_cm_ = 0.0f;
 };
 
 }  // namespace ui

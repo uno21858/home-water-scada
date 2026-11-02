@@ -24,7 +24,7 @@ const RowText kRowText[6] = {
     {"Altura del sensor", "Cambiar"},
     {"Toma de la bomba de pozo", "Cambiar"},
     {"Llena", "Está llena"},
-    {"Litros por cm", "Medir"},
+    {"Litros por cm", "Cambiar"},
 };
 // Seis renglones de 60 con 6 de aire (eran cinco con 12) y la nota abajo
 constexpr int32_t kRowStep = 66;
@@ -54,6 +54,7 @@ void LevelCalibrationScreen::update(const core::SystemState& s) {
     cm_ = core::level_cm(s);
     sensor_cm_ = s.level_sensor_cm;
     intake_cm_ = s.level_intake_cm;
+    liters_per_cm_ = s.level_liters_per_cm;
     char buf[72];  // la nota sin señal mide 52 bytes
     snprintf(buf, sizeof buf, "0 a %u cm", static_cast<unsigned>(s.level_range_cm));
     set_text(values_[range], buf);
@@ -136,7 +137,17 @@ void LevelCalibrationScreen::handle_row(lv_event_t* e) {
             });
             break;
         case liters:
-            show(Screen::level_liters);
+            // La capacidad entre la altura; si no se saben, "Medir litros" del
+            // encabezado los mide con F
+            if (self->liters_per_cm_ > 0.0f) {
+                snprintf(hint, sizeof hint, "Ahorita: %.1f", static_cast<double>(self->liters_per_cm_));
+            } else {
+                snprintf(hint, sizeof hint, "10,000 L en 220 cm: 45.5");
+            }
+            open_keypad({"Litros por cm", "Capacidad entre altura", "L/cm", 1, 4, hint, nullptr, nullptr},
+                        [](uint32_t tenths) {
+                            if (actions().level_liters_per_cm_set != nullptr) actions().level_liters_per_cm_set(tenths);
+                        });
             break;
         case kRows:
             break;

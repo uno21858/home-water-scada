@@ -69,10 +69,12 @@ Mientras llega el hardware, se desarrolla en el simulador con SDL (Mac y Fedora)
     `level_set_range`, que al cambiar el rango recalcula "Está llena" y los
     litros por cm con los mismos volts: con 200 puesto y un sensor de más
     rango, llena salía en 88 cm en una cisterna de 220). Litros por cm
-    (`level_liters_per_cm`, NVS): la cisterna de Erick es una Rotoplas sin
-    medidas, así que se miden con F (`level_measure_start`/`save`): con la
-    bomba de pozo apagada y agua entrando, los litros que contó F entre los
-    cm que subió; se guarda desde 5 cm. Con eso `level_liters` (todo lo que
+    (`level_liters_per_cm`, NVS): la capacidad entre la altura, escrita en
+    Calibrar nivel (`level_set_liters_per_cm`; la de Erick es una Rotoplas
+    de 10,000 L y ~220 cm: 45.5, y por el diámetro de la ficha, 2.38 m, sale
+    44.5), o medidos con F (`level_measure_start`/`save`, el enlace "Medir
+    litros"): con la bomba de pozo apagada y agua entrando, los litros que
+    contó F entre los cm que subió; se guarda desde 5 cm. Con eso `level_liters` (todo lo que
     hay, con lo de abajo de la toma) y el tope de la dosis: `dose_liters`
     (en `water`) es lo menor entre los litros desde la última dosis y los
     que hay (Erick, 28 oct 2026: le pedía 80 mL con la cisterna a la mitad;
@@ -595,9 +597,10 @@ Pendiente, en este orden:
   Calibrar nivel son 6 renglones como Cartuchos (de 60 con 6 de aire), en
   el orden en que se instala: rango de la etiqueta, cero en el aire, altura
   del sensor (2 o 3 cm del fondo para que no lo tape el lodo), la rejilla,
-  Está llena y Litros por cm ("Medir" abre su pantalla con el acomodo de
-  Prueba de cubeta: Empezar, lo que entró y lo que subió, Guardar desde 5
-  cm). En el Tren el agua de la cisterna sube y baja con el nivel y dice "76 %
+  Está llena y Litros por cm ("Cambiar" abre el teclado: capacidad entre
+  altura). El enlace "Medir litros" del encabezado abre la medición con F
+  con el acomodo de Prueba de cubeta: Empezar, lo que entró y lo que subió,
+  Guardar desde 5 cm. En el Tren el agua de la cisterna sube y baja con el nivel y dice "76 %
   útil" (con sonda ORP, "Cisterna · 76 %"); sin sonda, "≈ 3,750 L" va a la
   derecha del palo de la bomba R (junto al % se encimaba), y en el Pasillo
   "Cisterna 73 % · ≈ 3,750 L". Con el tope de la dosis, Dosis dice "690 L
