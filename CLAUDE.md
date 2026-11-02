@@ -69,10 +69,11 @@ Mientras llega el hardware, se desarrolla en el simulador con SDL (Mac y Fedora)
     `level_set_range`, que al cambiar el rango recalcula "Está llena" y los
     litros por cm con los mismos volts: con 200 puesto y un sensor de más
     rango, llena salía en 88 cm en una cisterna de 220). Litros por cm
-    (`level_liters_per_cm`, NVS): la capacidad entre la altura, escrita en
-    Calibrar nivel (`level_set_liters_per_cm`; la de Erick es una Rotoplas
-    de 10,000 L y ~220 cm: 45.5, y por el diámetro de la ficha, 2.38 m, sale
-    44.5), o medidos con F (`level_measure_start`/`save`, el enlace "Medir
+    (`level_liters_per_cm`, NVS): de fábrica 44.5, la cisterna de la casa
+    (Rotoplas de 10,000 L, 2.38 m de diámetro y 2.43 m con tapa: pi x 119² /
+    1000), así que hay litros estimados sin calibrar nada; un 0 guardado (el
+    "sin medir" de antes) regresa a ese. Se cambia en Calibrar nivel
+    (`level_set_liters_per_cm`, la capacidad entre la altura) o se mide con F (`level_measure_start`/`save`, el enlace "Medir
     litros"): con la bomba de pozo apagada y agua entrando, los litros que
     contó F entre los cm que subió; se guarda desde 5 cm. Con eso `level_liters` (todo lo que
     hay, con lo de abajo de la toma) y el tope de la dosis: `dose_liters`

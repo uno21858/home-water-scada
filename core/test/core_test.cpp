@@ -932,7 +932,9 @@ void cistern_liters() {
         s.level_volts = s.level_zero_volts + (cm - 3.0f) / 200.0f * core::kLevelSpanVolts;
     };
     set_level(60.0f);
-    CHECK(core::level_liters(s) < 0.0f);  // sin medir
+    CHECK(std::fabs(s.level_liters_per_cm - 44.5f) < 0.01f);  // de fábrica: la Rotoplas de la casa
+    s.level_liters_per_cm = 0.0f;
+    CHECK(core::level_liters(s) < 0.0f);  // sin litros por cm no hay litros
 
     // 100 L y 3 cm: todavía no se deja guardar
     core::level_measure_start(s);
@@ -986,7 +988,16 @@ void cistern_liters() {
     core::save(bad, store2, core::SaveGroup::settings);
     core::SystemState back2;
     core::load(back2, store2);
-    CHECK(back2.level_liters_per_cm == 0.0f);
+    CHECK(std::fabs(back2.level_liters_per_cm - 44.5f) < 0.01f);  // regresa al de fábrica
+
+    // El 0 que guardaba el firmware de antes ("sin medir") también
+    core::SystemState zero;
+    zero.level_liters_per_cm = 0.0f;
+    MemoryStore store3;
+    core::save(zero, store3, core::SaveGroup::settings);
+    core::SystemState back3;
+    core::load(back3, store3);
+    CHECK(std::fabs(back3.level_liters_per_cm - 44.5f) < 0.01f);
 }
 
 // El rango mal puesto: llena y los litros por cm se recalculan con los mismos volts

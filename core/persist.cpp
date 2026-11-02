@@ -124,9 +124,9 @@ void sanitize(SystemState& s) {
     if (!in<uint8_t>(s.mixer_manual_max_min, 1, 60)) s.mixer_manual_max_min = f.mixer_manual_max_min;
     // De 3 a 5 mA: el 0.132 que guardaba el firmware de 33 Ω regresa a fábrica
     if (!finite_in(s.level_zero_volts, kLevelZeroMinVolts, kLevelZeroMaxVolts)) s.level_zero_volts = f.level_zero_volts;
-    // 0 es sin medir; lo demás, lo que la medición se cree
-    if (s.level_liters_per_cm != 0.0f &&
-        !finite_in(s.level_liters_per_cm, kLevelLitersPerCmMin, kLevelLitersPerCmMax)) {
+    // Lo que la medición se cree. Un 0 guardado (el "sin medir" de antes)
+    // regresa al de fábrica: así hay litros estimados sin calibrar nada
+    if (!finite_in(s.level_liters_per_cm, kLevelLitersPerCmMin, kLevelLitersPerCmMax)) {
         s.level_liters_per_cm = f.level_liters_per_cm;
     }
     if (!in<uint16_t>(s.level_range_cm, kLevelRangeMinCm, kLevelRangeMaxCm)) s.level_range_cm = f.level_range_cm;

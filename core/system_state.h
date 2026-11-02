@@ -335,7 +335,10 @@ struct SystemState {
     uint8_t level_intake_cm = 60;     // el 0 %: la rejilla de la bomba de pozo (documento: ~45)
                                       // y un colchón; con 60 la bomba R (~50) sigue cubierta
     uint16_t level_full_cm = 0;       // nivel con la cisterna llena; 0 = sin marcar
-    float level_liters_per_cm = 0.0f; // litros que caben por cm, medidos con F; 0 = sin medir
+    // Litros que caben por cm. De fábrica, la cisterna de la casa: Rotoplas de
+    // 10,000 L, 2.38 m de diámetro y 2.43 m de alto con tapa (Erick, 2 nov
+    // 2026): pi x 119^2 / 1000 = 44.5. Se cambia en Calibrar nivel.
+    float level_liters_per_cm = 44.5f;
     // Midiendo los litros por cm (core/level.h; no se guarda): desde qué
     // nivel empezó y cuántos litros ha contado F desde entonces
     bool level_measuring = false;

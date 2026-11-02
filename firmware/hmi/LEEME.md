@@ -239,9 +239,11 @@ gris lo que lee cada entrada. La bomba R no se detecta: va en `menuconfig`.
   de 10,000 L, de 220 de alto, decía llena en 88 cm). Al cambiarlo, "Está
   llena" y los litros por cm se recalculan solos; la toma y la altura del
   sensor no, porque se midieron a mano.
-- Litros de la cisterna: Cisterna > Calibrar nivel > Litros por cm >
-  Cambiar, la capacidad entre la altura (10,000 L en 220 cm: 45.5). Va
-  después de corregir el rango: los litros salen de los cm. Si no se saben,
+- Litros de la cisterna: de fábrica 44.5 L por cm, la Rotoplas de 10,000 L
+  de la casa (2.38 m de diámetro), así que se ven sin calibrar. Para otra
+  cisterna, Cisterna > Calibrar nivel > Litros por cm > Cambiar, la
+  capacidad entre la altura. Los litros salen de los cm: con el rango mal
+  puesto salen mal, y el tope de "Toca echar" también. Si no se saben,
   "Medir litros" del encabezado los mide con F: con la bomba de pozo
   apagada y agua entrando del SIAPA, Empezar; cuando suba unos 10 cm,
   Guardar (se deja desde 5), con el factor de F ya calibrado con la Prueba
