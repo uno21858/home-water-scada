@@ -67,8 +67,11 @@ Mientras llega el hardware, se desarrolla en el simulador con SDL (Mac y Fedora)
     `level_pct`, lo útil de la rejilla de la bomba de pozo a llena) y su
     calibración (`level_zero` en el aire, `level_mark_full`, y
     `level_set_range`, que al cambiar el rango recalcula "Está llena" y los
-    litros por cm con los mismos volts: con 200 puesto y un sensor de más
-    rango, llena salía en 88 cm en una cisterna de 220). Litros por cm
+    litros por cm medidos con F con los mismos volts: con 200 puesto y un
+    sensor de más rango, llena salía en 88 cm en una cisterna de 220. Los de
+    fábrica o escritos son de la cisterna y se quedan
+    (`level_liters_per_cm_measured`; 3 nov 2026: los 44.5 quedaban en 17.8).
+    De fábrica el rango es 500, el sensor de la casa de 0 a 5 m). Litros por cm
     (`level_liters_per_cm`, NVS): de fábrica 44.5, la cisterna de la casa
     (Rotoplas de 10,000 L, 2.38 m de diámetro y 2.43 m con tapa: pi x 119² /
     1000), así que hay litros estimados sin calibrar nada; un 0 guardado (el

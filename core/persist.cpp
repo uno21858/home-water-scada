@@ -32,6 +32,7 @@ void each(SaveGroup group, S& s, F&& f) {
             f("lvl_intake", s.level_intake_cm);
             f("lvl_full", s.level_full_cm);
             f("lvl_l_per_cm", s.level_liters_per_cm);
+            f("lvl_lpc_f", s.level_liters_per_cm_measured);
             f("clog_r0", s.clog_r0);
             f("clog_r0_lpm", s.clog_r0_lpm);
             f("clog_r0_day", s.clog_r0_day);

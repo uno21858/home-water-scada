@@ -104,7 +104,7 @@ void LevelCalibrationScreen::handle_row(lv_event_t* e) {
     char body[160];
     switch (which) {
         case range:
-            snprintf(hint, sizeof hint, "En la etiqueta: 0 a 2 m es 200");
+            snprintf(hint, sizeof hint, "En la etiqueta: 0 a 5 m es 500");
             open_keypad({"Rango del sensor", "Hasta", "cm", 0, 4, hint, nullptr, nullptr}, [](uint32_t cm) {
                 if (actions().level_range_set != nullptr) actions().level_range_set(cm);
             });

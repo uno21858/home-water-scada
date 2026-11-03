@@ -330,7 +330,7 @@ struct SystemState {
 
     // Calibración del sensor de nivel (Cisterna > Calibrar nivel), en cm
     float level_zero_volts = 0.600f;  // lo que marca en el aire; de fábrica 4 mA x 150 Ω (core/level.h)
-    uint16_t level_range_cm = 200;    // rango de la etiqueta: 0 a 2 m es 200
+    uint16_t level_range_cm = 500;    // rango de la etiqueta: el de la casa es de 0 a 5 m
     uint8_t level_sensor_cm = 3;      // a cuánto del fondo quedó el sensor
     uint8_t level_intake_cm = 60;     // el 0 %: la rejilla de la bomba de pozo (documento: ~45)
                                       // y un colchón; con 60 la bomba R (~50) sigue cubierta
@@ -339,6 +339,10 @@ struct SystemState {
     // 10,000 L, 2.38 m de diámetro y 2.43 m de alto con tapa (Erick, 2 nov
     // 2026): pi x 119^2 / 1000 = 44.5. Se cambia en Calibrar nivel.
     float level_liters_per_cm = 44.5f;
+    // Si salieron de medir con F: esos dependen del rango (son litros entre
+    // cm del sensor). Los de fábrica o escritos salen de las medidas de la
+    // cisterna y no cambian con el rango.
+    bool level_liters_per_cm_measured = false;
     // Midiendo los litros por cm (core/level.h; no se guarda): desde qué
     // nivel empezó y cuántos litros ha contado F desde entonces
     bool level_measuring = false;

@@ -700,7 +700,7 @@ void persist_ignores_bad_data() {
     core::SystemState s;
     core::load(s, store);
     CHECK(s.flow_pulses_per_liter == core::kFactoryPulsesPerLiter);
-    CHECK(s.level_range_cm == 200);
+    CHECK(s.level_range_cm == 500);  // el de la casa, de 0 a 5 m
     CHECK(s.ml_per_liter == 0.100f);
     CHECK(s.recent_event_count == 0);
     CHECK(s.today == 0);  // reloj raro: espera al NTP
@@ -951,8 +951,10 @@ void cistern_liters() {
     s.no_signal.level = true;
     CHECK(!core::level_measure_ready(s));
     s.no_signal.level = false;
+    CHECK(!s.level_liters_per_cm_measured);
     CHECK(core::level_measure_save(s));
     CHECK(!s.level_measuring);
+    CHECK(s.level_liters_per_cm_measured);
     CHECK(std::fabs(s.level_liters_per_cm - 20.0f) < 0.2f);
     CHECK(std::fabs(core::level_liters(s) - 1300.0f) < 15.0f);  // 65 cm x 20
     // Sin medir no cuenta lo que entra
@@ -979,6 +981,7 @@ void cistern_liters() {
     core::SystemState back;
     core::load(back, store);
     CHECK(std::fabs(back.level_liters_per_cm - 20.0f) < 0.2f);
+    CHECK(back.level_liters_per_cm_measured);
     CHECK(!back.level_measuring);
 
     // Un número que no se cree regresa a sin medir
@@ -1010,8 +1013,24 @@ void level_range_fix() {
     s.level_volts = s.level_zero_volts + 85.0f / 200.0f * core::kLevelSpanVolts;
     core::level_mark_full(s);
     CHECK(s.level_full_cm == 88);
-    s.level_liters_per_cm = 110.0f;
 
+    // Los de fábrica son de la cisterna: no cambian con el rango (Erick, 3
+    // nov 2026: quedaban en 17.8 y decía 2,300 L con 129 cm de agua)
+    {
+        core::SystemState f = s;
+        CHECK(!f.level_liters_per_cm_measured);
+        core::level_set_range(f, 500);
+        CHECK(std::fabs(f.level_liters_per_cm - 44.5f) < 0.01f);
+        CHECK(f.level_full_cm == 216);
+        // Los escritos tampoco
+        core::level_set_liters_per_cm(f, 45.5f);
+        core::level_set_range(f, 200);
+        CHECK(std::fabs(f.level_liters_per_cm - 45.5f) < 0.01f);
+    }
+
+    // Medidos con F con el rango mal: eran litros entre cm del sensor
+    s.level_liters_per_cm = 110.0f;
+    s.level_liters_per_cm_measured = true;
     core::level_set_range(s, 500);
     CHECK(s.level_range_cm == 500);
     CHECK(std::fabs(core::level_cm(s) - 215.5f) < 0.1f);   // los mismos volts, en cm de verdad
@@ -1025,6 +1044,7 @@ void level_range_fix() {
     // Escritos a mano: la capacidad entre la altura (10,000 L en 220 cm)
     core::level_set_liters_per_cm(s, 45.5f);
     CHECK(std::fabs(s.level_liters_per_cm - 45.5f) < 0.01f);
+    CHECK(!s.level_liters_per_cm_measured);
     core::level_set_liters_per_cm(s, 0.0f);    // no se cree: se queda
     core::level_set_liters_per_cm(s, 5000.0f);
     CHECK(std::fabs(s.level_liters_per_cm - 45.5f) < 0.01f);

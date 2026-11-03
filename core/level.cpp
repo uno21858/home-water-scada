@@ -30,6 +30,7 @@ void level_set_liters_per_cm(SystemState& s, float liters_per_cm) {
         return;
     }
     s.level_liters_per_cm = liters_per_cm;
+    s.level_liters_per_cm_measured = false;
     level_measure_cancel(s);
 }
 
@@ -60,6 +61,7 @@ bool level_measure_ready(const SystemState& s) {
 bool level_measure_save(SystemState& s) {
     if (!level_measure_ready(s)) return false;
     s.level_liters_per_cm = level_measure_ratio(s);
+    s.level_liters_per_cm_measured = true;
     s.level_measuring = false;
     return true;
 }
@@ -76,7 +78,10 @@ void level_set_range(SystemState& s, uint32_t range_cm) {
             const float above = std::max(0.0f, static_cast<float>(s.level_full_cm) - sensor);
             s.level_full_cm = static_cast<uint16_t>(std::lround(std::min(sensor + above * k, 65535.0f)));
         }
-        if (s.level_liters_per_cm > 0.0f) s.level_liters_per_cm /= k;
+        // Solo los medidos con F: los de fábrica o escritos son de la cisterna
+        // (Erick, 3 nov 2026: los 44.5 de fábrica quedaron en 17.8 al pasar
+        // de 200 a 500 y decía 2,300 L con 129 cm de agua)
+        if (s.level_liters_per_cm_measured && s.level_liters_per_cm > 0.0f) s.level_liters_per_cm /= k;
     }
     level_measure_cancel(s);
     s.level_range_cm = static_cast<uint16_t>(range_cm);

@@ -8,7 +8,7 @@
 // quedó del fondo.
 //
 // Calibración (Cisterna > Calibrar nivel):
-// - rango de la etiqueta (0 a 2 m = 200 cm)
+// - rango de la etiqueta (0 a 5 m = 500 cm, el de la casa)
 // - cero con el sensor en el aire
 // - a cuántos cm del fondo quedó (2 o 3, para que no lo tape el lodo)
 // - a cuántos cm del fondo está la rejilla de la bomba de pozo
@@ -75,12 +75,13 @@ void level_measure_cancel(SystemState& s);
 inline constexpr uint16_t kLevelRangeMinCm = 10;
 inline constexpr uint16_t kLevelRangeMaxCm = 2000;
 
-// Cambia el rango de la etiqueta. "Está llena" y los litros por cm se
-// guardaron con los volts de ese momento: se recalculan con el rango nuevo,
-// así no hay que esperar a que se llene ni volver a medir (Erick, 28 oct
-// 2026: con 200 puesto y un sensor de más rango, llena salía en 88 cm en una
-// cisterna de 220). La toma y la altura del sensor son cm medidos a mano y
-// se quedan. Una medición a medias se cancela.
+// Cambia el rango de la etiqueta. "Está llena" y los litros por cm medidos
+// con F se guardaron con los volts de ese momento: se recalculan con el rango
+// nuevo, así no hay que esperar a que se llene ni volver a medir (Erick, 28
+// oct 2026: con 200 puesto y un sensor de más rango, llena salía en 88 cm en
+// una cisterna de 220). La toma, la altura del sensor y los litros por cm
+// de fábrica o escritos son medidas de la cisterna y se quedan. Una
+// medición a medias se cancela.
 void level_set_range(SystemState& s, uint32_t range_cm);
 
 // "Hacer cero": lo que marca ahorita, con el sensor en el aire, es 0 cm
