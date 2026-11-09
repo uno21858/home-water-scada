@@ -84,6 +84,23 @@ inline constexpr uint16_t kLevelRangeMaxCm = 2000;
 // medición a medias se cancela.
 void level_set_range(SystemState& s, uint32_t range_cm);
 
+// En cuánto se llena: los litros que faltan para "Está llena" entre lo que
+// entra por F (Erick, 9 nov 2026). El caudal de un segundo brinca: un pulso
+// de más o de menos son 0.15 L/min, 2.6 % a 6 L/min, y en 10 horas eso son 16
+// minutos. Por eso se promedia: Erick pedía 3 a 5 s; con 30 el número se
+// queda quieto y en minuto y medio ya siguió un cambio del SIAPA. Con la
+// subida del nivel no sale: a 6 L/min sube 0.13 cm por minuto, menos que su
+// ruido. Solo cuenta lo que entra: si la casa gasta agua mientras, tarda más.
+inline constexpr float kFillAverageSeconds = 30.0f;
+
+// Una vez por segundo, después de set_flow: lleva el promedio (fill_lpm).
+// Al empezar el flujo arranca en lo que hay y sin flujo regresa a 0.
+void level_fill_tick(SystemState& s);
+
+// Minutos para llegar a "Está llena" con ese caudal; -1 si no entra agua, ya
+// está llena, falta marcarla, no hay litros por cm o no hay lectura
+int level_fill_minutes(const SystemState& s);
+
 // "Hacer cero": lo que marca ahorita, con el sensor en el aire, es 0 cm
 void level_zero(SystemState& s);
 

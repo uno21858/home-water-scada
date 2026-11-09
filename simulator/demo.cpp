@@ -77,6 +77,7 @@ core::SystemState make() {
     s.last_upload_at = 18 * 60 + 42;
 
     s.flow_lpm = 12.4f;
+    s.fill_lpm = s.flow_lpm;  // faltan 33 cm x 25 L: "Se llena en ≈ 1 h 10 min"
     s.liters_today = 1860;
     s.liters_since_dose = 1850;  // x 0.100 = 185 mL
     for (int i = 0; i < core::kFlowSamples24h; ++i) {
@@ -331,6 +332,7 @@ bool set_scenario(const char* name) {
     auto stop_flow = [] {
         no_flow = true;
         s.flow_lpm = 0.0f;
+        s.fill_lpm = 0.0f;
         for (int i = 114; i < core::kFlowSamples2h; ++i) s.flow_2h[static_cast<size_t>(i)] = 0.0f;
         s.flow_24h.back() = 0.0f;
     };
@@ -456,6 +458,7 @@ void tick_1s() {
     // a-prueba: la cuenta baja con red y al llegar a 0 queda como buena
     if (s.trial == core::FirmwareTrial::testing && --s.trial_seconds == 0) s.trial = core::FirmwareTrial::passed;
     core::set_flow(s, no_flow ? 0.0f : 12.4f + 0.15f * std::sin(seconds / 3.0f));
+    core::level_fill_tick(s);         // el caudal parejo de "Se llena en"
     core::clog_tick(s, clog_window);  // R cada minuto de flujo parejo, como el firmware
 
     // Los litros enteros que contó F en este segundo, como el PCNT del firmware

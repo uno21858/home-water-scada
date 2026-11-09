@@ -19,6 +19,16 @@ void one_decimal(char* out, size_t size, float value);
 // Minuto del día -> "HH:MM"
 void clock(char* out, size_t size, unsigned minute_of_day);
 
+// Minutos que faltan, redondeados a lo que se les puede creer: de 5 en 5
+// abajo de una hora, de 10 en 10 hasta 10 horas y de hora en hora después.
+// `shown` es lo que ya se ve (0 = nada): se queda mientras el estimado no se
+// aleje 3/4 de paso, para que en la orilla de un redondeo no brinque.
+uint32_t rough_minutes(uint32_t minutes, uint32_t shown);
+
+// Lo que da rough_minutes -> "45 min", "2 h 30 min", "11 h"; de 2 días para
+// arriba, "más de 2 días"
+void rough_duration(char* out, size_t size, uint32_t minutes);
+
 // 0 domingo ... 6 sábado -> "Dom" ... "Sáb"
 const char* weekday_short(unsigned weekday);
 

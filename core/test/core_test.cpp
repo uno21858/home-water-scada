@@ -1056,6 +1056,84 @@ void level_range_fix() {
     CHECK(s.level_range_cm == 500 && s.level_full_cm == 216);
 }
 
+// En cuánto se llena: lo que falta para "Está llena" entre el caudal parejo
+void fill_time() {
+    core::SystemState s = house();
+    s.has_level = true;
+    s.level_range_cm = 500;
+    s.level_sensor_cm = 3;
+    s.level_intake_cm = 50;
+    s.level_full_cm = 214;
+    s.level_liters_per_cm = 44.5f;
+    auto set_level = [&s](float cm) {
+        s.level_volts = s.level_zero_volts + (cm - 3.0f) / 500.0f * core::kLevelSpanVolts;
+    };
+    set_level(129.0f);
+
+    // Sin flujo no hay estimado
+    core::set_flow(s, 0.0f);
+    core::level_fill_tick(s);
+    CHECK(core::level_fill_minutes(s) == -1);
+
+    // Al empezar el flujo arranca en lo que hay: 85 cm x 44.5 L / 6 L/min = 630 min
+    core::set_flow(s, 6.0f);
+    core::level_fill_tick(s);
+    CHECK(std::fabs(s.fill_lpm - 6.0f) < 0.001f);
+    CHECK(std::abs(core::level_fill_minutes(s) - 630) <= 1);
+
+    // Un pulso de más o de menos por segundo (0.15 L/min) casi no lo mueve
+    for (int i = 0; i < 120; ++i) {
+        core::set_flow(s, i % 2 == 0 ? 6.15f : 5.85f);
+        core::level_fill_tick(s);
+        CHECK(std::fabs(s.fill_lpm - 6.0f) < 0.16f / 2.0f);
+    }
+    CHECK(std::abs(core::level_fill_minutes(s) - 630) <= 5);
+
+    // Un cambio de verdad lo sigue: al doble de caudal, la mitad en minuto y medio
+    for (int i = 0; i < 90; ++i) {
+        core::set_flow(s, 12.0f);
+        core::level_fill_tick(s);
+    }
+    CHECK(std::fabs(s.fill_lpm - 12.0f) < 0.4f);
+    CHECK(std::abs(core::level_fill_minutes(s) - 315) <= 10);
+
+    // Se va el agua: nada, y al regresar no arrastra el caudal de antes
+    core::set_flow(s, 0.0f);
+    core::level_fill_tick(s);
+    CHECK(s.fill_lpm == 0.0f && core::level_fill_minutes(s) == -1);
+    core::set_flow(s, 3.0f);
+    core::level_fill_tick(s);
+    CHECK(std::fabs(s.fill_lpm - 3.0f) < 0.001f);
+
+    // Ya llena, sin marcar llena, sin litros por cm o sin señal: nada
+    set_level(214.0f);
+    CHECK(core::level_fill_minutes(s) == -1);
+    set_level(129.0f);
+    CHECK(core::level_fill_minutes(s) > 0);
+    s.level_full_cm = 0;
+    CHECK(core::level_fill_minutes(s) == -1);
+    s.level_full_cm = 214;
+    s.level_liters_per_cm = 0.0f;
+    CHECK(core::level_fill_minutes(s) == -1);
+    s.level_liters_per_cm = 44.5f;
+    s.no_signal.level = true;
+    CHECK(core::level_fill_minutes(s) == -1);
+    s.no_signal.level = false;
+
+    // Casi llena: 0.6 cm x 44.5 L / 12 L/min son 2 min; a menos de medio cm ya
+    // está llena. Un hilito de agua no pasa de una semana.
+    set_level(213.4f);
+    core::set_flow(s, 12.0f);
+    for (int i = 0; i < 200; ++i) core::level_fill_tick(s);
+    CHECK(core::level_fill_minutes(s) == 2);
+    set_level(213.7f);
+    CHECK(core::level_fill_minutes(s) == -1);
+    set_level(60.0f);
+    core::set_flow(s, 0.06f);
+    for (int i = 0; i < 600; ++i) core::level_fill_tick(s);
+    CHECK(core::level_fill_minutes(s) == 7 * 24 * 60);
+}
+
 int main() {
     auto_by_liters();
     dose_mixes();
@@ -1072,6 +1150,7 @@ int main() {
     mixer_bench_mode();
     cistern_liters();
     level_range_fix();
+    fill_time();
     calendar_day_change();
     calendar_hour_samples();
     telemetry_lines();

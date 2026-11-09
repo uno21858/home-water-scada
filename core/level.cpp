@@ -87,6 +87,27 @@ void level_set_range(SystemState& s, uint32_t range_cm) {
     s.level_range_cm = static_cast<uint16_t>(range_cm);
 }
 
+void level_fill_tick(SystemState& s) {
+    if (s.flow_lpm < kFlowingLpm) {
+        s.fill_lpm = 0.0f;
+    } else if (s.fill_lpm <= 0.0f) {
+        s.fill_lpm = s.flow_lpm;  // desde 0 tardaría medio minuto en dar un número creíble
+    } else {
+        // Promedio corrido: cada segundo se acerca 1/30 a lo que marca F
+        s.fill_lpm += (s.flow_lpm - s.fill_lpm) / kFillAverageSeconds;
+    }
+}
+
+int level_fill_minutes(const SystemState& s) {
+    if (s.fill_lpm < kFlowingLpm || s.level_full_cm == 0 || s.level_liters_per_cm <= 0.0f || !level_ok(s)) return -1;
+    // A menos de medio cm ya está llena: el nivel se dice en cm enteros
+    const float missing_cm = static_cast<float>(s.level_full_cm) - level_cm(s);
+    if (missing_cm < 0.5f) return -1;
+    // Tope de una semana: con un hilito de agua la cuenta no dice nada
+    const float minutes = std::min(missing_cm * s.level_liters_per_cm / s.fill_lpm, 7.0f * 24.0f * 60.0f);
+    return std::max(1, static_cast<int>(std::lround(minutes)));
+}
+
 void level_zero(SystemState& s) { s.level_zero_volts = s.level_volts; }
 
 void level_mark_full(SystemState& s) {

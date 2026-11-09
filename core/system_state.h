@@ -348,6 +348,9 @@ struct SystemState {
     bool level_measuring = false;
     float level_measure_from_cm = 0.0f;
     uint32_t level_measure_liters = 0;
+    // El caudal parejo con el que se estima en cuánto se llena: el promedio
+    // corrido de F (core/level.h, level_fill_tick). 0 sin flujo. No se guarda.
+    float fill_lpm = 0.0f;
 
     // Cambio de cartuchos: con V1 cerrada P1 baja a 0 igual que si se fuera el
     // SIAPA, así que mientras dura no se avisa ni la caída ni el sin agua.

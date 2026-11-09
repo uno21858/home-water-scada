@@ -123,6 +123,13 @@ void LevelScreen::create_reading(lv_obj_t* page) {
     lv_obj_set_height(calibrate, 76);
     lv_obj_move_to_index(icon(calibrate, &icon_editar_32, colors::text), 0);
     link_to(calibrate, Screen::level_calibration, &styles::button_secondary_pressed);
+
+    // En cuánto se llena: en el hueco a la derecha del botón (280 px), a la
+    // orilla de la tarjeta de arriba. Solo se ve con agua entrando.
+    fill_ = column(page, 0, LV_FLEX_ALIGN_END);
+    lv_obj_align(fill_, LV_ALIGN_TOP_RIGHT, -16, 370);
+    label(fill_, &font_label_26, colors::text_secondary, "Se llena en");
+    fill_value_ = label(fill_, &font_body_32, colors::text, "");
 }
 
 void LevelScreen::update(const core::SystemState& s) {
@@ -167,6 +174,19 @@ void LevelScreen::update(const core::SystemState& s) {
     if (liters >= 0.0f) {
         fmt::thousands(buf, sizeof buf, static_cast<uint32_t>(std::lround(liters / 10.0f) * 10));
         set_text(liters_value_, buf);
+    }
+
+    // En cuánto se llena, con lo que entra por F. "≈" va con el texto: la
+    // fuente de 32 sí lo trae
+    const int fill = core::level_fill_minutes(s);
+    lv_obj_set_hidden(fill_, fill < 0);
+    fill_shown_ = fill < 0 ? 0 : fmt::rough_minutes(static_cast<uint32_t>(fill), fill_shown_);
+    if (fill_shown_ > 0) {
+        char rough[20];
+        char text[28];
+        fmt::rough_duration(rough, sizeof rough, fill_shown_);
+        snprintf(text, sizeof text, fill_shown_ >= 48 * 60 ? "%s" : "\xE2\x89\x88 %s", rough);
+        set_text(fill_value_, text);
     }
 
     // Tanque: arriba cabe llena más un 8 %; sin marcar, el rango del sensor

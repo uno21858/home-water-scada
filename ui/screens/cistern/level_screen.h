@@ -4,7 +4,8 @@
 // A la izquierda el tanque con el agua: arriba de la rejilla de la bomba de
 // pozo en azul, abajo en gris (esa no la saca), apretado a la quinta parte
 // del tanque. A la derecha el % útil en grande, junto los litros que hay en
-// total (con los litros por cm medidos), los cm y "Calibrar nivel".
+// total (con los litros por cm medidos), los cm y "Calibrar nivel". Junto al
+// botón, con agua entrando, en cuánto se llena (core::level_fill_minutes).
 
 #include <array>
 #include <cstdint>
@@ -31,6 +32,12 @@ private:
     lv_obj_t* full_text_ = nullptr;
     lv_obj_t* intake_line_ = nullptr;
     lv_obj_t* intake_text_ = nullptr;
+
+    // "Se llena en ≈ 2 h 30 min", a la derecha de "Calibrar nivel": solo con
+    // agua entrando
+    lv_obj_t* fill_ = nullptr;
+    lv_obj_t* fill_value_ = nullptr;
+    uint32_t fill_shown_ = 0;  // los minutos que se ven; 0 = nada (fmt::rough_minutes)
 
     // Lectura
     lv_obj_t* pct_ = nullptr;   // "78 %"; sin marcar llena se esconde

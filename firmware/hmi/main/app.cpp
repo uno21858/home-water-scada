@@ -281,6 +281,7 @@ void every_second(lv_timer_t*) {
     const sensors::Readings r = sensors::latest();
     read_flow(r);
     read_analog(r);
+    core::level_fill_tick(s);         // el caudal parejo de "Se llena en" (Nivel)
     core::clog_tick(s, clog_window);  // R cada minuto de flujo parejo; se guarda con los contadores
     watch_mixer(r);
     read_network();

@@ -38,6 +38,28 @@ void clock(char* out, size_t size, unsigned minute_of_day) {
     snprintf(out, size, "%02u:%02u", (minute_of_day / 60) % 24, minute_of_day % 60);
 }
 
+uint32_t rough_minutes(uint32_t minutes, uint32_t shown) {
+    const uint32_t step = minutes < 60 ? 5 : minutes < 600 ? 10 : 60;
+    const uint32_t away = minutes > shown ? minutes - shown : shown - minutes;
+    if (shown > 0 && away * 4 < step * 3) return shown;
+    const uint32_t rounded = (minutes + step / 2) / step * step;
+    return rounded < step ? step : rounded;  // nunca "0 min"
+}
+
+void rough_duration(char* out, size_t size, uint32_t minutes) {
+    const unsigned hours = static_cast<unsigned>(minutes / 60);
+    const unsigned rest = static_cast<unsigned>(minutes % 60);
+    if (hours >= 48) {
+        snprintf(out, size, "más de 2 días");
+    } else if (hours == 0) {
+        snprintf(out, size, "%u min", rest);
+    } else if (rest == 0) {
+        snprintf(out, size, "%u h", hours);
+    } else {
+        snprintf(out, size, "%u h %u min", hours, rest);
+    }
+}
+
 const char* weekday_short(unsigned weekday) {
     static const char* const kNames[7] = {"Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"};
     return kNames[weekday % 7];

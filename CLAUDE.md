@@ -82,7 +82,13 @@ Mientras llega el hardware, se desarrolla en el simulador con SDL (Mac y Fedora)
     hay, con lo de abajo de la toma) y el tope de la dosis: `dose_liters`
     (en `water`) es lo menor entre los litros desde la última dosis y los
     que hay (Erick, 28 oct 2026: le pedía 80 mL con la cisterna a la mitad;
-    el agua que ya se usó sin cloro no se vuelve a dosificar).
+    el agua que ya se usó sin cloro no se vuelve a dosificar). En cuánto se
+    llena (`level_fill_minutes`, Erick, 9 nov 2026): los litros que faltan
+    para "Está llena" entre el caudal parejo (`fill_lpm`, el promedio corrido
+    de F de ~30 s que lleva `level_fill_tick` cada segundo: el caudal de un
+    segundo brinca 2.6 % por un pulso y en 10 horas eso son 16 min). Solo
+    cuenta lo que entra: si la casa gasta agua mientras, tarda más. Con la
+    subida del nivel no sale: a 6 L/min son 0.13 cm por minuto.
   - `detect`: los sensores del ADS1115 se detectan solos (`detect_sensors`
     cada segundo): con 5 s seguidos de una lectura que solo da un sensor
     conectado (P1 y P2 arriba de 0.3 V, nivel de 0.10, LDR de 0.15) su
@@ -221,7 +227,8 @@ Mientras llega el hardware, se desarrolla en el simulador con SDL (Mac y Fedora)
 - `docs/diseno/`: la especificación de diseño. Leer `docs/diseno/LEEME.md`.
 
 El firmware (`firmware/hmi/main/app.cpp`) hace lo mismo que `simulator/main.cpp` y `demo.cpp`: leer los
-sensores, pasarlos a `core` (`set_flow`, `count_liters`, `mixer_report_fault`...),
+sensores, pasarlos a `core` (`set_flow`, `count_liters`, `mixer_report_fault`...;
+cada segundo también `level_fill_tick` y `clog_tick`),
 cada minuto `core::set_time()` con la hora del NTP y `core::tick_minute()`,
 cada 10 s `core::queue_reading()` y, con red, el POST de `format_batch` y
 `mark_sent` (el modo de uso va arriba en `core/telemetry.h`), `ui::update()`,
@@ -597,7 +604,12 @@ Pendiente, en este orden:
   en 50 y llena en 88 se veía más gris que azul, Erick, 27 oct). A la derecha el %
   útil en la cifra de 136 y los cm. Sin marcar "Está llena" dice "Sin
   calibrar". A la derecha del % va "En la cisterna ≈ 3,750 L" (de 10 en 10,
-  "≈" en etiqueta: las fuentes de cifras no lo traen), o "Sin medir".
+  "≈" en etiqueta: las fuentes de cifras no lo traen), o "Sin medir". Con
+  agua entrando, en el hueco a la derecha de "Calibrar nivel" (280 px) va
+  "Se llena en" y "≈ 2 h 30 min" (`fmt::rough_minutes`: de 5 en 5 abajo de
+  una hora, de 10 en 10 hasta 10 horas, de hora en hora después y "más de 2
+  días"; no cambia hasta alejarse 3/4 de paso, para no brincar en la orilla
+  de un redondeo). Sin flujo, llena, sin señal o sin marcar llena no sale.
   Calibrar nivel son 6 renglones como Cartuchos (de 60 con 6 de aire), en
   el orden en que se instala: rango de la etiqueta, cero en el aire, altura
   del sensor (2 o 3 cm del fondo para que no lo tape el lodo), la rejilla,
