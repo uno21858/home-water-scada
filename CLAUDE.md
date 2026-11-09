@@ -446,7 +446,8 @@ Pendiente, en este orden:
     Tapados). Sin referencia, "R 3.9" y "Sin referencia" en gris.
   - Resumen (tarjeta Filtros): igual con ícono, y sin flujo "-- Sin flujo" y
     el estado con su hora.
-  - Pasillo: "Filtros 101 % Normal"; Panorama: "Filtros 101 %" con el ícono
+  - Pasillo: "Filtros 101 % Normal", y sin referencia el grupo no sale (de
+    lejos no dice nada; Erick, 9 nov 2026); Panorama: "Filtros 101 %" con el ícono
     ("Filtros sin referencia" no cabe en 232: "Sin referencia"); DetalleP:
     "Filtros · R 3.9 · 101 % Normal".
   - DetalleCaida: el % en la cifra de 136 con el estado, la escala de 50 a
@@ -488,7 +489,11 @@ Pendiente, en este orden:
   de la pastilla, que se queda donde la pone el canvas. Ni la bomba R abajo
   a la izquierda, en la línea de la cisterna y en lugar de la pista: prendida,
   el impulsor de Mezcla girando y "Mezclando · faltan 32 min"; con un aviso,
-  quieto y "Bomba R Atorada" en ámbar; apagada, regresa la pista.
+  quieto y "Bomba R Atorada" en ámbar; apagada, regresa la pista. Ni en
+  cuánto se llena, en la línea del título y solo con agua entrando: "Caudal
+  · cisterna llena en ≈ 2 h 30 min" (las cifras de 44 con "h" y "min" de
+  etiqueta, como "Hoy 1,860 L"; llega a x 675, antes de la raya de Toca
+  echar). En el renglón de abajo no cabe junto a Filtros: 1,070 px de 960.
 - En Ajustes, "Cambiar red" sale deshabilitado: el canvas no tiene la vista
   que abre. Pantalla no lleva la tarjeta "Apagar la luz de noche" del canvas:
   el brillo lo lleva el LDR del firmware (de noche baja solo) y el Pasillo ya

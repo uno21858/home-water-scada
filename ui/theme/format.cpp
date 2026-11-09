@@ -49,7 +49,7 @@ uint32_t rough_minutes(uint32_t minutes, uint32_t shown) {
 void rough_duration(char* out, size_t size, uint32_t minutes) {
     const unsigned hours = static_cast<unsigned>(minutes / 60);
     const unsigned rest = static_cast<unsigned>(minutes % 60);
-    if (hours >= 48) {
+    if (minutes >= kRoughDaysMinutes) {
         snprintf(out, size, "más de 2 días");
     } else if (hours == 0) {
         snprintf(out, size, "%u min", rest);

@@ -4,6 +4,8 @@
 // echar, litros de hoy, caída del tren, ORP y cisterna. Un toque en
 // cualquier lado regresa al Tren. Con la bomba R prendida, abajo a la
 // izquierda va su impulsor girando y lo que le falta, en lugar de la pista.
+// Con agua entrando, junto al título "Caudal" dice en cuánto se llena la
+// cisterna (core::level_fill_minutes).
 //
 // Con sensor de nivel, el fondo es el agua de la cisterna a su altura, con
 // una olita en la superficie. El agua quieta solo se redibuja cuando cambia
@@ -52,15 +54,24 @@ private:
 
     lv_obj_t* flow_title_ = nullptr;
     lv_obj_t* flow_value_ = nullptr;
+    // "· cisterna llena en ≈ 2 h 30 min", en la línea de "Caudal"
+    lv_obj_t* fill_ = nullptr;
+    lv_obj_t* fill_about_ = nullptr;  // "≈": con "más de 2 días" no va
+    lv_obj_t* fill_hours_ = nullptr;
+    lv_obj_t* fill_hours_unit_ = nullptr;
+    lv_obj_t* fill_minutes_ = nullptr;
+    lv_obj_t* fill_minutes_unit_ = nullptr;
+    lv_obj_t* fill_word_ = nullptr;   // "más de 2 días"
+    uint32_t fill_shown_ = 0;         // los minutos que se ven; 0 = nada (fmt::rough_minutes)
 
     lv_obj_t* dose_value_ = nullptr;
     lv_obj_t* dose_unit_ = nullptr;
 
     lv_obj_t* today_ = nullptr;
-    lv_obj_t* drop_ = nullptr;   // grupo de la caída: se esconde sin P1 y P2
+    lv_obj_t* drop_ = nullptr;   // grupo de los cartuchos: se esconde sin P1 y P2 o sin referencia
     lv_obj_t* drop_value_ = nullptr;
     lv_obj_t* drop_unit_ = nullptr;
-    lv_obj_t* drop_word_ = nullptr;  // Normal, Revisar, Tapados, Sin referencia o Sin señal
+    lv_obj_t* drop_word_ = nullptr;  // Normal, Revisar, Tapados o Sin señal
     lv_obj_t* orp_ = nullptr;    // grupo del ORP: se esconde sin sonda
     lv_obj_t* orp_value_ = nullptr;
 

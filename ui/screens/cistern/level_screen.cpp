@@ -185,7 +185,7 @@ void LevelScreen::update(const core::SystemState& s) {
         char rough[20];
         char text[28];
         fmt::rough_duration(rough, sizeof rough, fill_shown_);
-        snprintf(text, sizeof text, fill_shown_ >= 48 * 60 ? "%s" : "\xE2\x89\x88 %s", rough);
+        snprintf(text, sizeof text, fill_shown_ >= fmt::kRoughDaysMinutes ? "%s" : "\xE2\x89\x88 %s", rough);
         set_text(fill_value_, text);
     }
 

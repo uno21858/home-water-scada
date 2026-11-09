@@ -25,8 +25,9 @@ void clock(char* out, size_t size, unsigned minute_of_day);
 // aleje 3/4 de paso, para que en la orilla de un redondeo no brinque.
 uint32_t rough_minutes(uint32_t minutes, uint32_t shown);
 
-// Lo que da rough_minutes -> "45 min", "2 h 30 min", "11 h"; de 2 días para
-// arriba, "más de 2 días"
+// Lo que da rough_minutes -> "45 min", "2 h 30 min", "11 h"; de
+// kRoughDaysMinutes para arriba, "más de 2 días" (y ya no lleva "≈")
+inline constexpr uint32_t kRoughDaysMinutes = 2 * 24 * 60;
 void rough_duration(char* out, size_t size, uint32_t minutes);
 
 // 0 domingo ... 6 sábado -> "Dom" ... "Sáb"

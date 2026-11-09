@@ -96,6 +96,23 @@ void IdleScreen::create(lv_obj_t* layer, Callback on_wake) {
     // Caudal
     flow_title_ = label(root_, &font_body_32, colors::text_secondary, "");
     lv_obj_set_pos(flow_title_, 32, 124);
+    // En cuánto se llena la cisterna, en la línea del título y con su misma
+    // base: "Caudal · cisterna llena en ≈ 2 h 30 min". En el renglón de abajo
+    // no cabe junto a Filtros (1,070 px de 960). La altura va fija en la de
+    // las cifras: con "más de 2 días", que no lleva, no se sube.
+    lv_point_t title;
+    lv_text_get_size(&title, "Caudal", &font_body_32, 0, 0, LV_COORD_MAX, LV_TEXT_FLAG_NONE);
+    const int32_t tall = lv_font_get_line_height(&font_digits_44);
+    fill_ = row(root_, 10, LV_FLEX_ALIGN_END);
+    lv_obj_set_height(fill_, tall);
+    lv_obj_set_pos(fill_, 32 + title.x + 10, 124 + lv_font_get_line_height(&font_body_32) - tall);
+    label(fill_, &font_body_32, colors::text_secondary, "\xC2\xB7 cisterna llena en");
+    fill_about_ = label(fill_, &font_body_32, colors::text_secondary, "\xE2\x89\x88");
+    fill_hours_ = label(fill_, &font_digits_44, colors::text, "");
+    fill_hours_unit_ = label(fill_, &font_label_26, colors::text_secondary, "h");
+    fill_minutes_ = label(fill_, &font_digits_44, colors::text, "");
+    fill_minutes_unit_ = label(fill_, &font_label_26, colors::text_secondary, "min");
+    fill_word_ = label(fill_, &font_body_32, colors::text, "");
     flow_value_ = label(root_, &font_digits_232, colors::water, "");
     lv_obj_set_pos(flow_value_, 22, kFlowY);
     lv_obj_set_pos(label(root_, &font_title_36, colors::text_secondary, "L/min"), 584, 288);
@@ -177,6 +194,34 @@ void IdleScreen::update(const core::SystemState& s) {
         lv_obj_set_style_text_color(flow_value_, color(flowing ? colors::water : colors::text_disabled), 0);
     }
 
+    // En cuánto se llena la cisterna: solo con el título en "Caudal", que es
+    // junto a lo que va. Las horas y los minutos, cada uno con su unidad.
+    const int fill = flowing ? core::level_fill_minutes(s) : -1;
+    lv_obj_set_hidden(fill_, fill < 0);
+    fill_shown_ = fill < 0 ? 0 : fmt::rough_minutes(static_cast<uint32_t>(fill), fill_shown_);
+    if (fill_shown_ > 0) {
+        const unsigned hours = static_cast<unsigned>(fill_shown_ / 60);
+        const unsigned rest = static_cast<unsigned>(fill_shown_ % 60);
+        const bool days = fill_shown_ >= fmt::kRoughDaysMinutes;
+        const bool show_hours = !days && hours > 0;
+        const bool show_minutes = !days && (hours == 0 || rest > 0);
+        lv_obj_set_hidden(fill_about_, days);
+        lv_obj_set_hidden(fill_hours_, !show_hours);
+        lv_obj_set_hidden(fill_hours_unit_, !show_hours);
+        lv_obj_set_hidden(fill_minutes_, !show_minutes);
+        lv_obj_set_hidden(fill_minutes_unit_, !show_minutes);
+        lv_obj_set_hidden(fill_word_, !days);
+        snprintf(buf, sizeof buf, "%u", hours);
+        set_text(fill_hours_, buf);
+        snprintf(buf, sizeof buf, "%u", rest);
+        set_text(fill_minutes_, buf);
+        if (days) {
+            char word[20];
+            fmt::rough_duration(word, sizeof word, fill_shown_);
+            set_text(fill_word_, word);
+        }
+    }
+
     const uint32_t ml = core::dose_ml(s);
     snprintf(buf, sizeof buf, "%lu", static_cast<unsigned long>(ml));
     set_text(dose_value_, buf);
@@ -185,21 +230,24 @@ void IdleScreen::update(const core::SystemState& s) {
     fmt::thousands(buf, sizeof buf, s.liters_today);
     set_text(today_, buf);
 
-    lv_obj_set_hidden(drop_, !s.has_pressure);
-    if (s.has_pressure) {
-        // Sin señal de P1 o P2: la palabra en lugar de la cifra
-        // Los cartuchos: el último % contra la referencia y su estado, aunque
-        // ahorita no pase agua (eso ya lo dice el caudal de arriba)
-        const ClogLook look = clog_look(s);
-        const bool show_pct = look.pct >= 0 && look.kind != ClogLook::no_signal;
+    // Los cartuchos: el último % contra la referencia y su estado, aunque
+    // ahorita no pase agua (eso ya lo dice el caudal de arriba). Sin señal de
+    // P1 o P2, la palabra en lugar de la cifra. Sin referencia no hay nada
+    // que leer de lejos y el grupo no sale (Erick, 9 nov 2026): que falta
+    // guardarla lo dicen el Tren y Resumen.
+    const ClogLook clog = clog_look(s);
+    const bool show_drop = s.has_pressure && clog.kind != ClogLook::no_reference;
+    lv_obj_set_hidden(drop_, !show_drop);
+    if (show_drop) {
+        const bool show_pct = clog.pct >= 0 && clog.kind != ClogLook::no_signal;
         lv_obj_set_hidden(drop_value_, !show_pct);
         lv_obj_set_hidden(drop_unit_, !show_pct);
-        snprintf(buf, sizeof buf, "%d", look.pct);
+        snprintf(buf, sizeof buf, "%d", clog.pct);
         set_text(drop_value_, buf);
-        set_text(drop_word_, look.word);
-        if (look.kind != drop_level_) {
-            drop_level_ = look.kind;
-            lv_obj_set_style_text_color(drop_word_, color(look.fg), 0);
+        set_text(drop_word_, clog.word);
+        if (clog.kind != drop_level_) {
+            drop_level_ = clog.kind;
+            lv_obj_set_style_text_color(drop_word_, color(clog.fg), 0);
         }
     }
 
