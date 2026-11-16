@@ -31,7 +31,15 @@ if [ -z "$running" ]; then
 fi
 
 idf.py build
-version="$(python3 -c 'import json; print(json.load(open("build/project_description.json"))["project_version"])' 2>/dev/null || true)"
+# La versión como la dice la placa: "8cb7700+ c457b5ac", el commit y el
+# principio del hash del binario. Con cambios sin commit el commit es el
+# mismo en cada compilación; el hash cambia con cualquier cambio del código
+# y se queda igual si se vuelve a compilar sin tocar nada. Va dentro del
+# .bin, en su descripción (esp_app_desc_t): la versión en el byte 48 y el
+# hash en el 176.
+version="$(python3 -c '
+b = open("build/hmi.bin", "rb").read()
+print(b[48:80].split(b"\0")[0].decode(), b[176:180].hex())' 2>/dev/null || true)"
 echo
 echo "La placa trae $running; aquí está ${version:-?}. Mandando..."
 

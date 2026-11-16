@@ -125,6 +125,21 @@ Mientras llega el hardware, se desarrolla en el simulador con SDL (Mac y Fedora)
     es `pending_uploads`, lo que hay en la cola. Sin la URL de
     VictoriaMetrics (`has_server` en falso) el firmware no encola nada y la
     interfaz dice "Sin servidor" en lugar de "Por enviar".
+  - `panel`: `panel_json`, lo básico del Pasillo en JSON (números y códigos,
+    sin palabras) para el teléfono de la pared. El servidor de `ota` lo da
+    en `GET /datos` y la página en `GET /` (`firmware/hmi/main/panel.html`,
+    dentro del `.bin` con `EMBED_TXTFILES`): pregunta cada segundo, pone las
+    palabras y a los 5 s sin respuesta dice "Sin conexión con la pantalla"
+    (Erick, 10 nov 2026: un iPhone 7 viejo, LCD, que no se quema). Sin
+    websocket: los sensores cambian por segundo. Va en la cocina (un iPhone
+    XR): la cisterna en grande sobre el agua con olas (más rápidas con
+    flujo) y "Se llena en", Caudal y Hoy; abajo, en chico y solo si hay algo
+    que hacer, el cloro que toca, Filtros (Revisar, Tapados o sin señal) y
+    la bomba R (mezclando o con aviso). Sin agua dice desde cuándo ("desde
+    ayer 14:30", del evento `no_supply` abierto) y con la pastilla en Alarma
+    toda la pantalla va en rojo con el porqué; un toque la quita solo en el
+    teléfono (no es el Entendido de la pantalla). Se prueba sin placa con
+    `python3 -m http.server` y un archivo `datos` junto a un `index.html`.
   - `test/core_test.cpp`: pruebas en la compu (`ctest --test-dir build`).
 - `ui/`: la interfaz. No sabe nada de SDL ni del ESP32.
   - `ui.h/.cpp`: `init()`, `update()`, `show()` y las `Actions` que regresan a la
@@ -608,8 +623,11 @@ Pendiente, en este orden:
   escala: ocupa la quinta parte del tanque y lo útil lo demás (con la toma
   en 50 y llena en 88 se veía más gris que azul, Erick, 27 oct). A la derecha el %
   útil en la cifra de 136 y los cm. Sin marcar "Está llena" dice "Sin
-  calibrar". A la derecha del % va "En la cisterna ≈ 3,750 L" (de 10 en 10,
-  "≈" en etiqueta: las fuentes de cifras no lo traen), o "Sin medir". Con
+  calibrar". A la derecha del % va "Se pueden usar ≈ 2,250 L" (lo de arriba
+  de la toma, `level_usable_liters`; de 10 en 10, "≈" en etiqueta: las
+  fuentes de cifras no lo traen) y abajo "3,750 L en total", o "Sin medir".
+  Tren y Pasillo dicen los que se pueden usar; la dosis sigue topando con el
+  total (el cloro se mezcla en toda el agua; Erick, 2 nov 2026). Con
   agua entrando, en el hueco a la derecha de "Calibrar nivel" (280 px) va
   "Se llena en" y "≈ 2 h 30 min" (`fmt::rough_minutes`: de 5 en 5 abajo de
   una hora, de 10 en 10 hasta 10 horas, de hora en hora después y "más de 2

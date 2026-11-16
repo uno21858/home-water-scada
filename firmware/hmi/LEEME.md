@@ -124,7 +124,7 @@ git pull; ./firmware/hmi/subir-ota.sh
   firma no es de la llave de la casa" o "... ya falló una vez". Si la bomba R
   está corriendo no espera: dice que se revise luego con `/estado`. Si justo está
   bajando de la URL, espera hasta 20 s a que acabe. Antes de
-  compilar pregunta qué versión trae (`/version`); si no contesta, ni compila.
+  compilar pregunta qué versión trae (`/version`: el commit y el hash del binario, "8cb7700+ c457b5ac"); si no contesta, ni compila.
 - La placa compara el hash del binario, no la versión. Un `.bin` que ya falló
   una vez no se vuelve a instalar. Después de un `git pull` o un commit,
   `idf.py build` vuelve a configurar CMake solo, para que la versión sea la del

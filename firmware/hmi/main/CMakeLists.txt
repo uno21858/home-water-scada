@@ -1,6 +1,7 @@
 idf_component_register(
     SRCS main.cpp app.cpp board.cpp net.cpp ota.cpp sensors.cpp storage.cpp
     INCLUDE_DIRS "."
+    EMBED_TXTFILES panel.html
     REQUIRES core ui lvgl
     PRIV_REQUIRES app_update bootloader_support esp_app_format esp_driver_gpio esp_driver_i2c esp_driver_pcnt
                   esp_event esp_http_client esp_http_server esp_https_ota esp_lcd esp_netif esp_timer esp_wifi

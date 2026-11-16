@@ -33,6 +33,12 @@ constexpr std::size_t kHeadBytes = kDescOffset + sizeof(esp_app_desc_t);
 bool (*can_install)() = nullptr;
 void (*restart)() = nullptr;
 std::size_t (*status_text)(char* buf, std::size_t size) = nullptr;
+std::size_t (*panel_text)(char* buf, std::size_t size) = nullptr;
+
+// panel.html va dentro del .bin (EMBED_TXTFILES en CMakeLists.txt): el
+// enlazador deja estos dos símbolos donde empieza y donde acaba
+extern const char panel_html_start[] asm("_binary_panel_html_start");
+extern const char panel_html_end[] asm("_binary_panel_html_end");
 
 // Una sola escritura a la vez a la otra partición: la revisada de la URL o
 // una subida. Ya instalada una, ninguna más hasta reiniciar.
@@ -268,10 +274,35 @@ esp_err_t handle_status(httpd_req_t* req) {
     return httpd_resp_send(req, buf, static_cast<ssize_t>(n));
 }
 
-// GET /version: lo que corre, para que el script diga si ya está al día
+// GET /: la página del teléfono de la pared. El -1 es el '\0' que agrega
+// EMBED_TXTFILES al final.
+esp_err_t handle_panel(httpd_req_t* req) {
+    httpd_resp_set_type(req, "text/html; charset=utf-8");
+    return httpd_resp_send(req, panel_html_start, panel_html_end - panel_html_start - 1);
+}
+
+// GET /datos: lo que la página pregunta cada segundo (core/panel.h)
+esp_err_t handle_data(httpd_req_t* req) {
+    static char buf[400];  // static: el servidor atiende de una en una
+    const std::size_t n = panel_text != nullptr ? panel_text(buf, sizeof buf) : 0;
+    if (n == 0) return httpd_resp_send_500(req);
+    httpd_resp_set_type(req, "application/json");
+    httpd_resp_set_hdr(req, "Cache-Control", "no-store");
+    return httpd_resp_send(req, buf, static_cast<ssize_t>(n));
+}
+
+// GET /version: lo que corre, para que el script diga si ya está al día:
+// "8cb7700+ c457b5ac", el commit y el principio del hash del binario. El
+// commit solo no distingue dos compilaciones con cambios sin commit (las
+// dos son "8cb7700+"); el hash cambia si cambió una letra del código y es
+// el mismo que compara judge().
 esp_err_t handle_version(httpd_req_t* req) {
+    char hash[9];  // 8 letras y el '\0'
+    esp_app_get_elf_sha256(hash, sizeof hash);
+    char text[sizeof esp_app_desc_t::version + sizeof hash + 1];
+    std::snprintf(text, sizeof text, "%.32s %s", esp_app_get_description()->version, hash);
     httpd_resp_set_type(req, "text/plain; charset=utf-8");
-    return httpd_resp_sendstr(req, esp_app_get_description()->version);
+    return httpd_resp_sendstr(req, text);
 }
 
 // POST /ota con el hmi.bin en el cuerpo. Se escribe en la otra partición
@@ -387,14 +418,26 @@ void start_server() {
     upload.method = HTTP_POST;
     upload.handler = handle_upload;
     httpd_register_uri_handler(server, &upload);
+    httpd_uri_t panel = {};
+    panel.uri = "/";
+    panel.method = HTTP_GET;
+    panel.handler = handle_panel;
+    httpd_register_uri_handler(server, &panel);
+    httpd_uri_t data = {};
+    data.uri = "/datos";
+    data.method = HTTP_GET;
+    data.handler = handle_data;
+    httpd_register_uri_handler(server, &data);
 }
 
 }  // namespace
 
-void start(bool (*can_install_now)(), void (*restart_now)(), std::size_t (*status_now)(char*, std::size_t)) {
+void start(bool (*can_install_now)(), void (*restart_now)(), std::size_t (*status_now)(char*, std::size_t),
+           std::size_t (*panel_now)(char*, std::size_t)) {
     can_install = can_install_now;
     restart = restart_now;
     status_text = status_now;
+    panel_text = panel_now;
     start_server();
     if (CONFIG_HMI_OTA_URL[0] == '\0') {
         ESP_LOGI(kTag, "Sin URL de OTA: solo por subir-ota.sh");

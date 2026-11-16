@@ -9,3 +9,4 @@ _autosave-*
 *.lck
 fp-info-cache
 *.kicad_prl
+/firmware/hmi/firma_ota.pem

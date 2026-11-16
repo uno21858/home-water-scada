@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<!-- "Agregar a inicio" en el iPhone: abre a pantalla completa, sin la barra de Safari -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#1b1f24">
+<title>Agua de la casa</title>
+<style>
+  /* Los colores del DS (ui/theme/colors.h) */
+  :root {
+    --fondo: #1b1f24; --panel: #232930; --borde: #3a434d;
+    --texto: #e9edf1; --texto-2: #a9b3be; --texto-3: #7c8793;
+    --agua: #3cc8ea; --agua-tubo: #1f8eab;
+    --verde: #55c993; --verde-fondo: #16301f;
+    --ambar: #f2a83a; --ambar-fondo: #3a2a12;
+    --rojo: #ff7069; --rojo-fondo: #46181b;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    background: var(--fondo); color: var(--texto);
+    font: 500 18px/1.2 -apple-system, system-ui, sans-serif;
+    font-variant-numeric: tabular-nums;  /* las cifras no brincan al cambiar */
+    /* env(safe-area-inset-...): lo que tapan el notch y la rayita de abajo
+       del iPhone. Acostado, el notch queda a un lado. */
+    padding: max(14px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right))
+             max(14px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
+    display: flex; flex-direction: column; gap: 8px;
+    -webkit-user-select: none; user-select: none;
+  }
+
+  /* El agua de la cisterna de fondo, como en el Pasillo: sube y baja con el
+     nivel, y arriba lleva dos olas que se recorren a distinta velocidad */
+  #water { position: fixed; left: 0; right: 0; bottom: 0; height: 0; z-index: -1;
+           background: linear-gradient(rgba(31, 142, 171, .55), rgba(31, 142, 171, .3));
+           transition: height 2s; }
+  .wave { position: absolute; left: 0; bottom: 100%; width: 200%; height: 18px; margin-bottom: -1px;
+          background-repeat: repeat-x; background-size: 50% 100%; will-change: transform;
+          /* una ola dibujada en SVG, repetida a lo ancho */
+          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 18' preserveAspectRatio='none'%3E%3Cpath d='M0 9 Q50 0 100 9 T200 9 T300 9 T400 9 V18 H0Z' fill='%231f8eab'/%3E%3C/svg%3E");
+          animation: slide 9s linear infinite; opacity: .55; }
+  .wave.back { animation-duration: 15s; animation-direction: reverse; opacity: .3; height: 26px; }
+  /* Con agua entrando las olas van más rápido */
+  body.flowing .wave { animation-duration: 4s; }
+  body.flowing .wave.back { animation-duration: 7s; }
+  @keyframes slide { to { transform: translateX(-50%); } }
+
+  header { display: flex; justify-content: space-between; align-items: center; }
+  #time { font-size: 26px; color: var(--texto-2); }
+  .pill { padding: 5px 14px; border-radius: 999px; border: 2px solid; font-weight: 600; }
+  .ok { color: var(--verde); background: var(--verde-fondo); }
+  .warning { color: var(--ambar); background: var(--ambar-fondo); }
+  .alarm { color: var(--rojo); background: var(--rojo-fondo); }
+  .service { color: var(--texto); background: var(--panel); border-color: var(--borde); }
+
+  /* Parado: la cisterna arriba y abajo Caudal y Hoy, lado a lado. Sin
+     tarjetas: las cifras van directo sobre el agua. */
+  main { flex: 1; min-height: 0; display: grid; gap: 8px 20px; grid-template-columns: 1fr 1fr;
+         grid-template-rows: 1.6fr 1fr; }
+  section { display: flex; flex-direction: column; justify-content: center; min-width: 0; min-height: 0; }
+  .hero { grid-column: 1 / -1; }
+  h2 { font-size: 20px; font-weight: 500; color: var(--texto-2); }
+  /* El título de Caudal lleva las presiones a su derecha; si no caben
+     (parado), bajan a otro renglón */
+  .titled { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 16px; }
+  #psi { font-size: 18px; color: var(--texto-2); white-space: nowrap; }
+  #psi b { color: var(--texto); font-weight: 600; }
+  #psi b.amber { color: var(--ambar); }  /* el id gana sobre .amber: hay que decirlo aquí */
+  /* Las cifras crecen con el ancho, pero nunca más de lo que da el alto */
+  .value { font-size: min(15vw, 9vh); font-weight: 600; line-height: 1.05; white-space: nowrap; }
+  .hero .value { font-size: min(38vw, 22vh); }
+  .unit { font-size: .4em; font-weight: 500; color: var(--texto-2); margin-left: .15em; }
+  .note { font-size: min(5.5vw, 3.2vh); color: var(--texto-2); white-space: nowrap; }
+  #fill { font-weight: 600; color: var(--texto); }  /* en azul se perdía sobre el agua */
+  .lost { font-size: .3em; }         /* "Sin señal" no cabe al tamaño del % */
+  .water { color: var(--agua); }
+  .dim { color: var(--texto-3); }
+  .amber { color: var(--ambar); }
+  .red { color: var(--rojo); }
+
+  /* Abajo, en chico: el cloro que toca y lo que pide atención. Filtros en
+     Normal y la bomba R apagada no salen: no hay nada que hacer con eso. */
+  footer { display: flex; flex-wrap: wrap; gap: 6px 10px; min-height: 34px; align-items: center; }
+  .chip { padding: 4px 12px; border-radius: 999px; border: 1px solid var(--borde);
+          background: rgba(27, 31, 36, .7); color: var(--texto-2); white-space: nowrap; }
+  .chip b { color: var(--texto); font-weight: 600; }
+  .chip.amber { border-color: var(--ambar); color: var(--ambar); }
+  .chip.red { border-color: var(--rojo); color: var(--rojo); }
+  .chip.water { border-color: var(--agua-tubo); color: var(--agua); }
+
+  /* La alarma: toda la pantalla en rojo-alarma, encima de lo demás, para
+     que se vea desde el otro lado de la cocina. Un toque la quita. */
+  #alarm { position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 10; background: #a11f1b; color: #fff;
+           display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 2vh;
+           text-align: center; padding: 24px max(24px, env(safe-area-inset-right)) 24px max(24px, env(safe-area-inset-left)); }
+  #alarm h1 { font-size: min(9vw, 12vh); font-weight: 700; line-height: 1.1; }
+  #alarm p { font-size: min(5vw, 6vh); }
+  #alarm small { font-size: 18px; opacity: .8; margin-top: 3vh; }
+
+  [hidden] { display: none !important; }
+  #offline { background: var(--ambar-fondo); color: var(--ambar); border: 2px solid var(--ambar);
+             border-radius: 12px; padding: 8px 14px; font-weight: 600; text-align: center; }
+  body.stale main, body.stale footer, body.stale #water { opacity: .3; }
+  body.stale #status { visibility: hidden; }  /* sin datos no se sabe: no decir OK */
+
+  /* Acostado: la cisterna a la izquierda, y a la derecha Caudal arriba de Hoy */
+  @media (orientation: landscape) {
+    main { grid-template-columns: 1.25fr 1fr; grid-template-rows: 1fr 1fr; }
+    .hero { grid-column: 1; grid-row: 1 / -1; }
+    .value { font-size: min(11vw, 22vh); }
+    .hero .value { font-size: min(24vw, 46vh); }
+    .note { font-size: min(2.8vw, 6vh); }
+  }
+</style>
+</head>
+<body>
+<div id="water"><div class="wave back"></div><div class="wave"></div></div>
+<header>
+  <span id="time">--:--</span>
+  <span id="status" class="pill service">--</span>
+</header>
+<div id="alarm" hidden>
+  <p>Alarma</p>
+  <h1 id="alarm_title"></h1>
+  <p id="alarm_since"></p>
+  <small>Toca para quitar</small>
+</div>
+<div id="offline" hidden>Sin conexión con la pantalla</div>
+<main>
+  <section class="hero" id="level_card">
+    <h2>Cisterna</h2>
+    <div class="value"><span id="level">--</span><span class="unit" id="level_unit">%</span></div>
+    <div class="note" id="level_note"></div>
+    <div class="note" id="fill"></div>
+  </section>
+  <section>
+    <div class="titled"><h2 id="flow_title">Caudal</h2><span id="psi"></span></div>
+    <div class="value water" id="flow_box"><span id="flow">--</span><span class="unit">L/min</span></div>
+    <div class="note amber" id="dry_since"></div>
+  </section>
+  <section>
+    <h2>Hoy</h2>
+    <div class="value"><span id="today">--</span><span class="unit">L</span></div>
+  </section>
+</main>
+<footer>
+  <span class="chip" id="dose_chip">Toca echar <b id="dose">--</b> mL de cloro</span>
+  <span class="chip" id="filters_chip" hidden></span>
+  <span class="chip" id="mixer_chip" hidden></span>
+</footer>
+<script>
+// Atajo: $('flow') es el elemento con id="flow"
+const $ = id => document.getElementById(id);
+// 1860 -> "1,860", como la pantalla
+const thousands = n => n.toLocaleString('es-MX');
+
+const STATUS = [['OK', 'ok'], ['Advertencia', 'warning'], ['Alarma', 'alarm'], ['Mantenimiento', 'service']];
+// Estado nunca solo en color: cada uno con su palabra
+// Solo lo que pide atención (el código es el de core/panel.h): Filtros en
+// Normal o sin referencia y la bomba R apagada no salen
+const FILTERS = {1: ['Revisar', 'amber'], 2: ['Tapados', 'red'], 4: ['Sin señal', 'amber']};
+const MIXER = {1: ['Mezclando', 'water'], 2: ['Sin 12 V', 'amber'], 3: ['Nivel bajo', 'amber'], 4: ['Atorada', 'amber']};
+
+// Los títulos de la pantalla (fmt::alarm_title), en el orden de core::AlarmKind
+const ALARMS = ['Sin flujo mientras dosifica', 'Sensor F sin señal', 'Tope diario alcanzado'];
+
+// 870 -> "14:30": los minutos del día como hora
+const clock = m => String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
+
+// "desde las 14:30", "desde ayer 14:30" o "desde hace 3 días"
+function since(at, days) {
+  if (days === 0) return 'desde las ' + clock(at);
+  if (days === 1) return 'desde ayer ' + clock(at);
+  return 'desde hace ' + days + ' días';
+}
+
+let dismissed = '';  // la alarma que ya quitaron con un toque
+
+// La alarma a pantalla completa: sale con la pastilla en Alarma. Quitada con
+// un toque no regresa, hasta que sea otra o esta se quite y vuelva.
+function showAlarm(d) {
+  const title = d.status !== 2 ? '' : d.alarm >= 0 ? ALARMS[d.alarm] : d.filters === 2 ? 'Filtros tapados' : 'Revisa la pantalla';
+  if (title === '') dismissed = '';
+  $('alarm').hidden = title === '' || title === dismissed;
+  $('alarm_title').textContent = title;
+  $('alarm_since').textContent = d.alarm >= 0 ? 'Desde las ' + clock(d.alarm_at)
+                               : d.filters === 2 && d.filters_pct >= 0 ? d.filters_pct + ' % contra cartuchos nuevos' : '';
+}
+$('alarm').addEventListener('click', () => {
+  dismissed = $('alarm_title').textContent;
+  $('alarm').hidden = true;
+});
+
+// "P1 22 · P2 1 psi": la presión antes y después de los filtros. P1 es la
+// del SIAPA: abajo de 3 psi no hay agua (kNoSupplyPsi) y va en ámbar.
+function psiPart(name, psi) {
+  if (psi === -2) return name + ' <b class="amber">sin señal</b>';
+  return name + ' <b' + (name === 'P1' && psi < 3 ? ' class="amber"' : '') + '>' + psi + '</b>';
+}
+
+// "≈ 2 h 30 min": de 5 en 5 abajo de una hora, de 10 en 10 después
+function roughTime(min) {
+  if (min >= 2880) return 'más de 2 días';
+  const step = min < 60 ? 5 : 10;
+  const m = Math.max(step, Math.round(min / step) * step);
+  const h = Math.floor(m / 60), rest = m % 60;
+  return '≈ ' + (h ? h + ' h ' : '') + (rest || !h ? rest + ' min' : '');
+}
+
+// Un aviso de abajo: sale con su palabra y su color, o se esconde
+function chip(el, name, pair, extra) {
+  el.hidden = !pair;
+  if (!pair) return;
+  el.textContent = name + ' · ' + pair[0] + (extra || '');
+  el.className = 'chip ' + pair[1];
+}
+
+// Pinta lo que mandó la placa (core/panel.h dice qué es cada campo)
+function show(d) {
+  $('time').textContent = d.time;
+  $('status').textContent = STATUS[d.status][0];
+  $('status').className = 'pill ' + STATUS[d.status][1];
+
+  const flowing = d.flow > 0;
+  $('flow').textContent = d.flow.toFixed(1);
+  $('flow_box').className = 'value ' + (flowing ? 'water' : 'dim');
+  $('flow_title').textContent = flowing ? 'Caudal' : d.no_supply ? 'Sin agua del SIAPA' : 'Sin flujo';
+  $('flow_title').className = d.no_supply ? 'amber' : '';
+  $('dry_since').textContent = d.no_supply_at >= 0 ? since(d.no_supply_at, d.no_supply_days) : '';
+  // innerHTML y no textContent: las cifras llevan su <b>. Son números de la
+  // placa, no texto que escriba alguien.
+  $('psi').innerHTML = d.p1 === -1 ? '' : psiPart('P1', d.p1) + ' · ' + psiPart('P2', d.p2) + ' psi';
+  showAlarm(d);
+  // Con agua entrando: en cuánto se llena, y las olas más rápido
+  $('fill').textContent = d.fill_min >= 0 ? 'Se llena en ' + roughTime(d.fill_min) : '';
+  document.body.classList.toggle('flowing', flowing);
+
+  $('today').textContent = thousands(d.today);
+  $('dose').textContent = d.dose_ml;
+  $('dose_chip').hidden = d.dose_ml === 0;
+
+  // Cisterna: sin sensor la tarjeta no sale; sin señal lo dice
+  $('level_card').hidden = d.level < 0 && !d.level_lost;
+  $('level').textContent = d.level_lost ? 'Sin señal' : d.level;
+  $('level').className = d.level_lost ? 'amber lost' : '';
+  $('level_unit').hidden = d.level_lost;
+  $('level_note').textContent = d.liters >= 0 ? 'Se pueden usar ≈ ' + thousands(d.liters) + ' L' : '';
+  // Hasta 95 %: llena, que se sigan viendo las olas
+  $('water').style.height = Math.min(95, Math.max(0, d.level)) + '%';
+
+  chip($('filters_chip'), 'Filtros', FILTERS[d.filters], d.filters_pct >= 0 && d.filters < 3 ? ' ' + d.filters_pct + ' %' : '');
+  chip($('mixer_chip'), 'Bomba R', MIXER[d.mixer], d.mixer === 1 ? ' · faltan ' + d.mixer_min + ' min' : '');
+}
+
+let lastGood = Date.now();
+
+// Pregunta, pinta y se vuelve a citar en 1 s. Con setTimeout (y no
+// setInterval) nunca hay dos preguntas al mismo tiempo si la red va lenta.
+async function poll() {
+  const abort = new AbortController();
+  const timer = setTimeout(() => abort.abort(), 3000);  // la placa no contestó en 3 s
+  try {
+    const reply = await fetch('/datos', {signal: abort.signal, cache: 'no-store'});
+    show(await reply.json());
+    lastGood = Date.now();
+  } catch (e) {
+    // sin red o la placa reiniciando: se queda lo último y abajo se avisa
+  }
+  clearTimeout(timer);
+  const stale = Date.now() - lastGood > 5000;
+  $('offline').hidden = !stale;
+  document.body.classList.toggle('stale', stale);
+  if (stale) $('alarm').hidden = true;  // sin datos no se sabe si sigue
+  setTimeout(poll, 1000);
+}
+poll();
+</script>
+</body>
+</html>

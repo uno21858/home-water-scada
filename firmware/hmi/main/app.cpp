@@ -27,6 +27,7 @@
 #include "monitor.h"
 #include "net.h"
 #include "ota.h"
+#include "panel.h"
 #include "persist.h"
 #include "sdkconfig.h"
 #include "sensors.h"
@@ -474,6 +475,13 @@ constexpr const char* kOff = "\u00b7";
 
 const char* mark(bool ok) { return ok ? kOk : kBad; }
 
+// GET /datos: lo que pinta el teléfono de la pared. Lo pide la tarea del
+// servidor, así que toma el lock para leer s completo y no a medias.
+std::size_t panel_text(char* buf, std::size_t size) {
+    Locked locked;
+    return core::panel_json(s, buf, size);
+}
+
 // GET /estado: lo que subir-ota.sh imprime al terminar, para revisar desde
 // arriba sin ir a la placa. El primer renglón dice si sigue a prueba.
 std::size_t status_text(char* buf, std::size_t size) {
@@ -626,7 +634,7 @@ void start() {
         ESP_LOGE(kTag, "Sin red: falta grabar wifi.csv (idf.py flash)");
     }
     xTaskCreate(upload_task, "upload", 6 * 1024, nullptr, 2, nullptr);
-    if (has_wifi) ota::start(can_install, restart_for_update, status_text);  // sin red no hay a quién oír
+    if (has_wifi) ota::start(can_install, restart_for_update, status_text, panel_text);  // sin red no hay a quién oír
 }
 
 }  // namespace app

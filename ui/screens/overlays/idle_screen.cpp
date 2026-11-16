@@ -269,7 +269,7 @@ void IdleScreen::update(const core::SystemState& s) {
         snprintf(buf, sizeof buf, "%d", pct);
         set_text(cistern_value_, buf);
     }
-    const float liters = lost ? -1.0f : core::level_liters(s);
+    const float liters = lost ? -1.0f : core::level_usable_liters(s);
     lv_obj_set_hidden(cistern_liters_, liters < 0.0f);
     if (liters >= 0.0f) {
         char amount[16];

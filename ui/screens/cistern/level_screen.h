@@ -51,6 +51,7 @@ private:
     lv_obj_t* liters_ = nullptr;
     lv_obj_t* liters_row_ = nullptr;
     lv_obj_t* liters_value_ = nullptr;
+    lv_obj_t* liters_total_ = nullptr;
     lv_obj_t* liters_none_ = nullptr;  // "Sin medir"
 };
 

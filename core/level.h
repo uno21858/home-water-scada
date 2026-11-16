@@ -49,6 +49,11 @@ inline constexpr float kLevelLitersPerCmMax = 1000.0f;
 // arriba abajo. -1 sin litros por cm o sin lectura del nivel.
 float level_liters(const SystemState& s);
 
+// Los litros que sí se pueden usar: de la toma de la bomba de pozo para
+// arriba (lo de abajo no sale). Es lo que ven las pantallas; la dosis usa
+// level_liters, porque el cloro se mezcla en toda el agua.
+float level_usable_liters(const SystemState& s);
+
 // Los litros por cm escritos a mano (Calibrar nivel). Fuera de lo que se
 // cree, nada cambia. Una medición a medias se cancela.
 void level_set_liters_per_cm(SystemState& s, float liters_per_cm);

@@ -17,6 +17,7 @@
 #include "mixer_watch.h"
 #include "mixing.h"
 #include "monitor.h"
+#include "panel.h"
 #include "persist.h"
 #include "system_state.h"
 #include "telemetry.h"
@@ -957,6 +958,7 @@ void cistern_liters() {
     CHECK(s.level_liters_per_cm_measured);
     CHECK(std::fabs(s.level_liters_per_cm - 20.0f) < 0.2f);
     CHECK(std::fabs(core::level_liters(s) - 1300.0f) < 15.0f);  // 65 cm x 20
+    CHECK(std::fabs(core::level_usable_liters(s) - 300.0f) < 15.0f);  // (65 - 50) x 20: arriba de la toma
     // Sin medir no cuenta lo que entra
     const uint32_t counted = s.level_measure_liters;
     core::count_liters(s, 10);
@@ -1134,7 +1136,69 @@ void fill_time() {
     CHECK(core::level_fill_minutes(s) == 7 * 24 * 60);
 }
 
+// El panel del teléfono: el JSON de GET /datos
+void panel_data() {
+    core::SystemState s;
+    char buf[400];
+    // Recién prendida, sin nada instalado: todo lo que no hay va en -1
+    std::size_t n = core::panel_json(s, buf, sizeof buf);
+    CHECK(n > 0 && n == std::strlen(buf));
+    CHECK(buf[0] == '{' && buf[n - 1] == '}');
+    CHECK(std::strstr(buf, "\"status\":0") != nullptr);
+    CHECK(std::strstr(buf, "\"level\":-1") != nullptr);
+    CHECK(std::strstr(buf, "\"filters\":-1") != nullptr);
+    CHECK(std::strstr(buf, "\"mixer\":-1") != nullptr);
+    // Con agua y la bomba R atorada: Advertencia
+    s.hour = 18;
+    s.minute = 42;
+    s.flow_lpm = 5.64f;
+    s.liters_today = 1860;
+    s.has_mixer = true;
+    s.mixer_fault = core::MixerFault::stuck;
+    n = core::panel_json(s, buf, sizeof buf);
+    CHECK(std::strstr(buf, "\"time\":\"18:42\"") != nullptr);
+    CHECK(std::strstr(buf, "\"flow\":5.6,") != nullptr);
+    CHECK(std::strstr(buf, "\"today\":1860") != nullptr);
+    CHECK(std::strstr(buf, "\"status\":1") != nullptr);
+    CHECK(std::strstr(buf, "\"mixer\":4") != nullptr);
+    CHECK(std::strstr(buf, "\"no_supply_at\":-1") != nullptr);
+    CHECK(std::strstr(buf, "\"alarm\":-1") != nullptr);
+    CHECK(std::strstr(buf, "\"p1\":-1,\"p2\":-1") != nullptr);  // sin sensores de presión
+    // Se va el agua a las 14:30 y sigue sin agua al otro día: desde ayer
+    s.mixer_fault = core::MixerFault::none;
+    s.has_pressure = true;
+    s.flow_lpm = 0.0f;
+    s.p1_psi = 0;
+    s.today = 100;
+    s.hour = 14;
+    s.minute = 30;
+    core::check_supply(s);
+    s.today = 101;
+    core::panel_json(s, buf, sizeof buf);
+    CHECK(std::strstr(buf, "\"no_supply\":true") != nullptr);
+    CHECK(std::strstr(buf, "\"no_supply_at\":870,\"no_supply_days\":1") != nullptr);
+    // Regresa el agua: ya no dice desde cuándo
+    s.p1_psi = 30;
+    core::check_supply(s);
+    core::panel_json(s, buf, sizeof buf);
+    CHECK(std::strstr(buf, "\"no_supply_at\":-1") != nullptr);
+    // Las presiones, y P2 con el cable suelto
+    s.p2_psi = 1;
+    s.no_signal.p2 = true;
+    core::panel_json(s, buf, sizeof buf);
+    CHECK(std::strstr(buf, "\"p1\":30,\"p2\":-2") != nullptr);
+    s.no_signal.p2 = false;
+    // Una alarma: cuál y desde cuándo, y la pastilla en Alarma
+    core::alarm_raise(s, core::AlarmKind::sensor);
+    core::panel_json(s, buf, sizeof buf);
+    CHECK(std::strstr(buf, "\"status\":2") != nullptr);
+    CHECK(std::strstr(buf, "\"alarm\":1,\"alarm_at\":870") != nullptr);
+    // Si no cabe, nada: nunca un JSON cortado
+    CHECK(core::panel_json(s, buf, 40) == 0 && buf[0] == '\0');
+}
+
 int main() {
+    panel_data();
     auto_by_liters();
     dose_mixes();
     off_never_runs();

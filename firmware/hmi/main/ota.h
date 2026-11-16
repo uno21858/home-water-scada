@@ -2,7 +2,10 @@
 // Actualización por WiFi (documento, pág. 41: dos particiones y rollback),
 // de dos formas:
 // - La compu empuja: subir-ota.sh manda el .bin a POST /ota (puerto 80) y
-//   pregunta la versión en GET /version. La placa contesta al momento.
+//   pregunta la versión en GET /version ("8cb7700+ c457b5ac": el commit y
+//   el hash del binario, que sí distingue dos compilaciones sin commit).
+//   La placa contesta al momento.
+//   El mismo servidor da el panel del teléfono (GET / y GET /datos).
 // - La placa jala: cada CONFIG_HMI_OTA_CHECK_MINUTES lee el encabezado del .bin
 //   de CONFIG_HMI_OTA_URL (si hay) y lo baja (servir-ota.sh, o el NAS).
 // Las dos instalan solo si es otro binario (se compara el hash, no la
@@ -28,7 +31,10 @@ inline constexpr uint32_t kHealthTimeoutSeconds = 300;  // y conectarse antes de
 // status: escribe el checklist de GET /estado (lo que imprime subir-ota.sh
 // después de actualizar) y regresa cuántos bytes. Se llaman desde la tarea de
 // la OTA y desde el servidor de subidas.
-void start(bool (*can_install)(), void (*restart)(), std::size_t (*status)(char* buf, std::size_t size));
+// panel: igual que status, pero el JSON de GET /datos para el teléfono de la
+// pared (core/panel.h). La página que lo pide es GET / (panel.html).
+void start(bool (*can_install)(), void (*restart)(), std::size_t (*status)(char* buf, std::size_t size),
+           std::size_t (*panel)(char* buf, std::size_t size));
 
 // ¿Esta versión acaba de llegar y está a prueba? Se puede preguntar antes de start().
 bool on_trial();

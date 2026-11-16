@@ -459,7 +459,7 @@ void HomeScreen::update_orp(const core::SystemState& s) {
         char buf[24];
         const int pct = core::level_ok(s) ? core::level_pct(s) : -1;
         const bool lost = s.has_level && s.no_signal.level;
-        const float liters = core::level_liters(s);
+        const float liters = core::level_usable_liters(s);
         lv_obj_set_hidden(cistern_liters_, liters < 0.0f);
         if (liters >= 0.0f) {
             char amount[16];
